@@ -40,20 +40,10 @@ export default function Home() {
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <Link
               href="/login"
-              style={{
-                fontSize: "14px",
-                color: "#6b7280",
-                textDecoration: "none",
-              }}
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/coach/signup"
               className="btn btn-primary"
               style={{ fontSize: "14px" }}
             >
-              Start Coaching
+              Not a coach?
             </Link>
           </div>
         </div>
@@ -230,7 +220,7 @@ export default function Home() {
                 marginBottom: "16px",
               }}
             >
-              Simple, transparent pricing
+              One plan supports your entire business.
             </h2>
             <p style={{ color: "#6b7280", marginBottom: "48px" }}>
               One plan. Everything included. No hidden fees.
@@ -276,9 +266,11 @@ export default function Home() {
                 }}
               >
                 {[
-                  "Unlimited content uploads",
-                  "Custom branded landing page",
+                  "Custom content uploads",
+                  "Free landing page",
                   "Subscriber management",
+                  "Advanced analytics",
+                  "Customizable branding",
                   "Stripe payments & payouts",
                   "Only 20% platform fee on subscriber revenue",
                 ].map((item, i) => (
