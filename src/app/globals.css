@@ -17,6 +17,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Toast Animation */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
 /* Custom Components */
 @layer components {
   .btn {

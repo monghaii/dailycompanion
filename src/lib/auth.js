@@ -1,10 +1,11 @@
-import { supabase } from './supabase';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { cookies } from 'next/headers';
+import { supabase } from "./supabase";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-const TOKEN_EXPIRY = '7d';
+const JWT_SECRET =
+  process.env.JWT_SECRET || "your-secret-key-change-in-production";
+const TOKEN_EXPIRY = "7d";
 
 // Hash password
 export async function hashPassword(password) {
@@ -31,24 +32,25 @@ export function verifyToken(token) {
 }
 
 // Create a new user (coach or regular user)
-export async function createUser({ email, password, fullName, role = 'user' }) {
+export async function createUser({ email, password, fullName, role = "user" }) {
   // Check if user already exists
   const { data: existingUser } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('email', email)
+    .from("profiles")
+    .select("id")
+    .eq("email", email)
     .single();
 
   if (existingUser) {
-    throw new Error('User already exists');
+    throw new Error("User already exists");
   }
 
   // Create user in Supabase Auth
-  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  });
+  const { data: authData, error: authError } =
+    await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
 
   if (authError) {
     throw new Error(authError.message);
@@ -56,7 +58,7 @@ export async function createUser({ email, password, fullName, role = 'user' }) {
 
   // Create profile
   const { data: profile, error: profileError } = await supabase
-    .from('profiles')
+    .from("profiles")
     .insert({
       id: authData.user.id,
       email,
@@ -77,25 +79,33 @@ export async function createUser({ email, password, fullName, role = 'user' }) {
 
 // Sign in user
 export async function signIn({ email, password }) {
-  // Get user profile
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('email', email)
-    .single();
-
-  if (profileError || !profile) {
-    throw new Error('Invalid email or password');
-  }
-
-  // Verify password using Supabase Auth
-  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  // First verify password with Supabase Auth
+  const { data: authData, error: authError } =
+    await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
   if (authError) {
-    throw new Error('Invalid email or password');
+    throw new Error("Invalid email or password");
+  }
+
+  // Then get user profile using the ID from auth (more reliable than email)
+  // Use .maybeSingle() instead of .single() to avoid errors if no rows found
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", authData.user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    throw new Error(
+      "Database error. Please check RLS policies on profiles table."
+    );
+  }
+
+  if (!profile) {
+    throw new Error("Profile not found. Please sign up first.");
   }
 
   // Generate session token
@@ -105,7 +115,7 @@ export async function signIn({ email, password }) {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
-  await supabase.from('sessions').insert({
+  await supabase.from("sessions").insert({
     user_id: profile.id,
     token,
     expires_at: expiresAt.toISOString(),
@@ -117,7 +127,7 @@ export async function signIn({ email, password }) {
 // Get current user from request
 export async function getCurrentUser() {
   const cookieStore = await cookies();
-  const token = cookieStore.get('auth_token')?.value;
+  const token = cookieStore.get("auth_token")?.value;
 
   if (!token) {
     return null;
@@ -130,10 +140,10 @@ export async function getCurrentUser() {
 
   // Verify session exists and is not expired
   const { data: session } = await supabase
-    .from('sessions')
-    .select('*')
-    .eq('token', token)
-    .gt('expires_at', new Date().toISOString())
+    .from("sessions")
+    .select("*")
+    .eq("token", token)
+    .gt("expires_at", new Date().toISOString())
     .single();
 
   if (!session) {
@@ -142,9 +152,9 @@ export async function getCurrentUser() {
 
   // Get user profile
   const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', decoded.userId)
+    .from("profiles")
+    .select("*")
+    .eq("id", decoded.userId)
     .single();
 
   return profile;
@@ -153,16 +163,16 @@ export async function getCurrentUser() {
 // Get current user with coach data if applicable
 export async function getCurrentUserWithCoach() {
   const profile = await getCurrentUser();
-  
+
   if (!profile) {
     return null;
   }
 
-  if (profile.role === 'coach') {
+  if (profile.role === "coach") {
     const { data: coach } = await supabase
-      .from('coaches')
-      .select('*')
-      .eq('profile_id', profile.id)
+      .from("coaches")
+      .select("*")
+      .eq("profile_id", profile.id)
       .single();
 
     return { ...profile, coach };
@@ -174,10 +184,10 @@ export async function getCurrentUserWithCoach() {
 // Sign out user
 export async function signOut() {
   const cookieStore = await cookies();
-  const token = cookieStore.get('auth_token')?.value;
+  const token = cookieStore.get("auth_token")?.value;
 
   if (token) {
-    await supabase.from('sessions').delete().eq('token', token);
+    await supabase.from("sessions").delete().eq("token", token);
   }
 }
 
@@ -185,17 +195,17 @@ export async function signOut() {
 export async function createCoach({ profileId, slug, businessName }) {
   // Check if slug is available
   const { data: existingCoach } = await supabase
-    .from('coaches')
-    .select('id')
-    .eq('slug', slug)
+    .from("coaches")
+    .select("id")
+    .eq("slug", slug)
     .single();
 
   if (existingCoach) {
-    throw new Error('This URL is already taken');
+    throw new Error("This URL is already taken");
   }
 
   const { data: coach, error } = await supabase
-    .from('coaches')
+    .from("coaches")
     .insert({
       profile_id: profileId,
       slug,
@@ -214,12 +224,14 @@ export async function createCoach({ profileId, slug, businessName }) {
 // Get coach by slug
 export async function getCoachBySlug(slug) {
   const { data: coach, error } = await supabase
-    .from('coaches')
-    .select(`
+    .from("coaches")
+    .select(
+      `
       *,
       profile:profiles(*)
-    `)
-    .eq('slug', slug)
+    `
+    )
+    .eq("slug", slug)
     .single();
 
   if (error) {
@@ -232,12 +244,50 @@ export async function getCoachBySlug(slug) {
 // Get user's subscription to a coach
 export async function getUserSubscription(userId, coachId) {
   const { data: subscription } = await supabase
-    .from('user_subscriptions')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('coach_id', coachId)
+    .from("user_subscriptions")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("coach_id", coachId)
     .single();
 
   return subscription;
 }
 
+// Request password reset
+export async function requestPasswordReset(email) {
+  // Check if user exists
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("email", email)
+    .single();
+
+  if (!profile) {
+    // Don't reveal if user exists or not for security
+    return { success: true };
+  }
+
+  // Send password reset email using Supabase Auth
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return { success: true };
+}
+
+// Update password using reset token
+export async function updatePassword(newPassword) {
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return { success: true };
+}

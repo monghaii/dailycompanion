@@ -10,6 +10,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.87.0",
     "bcryptjs": "^3.0.3",
+    "canvas-confetti": "^1.9.4",
     "jsonwebtoken": "^9.0.3",
     "next": "16.0.8",
     "react": "19.2.1",
