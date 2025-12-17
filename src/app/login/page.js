@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function UserLogin() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const coachSlug = searchParams.get("coach");
@@ -262,5 +262,13 @@ export default function UserLogin() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function UserLogin() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
