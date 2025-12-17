@@ -38,6 +38,16 @@ export default function UserDashboard() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [chatMessage, setChatMessage] = useState("");
   const [showCoachProfile, setShowCoachProfile] = useState(false);
+  const [chatMessages, setChatMessages] = useState([
+    {
+      role: "assistant",
+      content:
+        "Before we dive in - what's one thing you're grateful for right now?",
+    },
+  ]);
+  const [isSendingChat, setIsSendingChat] = useState(false);
+  const [tokenWarning, setTokenWarning] = useState(null);
+  const chatEndRef = useRef(null);
   const [moreSubpage, setMoreSubpage] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("moreSubpage") || null;
@@ -626,6 +636,93 @@ export default function UserDashboard() {
       setShowEmotionalModal(false);
       setSelectedEmotions([]);
     }
+  };
+
+  const handleSendChatMessage = async (e) => {
+    e.preventDefault();
+    if (!chatMessage.trim() || isSendingChat) return;
+
+    const userMessage = chatMessage.trim();
+    setChatMessage("");
+
+    // Add user message to chat
+    const newMessages = [
+      ...chatMessages,
+      { role: "user", content: userMessage },
+    ];
+    setChatMessages(newMessages);
+    setIsSendingChat(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: newMessages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        // Check if it's a token limit error
+        const errorMessage =
+          data.message ||
+          "Sorry, I had trouble processing that. Please try again.";
+        setChatMessages([
+          ...newMessages,
+          {
+            role: "assistant",
+            content: errorMessage,
+          },
+        ]);
+        return;
+      }
+
+      setChatMessages([
+        ...newMessages,
+        {
+          role: "assistant",
+          content: data.message,
+        },
+      ]);
+
+      // Show token usage warning if present
+      if (data.warning) {
+        setTokenWarning(data.warning);
+        // Auto-hide warning after 10 seconds
+        setTimeout(() => setTokenWarning(null), 10000);
+      }
+    } catch (err) {
+      console.error("Chat error:", err);
+      setChatMessages([
+        ...newMessages,
+        {
+          role: "assistant",
+          content: "Sorry, something went wrong. Please try again.",
+        },
+      ]);
+    } finally {
+      setIsSendingChat(false);
+    }
+  };
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  // Render markdown bold syntax
+  const renderMessageContent = (content) => {
+    const parts = content.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={index}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
   };
 
   // Get current week days for awareness tab
@@ -1748,13 +1845,51 @@ export default function UserDashboard() {
               </div>
             </div>
 
+            {/* Token Usage Warning */}
+            {tokenWarning && (
+              <div
+                style={{
+                  backgroundColor:
+                    tokenWarning.level === "high" ? "#fee2e2" : "#fef3c7",
+                  border:
+                    tokenWarning.level === "high"
+                      ? "1px solid #fca5a5"
+                      : "1px solid #fcd34d",
+                  color: tokenWarning.level === "high" ? "#991b1b" : "#92400e",
+                  padding: "12px 24px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                }}
+              >
+                <span>{tokenWarning.message}</span>
+                <button
+                  onClick={() => setTokenWarning(null)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "inherit",
+                    fontSize: "18px",
+                    cursor: "pointer",
+                    padding: "0 4px",
+                    lineHeight: 1,
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
             {/* Chat Messages Area */}
             <div
               style={{
                 flex: 1,
                 overflowY: "auto",
                 padding: "24px",
-                paddingBottom: "100px",
+                paddingBottom: "180px",
                 background: "linear-gradient(180deg, #fce7f3 0%, #e0e7ff 100%)",
               }}
             >
@@ -1847,57 +1982,127 @@ export default function UserDashboard() {
                 </div>
               )}
 
-              {/* Coach Message */}
-              <div
-                style={{ display: "flex", gap: "12px", marginBottom: "16px" }}
-              >
+              {/* Chat Messages */}
+              {chatMessages.map((msg, idx) => (
                 <div
+                  key={idx}
                   style={{
-                    width: "48px",
-                    height: "48px",
-                    borderRadius: "50%",
-                    background:
-                      "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#fff",
-                    fontSize: "20px",
-                    fontWeight: 700,
-                    flexShrink: 0,
+                    gap: "12px",
+                    marginBottom: "16px",
+                    justifyContent:
+                      msg.role === "user" ? "flex-end" : "flex-start",
                   }}
                 >
-                  IJ
-                </div>
-                <div
-                  style={{
-                    backgroundColor: "#fff",
-                    padding: "16px 20px",
-                    borderRadius: "20px",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                    maxWidth: "80%",
-                  }}
-                >
-                  <p
+                  {msg.role === "assistant" && (
+                    <div
+                      style={{
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "50%",
+                        background:
+                          "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#fff",
+                        fontSize: "20px",
+                        fontWeight: 700,
+                        flexShrink: 0,
+                      }}
+                    >
+                      IJ
+                    </div>
+                  )}
+                  <div
                     style={{
-                      fontSize: "16px",
-                      lineHeight: "1.5",
-                      color: "#1a1a1a",
-                      margin: 0,
+                      backgroundColor: msg.role === "user" ? "#ef4444" : "#fff",
+                      color: msg.role === "user" ? "#fff" : "#1a1a1a",
+                      padding: "16px 20px",
+                      borderRadius: "20px",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                      maxWidth: "80%",
                     }}
                   >
-                    Before we dive in - what's one thing you're grateful for
-                    right now?
-                  </p>
+                    <p
+                      style={{
+                        fontSize: "16px",
+                        lineHeight: "1.5",
+                        margin: 0,
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      {renderMessageContent(msg.content)}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ))}
+              {isSendingChat && (
+                <div
+                  style={{ display: "flex", gap: "12px", marginBottom: "16px" }}
+                >
+                  <div
+                    style={{
+                      width: "48px",
+                      height: "48px",
+                      borderRadius: "50%",
+                      background:
+                        "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#fff",
+                      fontSize: "20px",
+                      fontWeight: 700,
+                      flexShrink: 0,
+                    }}
+                  >
+                    IJ
+                  </div>
+                  <div
+                    style={{
+                      backgroundColor: "#fff",
+                      padding: "16px 20px",
+                      borderRadius: "20px",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: "16px",
+                        lineHeight: "1.5",
+                        color: "#1a1a1a",
+                        margin: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "inline-block",
+                          width: "16px",
+                          height: "16px",
+                          border: "2px solid #e5e7eb",
+                          borderTop: "2px solid #ef4444",
+                          borderRadius: "50%",
+                          animation: "spin 1s linear infinite",
+                        }}
+                      />
+                      Thinking...
+                    </p>
+                  </div>
+                </div>
+              )}
+              <div ref={chatEndRef} />
             </div>
 
             {/* Input Area */}
-            <div
+            <form
+              onSubmit={handleSendChatMessage}
               style={{
                 position: "fixed",
-                bottom: 0,
+                bottom: "100px",
                 left: 0,
                 right: 0,
                 backgroundColor: "#fff",
@@ -1906,6 +2111,7 @@ export default function UserDashboard() {
                 display: "flex",
                 alignItems: "center",
                 gap: "12px",
+                zIndex: 40,
               }}
             >
               <input
@@ -1913,6 +2119,7 @@ export default function UserDashboard() {
                 value={chatMessage}
                 onChange={(e) => setChatMessage(e.target.value)}
                 placeholder="Type your response here..."
+                disabled={isSendingChat}
                 style={{
                   flex: 1,
                   padding: "14px 20px",
@@ -1924,6 +2131,8 @@ export default function UserDashboard() {
                 }}
               />
               <button
+                type="submit"
+                disabled={isSendingChat || !chatMessage.trim()}
                 style={{
                   width: "56px",
                   height: "56px",
@@ -1933,8 +2142,12 @@ export default function UserDashboard() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  cursor: "pointer",
+                  cursor:
+                    isSendingChat || !chatMessage.trim()
+                      ? "not-allowed"
+                      : "pointer",
                   flexShrink: 0,
+                  opacity: isSendingChat || !chatMessage.trim() ? 0.5 : 1,
                 }}
               >
                 <svg
@@ -1951,7 +2164,7 @@ export default function UserDashboard() {
                   />
                 </svg>
               </button>
-            </div>
+            </form>
           </div>
         )}
 
