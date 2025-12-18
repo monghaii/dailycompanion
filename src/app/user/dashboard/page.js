@@ -48,6 +48,7 @@ export default function UserDashboard() {
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [tokenWarning, setTokenWarning] = useState(null);
   const chatEndRef = useRef(null);
+  const configFetched = useRef(false);
   const [moreSubpage, setMoreSubpage] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("moreSubpage") || null;
@@ -75,10 +76,26 @@ export default function UserDashboard() {
   const [settingsLastName, setSettingsLastName] = useState("");
   const [settingsEmail, setSettingsEmail] = useState("");
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [coachConfig, setCoachConfig] = useState(null);
 
   useEffect(() => {
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    if (user && !configFetched.current) {
+      console.log(
+        "📞 useEffect calling fetchCoachConfig ONCE, user:",
+        user?.email
+      );
+      configFetched.current = true;
+      fetchCoachConfig();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    console.log("🔄 coachConfig state changed to:", coachConfig);
+  }, [coachConfig]);
 
   useEffect(() => {
     if (user && activeTab === "focus") {
@@ -148,6 +165,43 @@ export default function UserDashboard() {
       router.push("/login");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchCoachConfig = async () => {
+    try {
+      const res = await fetch("/api/user/coach-config");
+      const data = await res.json();
+
+      if (res.ok && data.config) {
+        let parsedConfig = { ...data.config };
+
+        // Parse sections if they are strings (fixes double-stringification issue)
+        const parseSection = (section) => {
+          if (typeof section === "string") {
+            try {
+              return JSON.parse(section);
+            } catch (e) {
+              return section;
+            }
+          }
+          return section;
+        };
+
+        if (parsedConfig.focus_tab) {
+          parsedConfig.focus_tab = parseSection(parsedConfig.focus_tab);
+        }
+        if (parsedConfig.header) {
+          parsedConfig.header = parseSection(parsedConfig.header);
+        }
+        if (parsedConfig.branding) {
+          parsedConfig.branding = parseSection(parsedConfig.branding);
+        }
+
+        setCoachConfig(parsedConfig);
+      }
+    } catch (error) {
+      console.error("Failed to fetch coach config:", error);
     }
   };
 
@@ -413,13 +467,27 @@ export default function UserDashboard() {
     }
   };
 
-  const completedCount = Object.values(completedTasks).filter(Boolean).length;
-  const totalTasks = Object.keys(completedTasks).length;
-  const progressPercent = (completedCount / totalTasks) * 100;
+  // Calculate enabled tasks based on coach config
+  const enabledTasks = {
+    morning: coachConfig?.focus_tab?.task_1?.enabled !== false,
+    intention: coachConfig?.focus_tab?.task_2?.enabled !== false,
+    evening: coachConfig?.focus_tab?.task_3?.enabled !== false,
+  };
 
-  // Trigger confetti when all tasks are completed
+  const completedCount = Object.entries(completedTasks).filter(
+    ([key, completed]) => enabledTasks[key] && completed
+  ).length;
+  const totalTasks = Object.values(enabledTasks).filter(Boolean).length;
+  const progressPercent =
+    totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0;
+
+  // Trigger confetti when all enabled tasks are completed
   useEffect(() => {
-    if (completedCount === 3 && previousCompletedCount.current === 2) {
+    if (
+      totalTasks > 0 &&
+      completedCount === totalTasks &&
+      previousCompletedCount.current === totalTasks - 1
+    ) {
       // Full screen confetti burst
       const duration = 3000;
       const animationEnd = Date.now() + duration;
@@ -802,10 +870,11 @@ export default function UserDashboard() {
         paddingBottom: "80px",
       }}
     >
-      {/* Header with gradient */}
+      {/* Header with gradient or custom color */}
       <div
         style={{
           background:
+            coachConfig?.branding?.background_color ||
             "linear-gradient(135deg, #ff6b9d 0%, #ffa057 50%, #ffd96a 100%)",
           padding: "32px 24px 48px",
           textAlign: "center",
@@ -820,7 +889,7 @@ export default function UserDashboard() {
             letterSpacing: "-0.02em",
           }}
         >
-          BrainPeace
+          {coachConfig?.header?.title || "BrainPeace"}
         </h1>
         <p
           style={{
@@ -829,7 +898,7 @@ export default function UserDashboard() {
             opacity: 0.8,
           }}
         >
-          Mental Fitness for Active Minds
+          {coachConfig?.header?.subtitle || "Mental Fitness for Active Minds"}
         </p>
       </div>
 
@@ -865,10 +934,12 @@ export default function UserDashboard() {
                       marginBottom: "4px",
                     }}
                   >
-                    Today's Focus
+                    {coachConfig?.focus_tab?.progress_bar?.title ||
+                      "Today's Focus"}
                   </h2>
                   <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                    Direct your energy intentionally
+                    {coachConfig?.focus_tab?.progress_bar?.subtitle ||
+                      "Direct your energy intentionally"}
                   </p>
                 </div>
                 <div style={{ textAlign: "right" }}>
@@ -909,23 +980,125 @@ export default function UserDashboard() {
             </div>
 
             {/* Morning Practice */}
-            <div
-              style={{
-                backgroundColor: "#fff",
-                padding: "20px",
-                borderRadius: "12px",
-                marginBottom: "16px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-              }}
-            >
+            {coachConfig?.focus_tab?.task_1?.enabled !== false && (
               <div
-                style={{ display: "flex", gap: "16px", marginBottom: "16px" }}
+                style={{
+                  backgroundColor: "#fff",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  marginBottom: "16px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                }}
+              >
+                <div
+                  style={{ display: "flex", gap: "16px", marginBottom: "16px" }}
+                >
+                  <div
+                    style={{
+                      width: "56px",
+                      height: "56px",
+                      backgroundColor: "#fff9e6",
+                      borderRadius: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "28px",
+                      flexShrink: 0,
+                    }}
+                  >
+                    ☀️
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      <h3
+                        style={{
+                          fontSize: "18px",
+                          fontWeight: 600,
+                          color: "#1a1a1a",
+                        }}
+                      >
+                        {coachConfig?.focus_tab?.task_1?.title ||
+                          "Morning Practice"}
+                      </h3>
+                      <span style={{ fontSize: "20px" }}>⭐</span>
+                    </div>
+                    <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                      {coachConfig?.focus_tab?.task_1?.subtitle ||
+                        "Follow Your Spark • 7:00"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => toggleTask("morning")}
+                    style={{
+                      width: "24px",
+                      height: "24px",
+                      borderRadius: "50%",
+                      border: "2px solid #d1d5db",
+                      backgroundColor: completedTasks.morning
+                        ? "#22c55e"
+                        : "#fff",
+                      cursor: "pointer",
+                      flexShrink: 0,
+                    }}
+                  />
+                </div>
+                {coachConfig?.focus_tab?.task_1?.audio_url && (
+                  <button
+                    onClick={() =>
+                      window.open(
+                        coachConfig.focus_tab.task_1.audio_url,
+                        "_blank"
+                      )
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "14px",
+                      backgroundColor: "#ff5a7e",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <span style={{ fontSize: "18px" }}>▶</span>
+                    Listen Now
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Daily Intention */}
+            {coachConfig?.focus_tab?.task_2?.enabled !== false && (
+              <div
+                style={{
+                  backgroundColor: "#fff",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  marginBottom: "16px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                }}
               >
                 <div
                   style={{
                     width: "56px",
                     height: "56px",
-                    backgroundColor: "#fff9e6",
+                    backgroundColor: "#f3e8ff",
                     borderRadius: "12px",
                     display: "flex",
                     alignItems: "center",
@@ -934,40 +1107,32 @@ export default function UserDashboard() {
                     flexShrink: 0,
                   }}
                 >
-                  ☀️
+                  🔔
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div
+                  <h3
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
+                      fontSize: "18px",
+                      fontWeight: 600,
+                      color: "#1a1a1a",
                       marginBottom: "4px",
                     }}
                   >
-                    <h3
-                      style={{
-                        fontSize: "18px",
-                        fontWeight: 600,
-                        color: "#1a1a1a",
-                      }}
-                    >
-                      Morning Practice
-                    </h3>
-                    <span style={{ fontSize: "20px" }}>⭐</span>
-                  </div>
+                    {coachConfig?.focus_tab?.task_2?.title || "Daily Intention"}
+                  </h3>
                   <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                    Follow Your Spark • 7:00
+                    {coachConfig?.focus_tab?.task_2?.subtitle ||
+                      "Set your focus for the day"}
                   </p>
                 </div>
                 <button
-                  onClick={() => toggleTask("morning")}
+                  onClick={() => toggleTask("intention")}
                   style={{
                     width: "24px",
                     height: "24px",
                     borderRadius: "50%",
                     border: "2px solid #d1d5db",
-                    backgroundColor: completedTasks.morning
+                    backgroundColor: completedTasks.intention
                       ? "#22c55e"
                       : "#fff",
                     cursor: "pointer",
@@ -975,143 +1140,69 @@ export default function UserDashboard() {
                   }}
                 />
               </div>
-              <button
-                style={{
-                  width: "100%",
-                  padding: "14px",
-                  backgroundColor: "#ff5a7e",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px",
-                }}
-              >
-                <span style={{ fontSize: "18px" }}>▶</span>
-                Listen Now
-              </button>
-            </div>
-
-            {/* Daily Intention */}
-            <div
-              style={{
-                backgroundColor: "#fff",
-                padding: "20px",
-                borderRadius: "12px",
-                marginBottom: "16px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
-              }}
-            >
-              <div
-                style={{
-                  width: "56px",
-                  height: "56px",
-                  backgroundColor: "#f3e8ff",
-                  borderRadius: "12px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "28px",
-                  flexShrink: 0,
-                }}
-              >
-                🔔
-              </div>
-              <div style={{ flex: 1 }}>
-                <h3
-                  style={{
-                    fontSize: "18px",
-                    fontWeight: 600,
-                    color: "#1a1a1a",
-                    marginBottom: "4px",
-                  }}
-                >
-                  Daily Intention
-                </h3>
-                <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                  Set your focus for the day
-                </p>
-              </div>
-              <button
-                onClick={() => toggleTask("intention")}
-                style={{
-                  width: "24px",
-                  height: "24px",
-                  borderRadius: "50%",
-                  border: "2px solid #d1d5db",
-                  backgroundColor: completedTasks.intention
-                    ? "#22c55e"
-                    : "#fff",
-                  cursor: "pointer",
-                  flexShrink: 0,
-                }}
-              />
-            </div>
+            )}
 
             {/* Evening Review */}
-            <div
-              style={{
-                backgroundColor: "#fff",
-                padding: "20px",
-                borderRadius: "12px",
-                marginBottom: "24px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
-              }}
-            >
+            {coachConfig?.focus_tab?.task_3?.enabled !== false && (
               <div
                 style={{
-                  width: "56px",
-                  height: "56px",
-                  backgroundColor: "#e0e7ff",
+                  backgroundColor: "#fff",
+                  padding: "20px",
                   borderRadius: "12px",
+                  marginBottom: "24px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "28px",
-                  flexShrink: 0,
+                  gap: "16px",
                 }}
               >
-                🌙
-              </div>
-              <div style={{ flex: 1 }}>
-                <h3
+                <div
                   style={{
-                    fontSize: "18px",
-                    fontWeight: 600,
-                    color: "#1a1a1a",
-                    marginBottom: "4px",
+                    width: "56px",
+                    height: "56px",
+                    backgroundColor: "#e0e7ff",
+                    borderRadius: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "28px",
+                    flexShrink: 0,
                   }}
                 >
-                  Evening Review
-                </h3>
-                <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                  Journal offline tonight
-                </p>
+                  🌙
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: 600,
+                      color: "#1a1a1a",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    {coachConfig?.focus_tab?.task_3?.title || "Evening Review"}
+                  </h3>
+                  <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                    {coachConfig?.focus_tab?.task_3?.subtitle ||
+                      "Journal offline tonight"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => toggleTask("evening")}
+                  style={{
+                    width: "24px",
+                    height: "24px",
+                    borderRadius: "50%",
+                    border: "2px solid #d1d5db",
+                    backgroundColor: completedTasks.evening
+                      ? "#22c55e"
+                      : "#fff",
+                    cursor: "pointer",
+                    flexShrink: 0,
+                  }}
+                />
               </div>
-              <button
-                onClick={() => toggleTask("evening")}
-                style={{
-                  width: "24px",
-                  height: "24px",
-                  borderRadius: "50%",
-                  border: "2px solid #d1d5db",
-                  backgroundColor: completedTasks.evening ? "#22c55e" : "#fff",
-                  cursor: "pointer",
-                  flexShrink: 0,
-                }}
-              />
-            </div>
+            )}
 
             {/* Day Notes */}
             <div
@@ -1154,10 +1245,11 @@ export default function UserDashboard() {
                       marginBottom: "2px",
                     }}
                   >
-                    Day Notes
+                    {coachConfig?.focus_tab?.day_notes?.title || "Day Notes"}
                   </h3>
                   <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                    Log observations to spot patterns
+                    {coachConfig?.focus_tab?.day_notes?.subtitle ||
+                      "Log observations to spot patterns"}
                   </p>
                 </div>
               </div>
@@ -1731,6 +1823,7 @@ export default function UserDashboard() {
               <div
                 style={{
                   background:
+                    coachConfig?.branding?.background_color ||
                     "linear-gradient(135deg, #ff6b9d 0%, #ffa057 50%, #ffd96a 100%)",
                   padding: "32px 24px",
                 }}
@@ -1745,7 +1838,7 @@ export default function UserDashboard() {
                     textAlign: "center",
                   }}
                 >
-                  BrainPeace
+                  {coachConfig?.header?.title || "BrainPeace"}
                 </h1>
                 <p
                   style={{
@@ -1756,7 +1849,8 @@ export default function UserDashboard() {
                     margin: 0,
                   }}
                 >
-                  Mental Fitness for Active Minds
+                  {coachConfig?.header?.subtitle ||
+                    "Mental Fitness for Active Minds"}
                 </p>
               </div>
 
