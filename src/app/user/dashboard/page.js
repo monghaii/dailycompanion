@@ -75,8 +75,27 @@ export default function UserDashboard() {
   const [settingsFirstName, setSettingsFirstName] = useState("");
   const [settingsLastName, setSettingsLastName] = useState("");
   const [settingsEmail, setSettingsEmail] = useState("");
+  const [settingsTimezone, setSettingsTimezone] = useState(
+    Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York"
+  );
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [coachConfig, setCoachConfig] = useState(null);
+
+  // Timezone utility functions
+  const getTodayInUserTimezone = () => {
+    const now = new Date();
+    const userDate = new Date(
+      now.toLocaleString("en-US", { timeZone: settingsTimezone })
+    );
+    return userDate.toISOString().split("T")[0];
+  };
+
+  const formatDateInUserTimezone = (dateStr) => {
+    // Convert YYYY-MM-DD string to user's timezone
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toISOString().split("T")[0];
+  };
 
   useEffect(() => {
     fetchUser();
@@ -161,6 +180,11 @@ export default function UserDashboard() {
       }
 
       setUser(data.user);
+
+      // Set timezone from user profile
+      if (data.user.timezone) {
+        setSettingsTimezone(data.user.timezone);
+      }
     } catch (error) {
       router.push("/login");
     } finally {
@@ -197,6 +221,14 @@ export default function UserDashboard() {
         if (parsedConfig.branding) {
           parsedConfig.branding = parseSection(parsedConfig.branding);
         }
+        if (parsedConfig.awareness_tab) {
+          parsedConfig.awareness_tab = parseSection(parsedConfig.awareness_tab);
+        }
+        if (parsedConfig.emotional_state_tab) {
+          parsedConfig.emotional_state_tab = parseSection(
+            parsedConfig.emotional_state_tab
+          );
+        }
 
         setCoachConfig(parsedConfig);
       }
@@ -207,7 +239,8 @@ export default function UserDashboard() {
 
   const fetchFocusEntry = async () => {
     try {
-      const res = await fetch("/api/daily-entries/today");
+      const todayStr = getTodayInUserTimezone();
+      const res = await fetch(`/api/daily-entries/date?date=${todayStr}`);
       const data = await res.json();
 
       if (res.ok && data.entry) {
@@ -325,15 +358,23 @@ export default function UserDashboard() {
     awarenessInsightsData.forEach((entry) => {
       if (entry.log_2_entries && Array.isArray(entry.log_2_entries)) {
         entry.log_2_entries.forEach((log) => {
-          // The structure is: log.emotions = ["type-emotion"]
+          // The structure is: log.emotions = ["categoryId-emotion"]
           if (log.emotions && Array.isArray(log.emotions)) {
             log.emotions.forEach((emotionStr) => {
-              // Extract just the emotion name (after the dash if present)
-              const emotionName = emotionStr.includes("-")
-                ? emotionStr.split("-")[1]
-                : emotionStr;
-              emotionCounts[emotionName] =
-                (emotionCounts[emotionName] || 0) + 1;
+              // Extract category and emotion name
+              const parts = emotionStr.split("-");
+              const categoryId = parts[0] || "";
+              const emotionName = parts[1] || emotionStr;
+
+              const key = emotionStr; // Use full string as key to track category
+              if (!emotionCounts[key]) {
+                emotionCounts[key] = {
+                  emotion: emotionName,
+                  categoryId: categoryId,
+                  count: 0,
+                };
+              }
+              emotionCounts[key].count++;
               totalCount++;
             });
           }
@@ -342,11 +383,12 @@ export default function UserDashboard() {
     });
 
     // Convert to array with percentages
-    const distribution = Object.entries(emotionCounts)
-      .map(([emotion, count]) => ({
-        emotion,
-        count,
-        percentage: ((count / totalCount) * 100).toFixed(0),
+    const distribution = Object.values(emotionCounts)
+      .map((item) => ({
+        emotion: item.emotion,
+        categoryId: item.categoryId,
+        count: item.count,
+        percentage: ((item.count / totalCount) * 100).toFixed(0),
       }))
       .sort((a, b) => b.count - a.count);
 
@@ -362,6 +404,9 @@ export default function UserDashboard() {
         setSettingsFirstName(data.profile.first_name || "");
         setSettingsLastName(data.profile.last_name || "");
         setSettingsEmail(data.profile.email || "");
+        if (data.profile.timezone) {
+          setSettingsTimezone(data.profile.timezone);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch profile:", error);
@@ -371,7 +416,8 @@ export default function UserDashboard() {
   const handleSaveSettings = async () => {
     setIsSavingSettings(true);
     try {
-      const res = await fetch("/api/profile", {
+      // Save basic profile info
+      const profileRes = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -381,7 +427,16 @@ export default function UserDashboard() {
         }),
       });
 
-      if (res.ok) {
+      // Save timezone
+      const settingsRes = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          timezone: settingsTimezone,
+        }),
+      });
+
+      if (profileRes.ok && settingsRes.ok) {
         setToastMessage("Settings saved");
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
@@ -439,10 +494,12 @@ export default function UserDashboard() {
         evening: "task_3_completed",
       };
 
+      const todayStr = getTodayInUserTimezone();
       const res = await fetch("/api/daily-entries/focus", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          date: todayStr,
           [taskMap[task]]: newValue,
         }),
       });
@@ -527,7 +584,8 @@ export default function UserDashboard() {
     previousCompletedCount.current = completedCount;
   }, [completedCount]);
 
-  const mindfulnessItems = [
+  // Get mindfulness items from coach config or use defaults
+  const mindfulnessItems = coachConfig?.awareness_tab?.logs || [
     { id: "present", label: "Present moment", color: "#60a5fa" },
     { id: "gratitude", label: "Felt gratitude", color: "#4ade80" },
     { id: "pattern", label: "Shifted a pattern", color: "#f87171" },
@@ -545,6 +603,7 @@ export default function UserDashboard() {
     const timeStr = now.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
+      timeZone: settingsTimezone,
     });
 
     const entry = {
@@ -555,7 +614,13 @@ export default function UserDashboard() {
       timestamp: now.toISOString(),
     };
 
-    const dateStr = selectedAwarenessDate.toISOString().split("T")[0];
+    // Convert selected date to timezone-aware date string
+    const dateInTz = new Date(
+      selectedAwarenessDate.toLocaleString("en-US", {
+        timeZone: settingsTimezone,
+      })
+    );
+    const dateStr = dateInTz.toISOString().split("T")[0];
 
     try {
       const res = await fetch("/api/daily-entries/awareness", {
@@ -583,43 +648,52 @@ export default function UserDashboard() {
     }
   };
 
-  const emotions = {
-    challenging: [
-      "Stressed",
-      "Anxious",
-      "Overwhelmed",
-      "Sad",
-      "Angry",
-      "Frustrated",
-      "Restless",
-      "Lonely",
-      "Tired",
-      "Scattered",
-    ],
-    positive: [
-      "Calm",
-      "Joyful",
-      "Creative",
-      "Energized",
-      "Grateful",
-      "Peaceful",
-      "Hopeful",
-      "Content",
-      "Confident",
-      "Inspired",
-    ],
-  };
+  const emotions = coachConfig?.emotional_state_tab?.categories
+    ? coachConfig.emotional_state_tab.categories.reduce((acc, cat) => {
+        // Filter out empty options
+        acc[cat.id] = (cat.options || []).filter((opt) => opt.trim() !== "");
+        return acc;
+      }, {})
+    : {
+        challenging: [
+          "Stressed",
+          "Anxious",
+          "Overwhelmed",
+          "Sad",
+          "Angry",
+          "Frustrated",
+          "Restless",
+          "Lonely",
+          "Tired",
+          "Scattered",
+        ],
+        positive: [
+          "Calm",
+          "Joyful",
+          "Creative",
+          "Energized",
+          "Grateful",
+          "Peaceful",
+          "Hopeful",
+          "Content",
+          "Confident",
+          "Inspired",
+        ],
+      };
 
-  const toggleEmotion = (emotion) => {
-    setSelectedEmotions((prev) =>
-      prev.includes(emotion)
-        ? prev.filter((e) => e !== emotion)
-        : [...prev, emotion]
-    );
+  const toggleEmotion = (emotionId, categoryId) => {
+    // Only allow selecting ONE emotion at a time
+    setSelectedEmotions([{ id: emotionId, categoryId }]);
   };
 
   const handleDeleteEntry = async (entryId, entryType) => {
-    const dateStr = selectedAwarenessDate.toISOString().split("T")[0];
+    // Convert selected date to timezone-aware date string
+    const dateInTz = new Date(
+      selectedAwarenessDate.toLocaleString("en-US", {
+        timeZone: settingsTimezone,
+      })
+    );
+    const dateStr = dateInTz.toISOString().split("T")[0];
 
     try {
       let updatedEntries;
@@ -665,15 +739,23 @@ export default function UserDashboard() {
     const timeStr = now.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
+      timeZone: settingsTimezone,
     });
 
-    // Format emotions with category prefix (challenging-Stressed, positive-Joyful)
-    const formattedEmotions = selectedEmotions.map((emotion) => {
-      const category = emotions.challenging.includes(emotion)
-        ? "challenging"
-        : "positive";
-      return `${category}-${emotion}`;
-    });
+    // Get the selected emotion info
+    const selected = selectedEmotions[0];
+    const categories = coachConfig?.emotional_state_tab?.categories || [
+      { id: "challenging", options: emotions.challenging || [] },
+      { id: "positive", options: emotions.positive || [] },
+    ];
+
+    // Find the category and get the emotion label
+    const category = categories.find((cat) => cat.id === selected.categoryId);
+    const emotionIndex = parseInt(selected.id.split("-")[1]);
+    const emotionLabel = emotions[selected.categoryId]?.[emotionIndex] || "";
+
+    // Format: categoryId-EmotionLabel
+    const formattedEmotions = [`${selected.categoryId}-${emotionLabel}`];
 
     const entry = {
       id: crypto.randomUUID(),
@@ -682,7 +764,13 @@ export default function UserDashboard() {
       timestamp: now.toISOString(),
     };
 
-    const dateStr = selectedAwarenessDate.toISOString().split("T")[0];
+    // Convert selected date to timezone-aware date string
+    const dateInTz = new Date(
+      selectedAwarenessDate.toLocaleString("en-US", {
+        timeZone: settingsTimezone,
+      })
+    );
+    const dateStr = dateInTz.toISOString().split("T")[0];
 
     try {
       const res = await fetch("/api/daily-entries/awareness", {
@@ -795,6 +883,9 @@ export default function UserDashboard() {
 
   // Get current week days for awareness tab
   const today = new Date();
+  const todayInUserTz = new Date(
+    today.toLocaleString("en-US", { timeZone: settingsTimezone })
+  );
   const currentDay = today.getDate();
   const startOfWeek = new Date(selectedAwarenessDate);
   startOfWeek.setDate(
@@ -805,6 +896,7 @@ export default function UserDashboard() {
   for (let i = 0; i < 7; i++) {
     const day = new Date(startOfWeek);
     day.setDate(startOfWeek.getDate() + i);
+    const isFuture = day > todayInUserTz;
     weekDays.push({
       date: day.getDate(),
       fullDate: new Date(day),
@@ -814,6 +906,7 @@ export default function UserDashboard() {
       isSelected:
         day.getDate() === selectedAwarenessDate.getDate() &&
         day.getMonth() === selectedAwarenessDate.getMonth(),
+      isFuture: isFuture,
     });
   }
 
@@ -1356,14 +1449,18 @@ export default function UserDashboard() {
                 {weekDays.map((day, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setSelectedAwarenessDate(day.fullDate)}
+                    onClick={() =>
+                      !day.isFuture && setSelectedAwarenessDate(day.fullDate)
+                    }
+                    disabled={day.isFuture}
                     style={{
                       textAlign: "center",
                       flex: 1,
                       background: "none",
                       border: "none",
-                      cursor: "pointer",
+                      cursor: day.isFuture ? "not-allowed" : "pointer",
                       padding: "0",
+                      opacity: day.isFuture ? 0.4 : 1,
                     }}
                   >
                     <div
@@ -1522,7 +1619,10 @@ export default function UserDashboard() {
                     marginBottom: "16px",
                   }}
                 >
-                  EMOTIONAL STATE
+                  {(
+                    coachConfig?.emotional_state_tab?.log_label ||
+                    "EMOTIONAL STATE"
+                  ).toUpperCase()}
                 </h3>
 
                 <div
@@ -1539,7 +1639,9 @@ export default function UserDashboard() {
                       color: "#1a1a1a",
                     }}
                   >
-                    Log emotional state
+                    Log{" "}
+                    {coachConfig?.emotional_state_tab?.log_label?.toLowerCase() ||
+                      "emotional state"}
                   </span>
                   <button
                     onClick={() => setShowEmotionalModal(true)}
@@ -1768,10 +1870,25 @@ export default function UserDashboard() {
                         />
                         <span style={{ fontSize: "16px", color: "#1a1a1a" }}>
                           Feeling{" "}
-                          {entry.emotions
-                            .map((e) => e.split("-")[1] || e)
-                            .join(", ")
-                            .toLowerCase()}
+                          {Array.isArray(entry.emotions)
+                            ? entry.emotions
+                                .map((e) => {
+                                  // Handle both string format and object format
+                                  if (typeof e === "string") {
+                                    return e.split("-")[1] || e;
+                                  } else if (
+                                    typeof e === "object" &&
+                                    e !== null
+                                  ) {
+                                    // If it's an object, try to extract the label
+                                    return e.label || e.emotion || "";
+                                  }
+                                  return "";
+                                })
+                                .filter((e) => e !== "")
+                                .join(", ")
+                                .toLowerCase()
+                            : ""}
                         </span>
                       </div>
                       <span
@@ -3354,24 +3471,21 @@ export default function UserDashboard() {
                       );
                     }
 
-                    // Define colors for emotions
-                    const emotionColors = {
-                      calm: "#10b981",
-                      grateful: "#6366f1",
-                      stressed: "#ef4444",
-                      creative: "#f97316",
-                      anxious: "#8b5cf6",
-                      joyful: "#fbbf24",
-                      sad: "#60a5fa",
-                      angry: "#dc2626",
-                      peaceful: "#34d399",
-                      excited: "#fb923c",
-                    };
-
-                    // Get color for emotion (case insensitive, with fallback)
-                    const getEmotionColor = (emotion) => {
-                      const normalizedEmotion = emotion.toLowerCase();
-                      return emotionColors[normalizedEmotion] || "#9ca3af";
+                    // Get color based on category from coach config
+                    const getEmotionColor = (categoryId) => {
+                      if (coachConfig?.emotional_state_tab?.categories) {
+                        const category =
+                          coachConfig.emotional_state_tab.categories.find(
+                            (cat) => cat.id === categoryId
+                          );
+                        if (category && category.color) {
+                          return category.color;
+                        }
+                      }
+                      // Fallback colors for default categories
+                      if (categoryId === "challenging") return "#3b82f6";
+                      if (categoryId === "positive") return "#10b981";
+                      return "#9ca3af";
                     };
 
                     // Calculate cumulative percentages for SVG
@@ -3382,7 +3496,7 @@ export default function UserDashboard() {
                       return {
                         ...item,
                         startPercent,
-                        color: getEmotionColor(item.emotion),
+                        color: getEmotionColor(item.categoryId),
                       };
                     });
 
@@ -3403,21 +3517,13 @@ export default function UserDashboard() {
                             viewBox="0 0 200 200"
                             style={{ overflow: "visible" }}
                           >
-                            {/* Background circle */}
-                            <circle
-                              cx="100"
-                              cy="100"
-                              r="70"
-                              fill="none"
-                              stroke="#f3f4f6"
-                              strokeWidth="40"
-                            />
                             {/* Colored segments */}
                             {segments.map((segment, i) => {
                               const circumference = 2 * Math.PI * 70;
                               const segmentLength =
                                 (parseFloat(segment.percentage) / 100) *
-                                circumference;
+                                  circumference +
+                                0.5; // Add small overlap to prevent gaps
                               const offset =
                                 (segment.startPercent / 100) * circumference;
 
@@ -3430,6 +3536,7 @@ export default function UserDashboard() {
                                   fill="none"
                                   stroke={segment.color}
                                   strokeWidth="40"
+                                  strokeLinecap="butt"
                                   strokeDasharray={`${segmentLength} ${circumference}`}
                                   strokeDashoffset={-offset}
                                   transform="rotate(-90 100 100)"
@@ -3465,7 +3572,7 @@ export default function UserDashboard() {
                                   height: "16px",
                                   borderRadius: "50%",
                                   backgroundColor: getEmotionColor(
-                                    item.emotion
+                                    item.categoryId
                                   ),
                                   flexShrink: 0,
                                 }}
@@ -3832,6 +3939,53 @@ export default function UserDashboard() {
                 />
               </div>
 
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "14px",
+                    color: "#6b7280",
+                    marginBottom: "8px",
+                  }}
+                >
+                  Timezone
+                </label>
+                <select
+                  value={settingsTimezone}
+                  onChange={(e) => setSettingsTimezone(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    fontSize: "16px",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
+                    backgroundColor: "#fff",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="America/New_York">Eastern Time (ET)</option>
+                  <option value="America/Chicago">Central Time (CT)</option>
+                  <option value="America/Denver">Mountain Time (MT)</option>
+                  <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                  <option value="America/Anchorage">Alaska Time (AKT)</option>
+                  <option value="Pacific/Honolulu">Hawaii Time (HT)</option>
+                  <option value="Europe/London">London (GMT/BST)</option>
+                  <option value="Europe/Paris">Paris (CET/CEST)</option>
+                  <option value="Asia/Tokyo">Tokyo (JST)</option>
+                  <option value="Asia/Shanghai">Shanghai (CST)</option>
+                  <option value="Australia/Sydney">Sydney (AEDT)</option>
+                </select>
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#9ca3af",
+                    marginTop: "8px",
+                  }}
+                >
+                  This controls how dates are calculated for your daily entries
+                </p>
+              </div>
+
               <div>
                 <div
                   style={{
@@ -3980,31 +4134,35 @@ export default function UserDashboard() {
                   </div>
                 </div>
 
-                {/* Membership - Current */}
+                {/* Membership */}
                 <div
                   style={{
-                    backgroundColor: "#f3e8ff",
-                    border: "3px solid #a855f7",
+                    backgroundColor: !user?.coach ? "#f3e8ff" : "#fff",
+                    border: !user?.coach
+                      ? "3px solid #a855f7"
+                      : "1px solid #e5e7eb",
                     borderRadius: "12px",
                     padding: "20px",
                     position: "relative",
                   }}
                 >
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: "16px",
-                      right: "16px",
-                      backgroundColor: "#a855f7",
-                      color: "#fff",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      padding: "4px 12px",
-                      borderRadius: "12px",
-                    }}
-                  >
-                    CURRENT
-                  </span>
+                  {!user?.coach && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: "16px",
+                        right: "16px",
+                        backgroundColor: "#a855f7",
+                        color: "#fff",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        padding: "4px 12px",
+                        borderRadius: "12px",
+                      }}
+                    >
+                      CURRENT
+                    </span>
+                  )}
                   <h4
                     style={{
                       fontSize: "18px",
@@ -4038,12 +4196,32 @@ export default function UserDashboard() {
                 {/* Bundled Account */}
                 <div
                   style={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #e5e7eb",
+                    backgroundColor: user?.coach ? "#f3e8ff" : "#fff",
+                    border: user?.coach
+                      ? "3px solid #a855f7"
+                      : "1px solid #e5e7eb",
                     borderRadius: "12px",
                     padding: "20px",
+                    position: "relative",
                   }}
                 >
+                  {user?.coach && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: "16px",
+                        right: "16px",
+                        backgroundColor: "#a855f7",
+                        color: "#fff",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        padding: "4px 12px",
+                        borderRadius: "12px",
+                      }}
+                    >
+                      CURRENT
+                    </span>
+                  )}
                   <h4
                     style={{
                       fontSize: "18px",
@@ -4052,7 +4230,9 @@ export default function UserDashboard() {
                       marginBottom: "4px",
                     }}
                   >
-                    Bundled Account
+                    {user?.coach
+                      ? `Bundled with ${user.coach.business_name}`
+                      : "Bundled Account"}
                   </h4>
                   <p
                     style={{
@@ -4175,7 +4355,7 @@ export default function UserDashboard() {
                   color: "#1a1a1a",
                 }}
               >
-                Nice catch!
+                {coachConfig?.awareness_tab?.modal_title || "Nice catch!"}
               </h3>
               <button
                 onClick={() => setShowModal(false)}
@@ -4225,12 +4405,16 @@ export default function UserDashboard() {
                   marginBottom: "8px",
                 }}
               >
-                What pattern did you catch? What did you do instead?
+                {selectedMindfulness?.prompt ||
+                  "What pattern did you catch? What did you do instead?"}
               </label>
               <textarea
                 value={modalNotes}
                 onChange={(e) => setModalNotes(e.target.value)}
-                placeholder="I caught myself... and instead I..."
+                placeholder={
+                  selectedMindfulness?.placeholder ||
+                  "I caught myself... and instead I..."
+                }
                 style={{
                   width: "100%",
                   minHeight: "120px",
@@ -4323,7 +4507,8 @@ export default function UserDashboard() {
                 marginBottom: "24px",
               }}
             >
-              Select all that apply
+              {coachConfig?.emotional_state_tab?.modal_subtitle ||
+                "Select all that apply"}
             </p>
 
             <div
@@ -4334,105 +4519,63 @@ export default function UserDashboard() {
                 marginBottom: "24px",
               }}
             >
-              {/* Challenging Column */}
-              <div>
-                <div
-                  style={{
-                    backgroundColor: "#3b82f6",
-                    color: "#fff",
-                    padding: "8px",
-                    borderRadius: "8px 8px 0 0",
-                    textAlign: "center",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    letterSpacing: "0.05em",
-                  }}
-                >
-                  CHALLENGING
+              {(
+                coachConfig?.emotional_state_tab?.categories || [
+                  { id: "challenging", label: "CHALLENGING", color: "#3b82f6" },
+                  { id: "positive", label: "POSITIVE", color: "#10b981" },
+                ]
+              ).map((category) => (
+                <div key={category.id}>
+                  <div
+                    style={{
+                      backgroundColor: category.color,
+                      color: "#fff",
+                      padding: "8px",
+                      borderRadius: "8px 8px 0 0",
+                      textAlign: "center",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    {category.label}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                    }}
+                  >
+                    {(emotions[category.id] || []).map((emotion, index) => {
+                      const emotionId = `${category.id}-${index}`;
+                      const isSelected =
+                        selectedEmotions.length > 0 &&
+                        selectedEmotions[0].id === emotionId;
+                      return (
+                        <button
+                          key={emotionId}
+                          onClick={() => toggleEmotion(emotionId, category.id)}
+                          style={{
+                            padding: "12px",
+                            backgroundColor: isSelected
+                              ? category.color
+                              : "#fff",
+                            color: isSelected ? "#fff" : "#1a1a1a",
+                            border: "none",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            cursor: "pointer",
+                            fontWeight: isSelected ? 600 : 400,
+                          }}
+                        >
+                          {emotion}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                  }}
-                >
-                  {emotions.challenging.map((emotion) => (
-                    <button
-                      key={emotion}
-                      onClick={() => toggleEmotion(emotion)}
-                      style={{
-                        padding: "12px",
-                        backgroundColor: selectedEmotions.includes(emotion)
-                          ? "#3b82f6"
-                          : "#fff",
-                        color: selectedEmotions.includes(emotion)
-                          ? "#fff"
-                          : "#1a1a1a",
-                        border: "none",
-                        borderRadius: "8px",
-                        fontSize: "14px",
-                        cursor: "pointer",
-                        fontWeight: selectedEmotions.includes(emotion)
-                          ? 600
-                          : 400,
-                      }}
-                    >
-                      {emotion}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Positive Column */}
-              <div>
-                <div
-                  style={{
-                    backgroundColor: "#10b981",
-                    color: "#fff",
-                    padding: "8px",
-                    borderRadius: "8px 8px 0 0",
-                    textAlign: "center",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    letterSpacing: "0.05em",
-                  }}
-                >
-                  POSITIVE
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                  }}
-                >
-                  {emotions.positive.map((emotion) => (
-                    <button
-                      key={emotion}
-                      onClick={() => toggleEmotion(emotion)}
-                      style={{
-                        padding: "12px",
-                        backgroundColor: selectedEmotions.includes(emotion)
-                          ? "#10b981"
-                          : "#fff",
-                        color: selectedEmotions.includes(emotion)
-                          ? "#fff"
-                          : "#1a1a1a",
-                        border: "none",
-                        borderRadius: "8px",
-                        fontSize: "14px",
-                        cursor: "pointer",
-                        fontWeight: selectedEmotions.includes(emotion)
-                          ? 600
-                          : 400,
-                      }}
-                    >
-                      {emotion}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              ))}
             </div>
 
             <button
@@ -4477,7 +4620,12 @@ export default function UserDashboard() {
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              setActiveTab(tab.id);
+              if (tab.id === "more") {
+                setMoreSubpage(null);
+              }
+            }}
             style={{
               flex: 1,
               display: "flex",

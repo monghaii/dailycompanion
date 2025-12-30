@@ -7,16 +7,25 @@ import { useRouter } from "next/navigation";
 function DashboardContent() {
   const router = useRouter();
   const [user, setUser] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState("resource-hub");
+  const [activeSection, setActiveSection] = useState("config");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [savingSection, setSavingSection] = useState(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [headerConfig, setHeaderConfig] = useState({
     title: "BrainPeace",
     subtitle: "Mental Fitness for Active Minds",
   });
+  const [profileConfig, setProfileConfig] = useState({
+    business_name: "",
+    slug: "",
+    bio: "",
+    user_monthly_price_cents: 2900,
+  });
+
   const [brandingConfig, setBrandingConfig] = useState({
     primary_color: "#7c3aed",
     background_color: "#f9fafb",
@@ -48,6 +57,75 @@ function DashboardContent() {
       subtitle: "Capture thoughts and reflections",
     },
   });
+
+  const [awarenessConfig, setAwarenessConfig] = useState({
+    modal_title: "Nice catch!",
+    logs: [
+      {
+        id: "present",
+        label: "Present moment",
+        prompt: "What pattern did you catch? What did you do instead?",
+        placeholder: "I caught myself... and instead I...",
+        color: "#60a5fa",
+      },
+      {
+        id: "gratitude",
+        label: "Felt gratitude",
+        prompt: "What are you grateful for? How did it make you feel?",
+        placeholder: "I felt grateful for... because...",
+        color: "#4ade80",
+      },
+      {
+        id: "pattern",
+        label: "Shifted a pattern",
+        prompt: "What pattern did you notice? What did you do differently?",
+        placeholder: "I noticed... and changed by...",
+        color: "#f87171",
+      },
+    ],
+  });
+
+  const [emotionalStateConfig, setEmotionalStateConfig] = useState({
+    log_label: "Emotional State",
+    modal_subtitle: "Select all that apply",
+    categories: [
+      {
+        id: "challenging",
+        label: "CHALLENGING",
+        color: "#3b82f6",
+        options: [
+          "Stressed",
+          "Anxious",
+          "Overwhelmed",
+          "Sad",
+          "Angry",
+          "Frustrated",
+          "Restless",
+          "Lonely",
+          "Tired",
+          "Scattered",
+        ],
+      },
+      {
+        id: "positive",
+        label: "POSITIVE",
+        color: "#10b981",
+        options: [
+          "Calm",
+          "Joyful",
+          "Creative",
+          "Energized",
+          "Grateful",
+          "Peaceful",
+          "Hopeful",
+          "Content",
+          "Confident",
+          "Inspired",
+        ],
+      },
+    ],
+  });
+
   const [collections, setCollections] = useState([
     {
       id: 1,
@@ -75,6 +153,14 @@ function DashboardContent() {
 
   useEffect(() => {
     if (user?.role === "coach") {
+      if (user.coach) {
+        setProfileConfig({
+          business_name: user.coach.business_name || "",
+          slug: user.coach.slug || "",
+          bio: user.coach.bio || "",
+          user_monthly_price_cents: user.coach.user_monthly_price_cents || 2900,
+        });
+      }
       fetchCoachConfig();
     }
   }, [user]);
@@ -99,10 +185,31 @@ function DashboardContent() {
           return section;
         };
 
+        if (config.awareness) {
+          setAwarenessConfig((prev) => ({
+            ...prev,
+            ...parseSection(config.awareness),
+          }));
+        }
+
         if (config.focus_tab) {
           setFocusConfig((prev) => ({
             ...prev,
             ...parseSection(config.focus_tab),
+          }));
+        }
+
+        if (config.awareness_tab) {
+          setAwarenessConfig((prev) => ({
+            ...prev,
+            ...parseSection(config.awareness_tab),
+          }));
+        }
+
+        if (config.emotional_state_tab) {
+          setEmotionalStateConfig((prev) => ({
+            ...prev,
+            ...parseSection(config.emotional_state_tab),
           }));
         }
 
@@ -180,8 +287,49 @@ function DashboardContent() {
     }
   };
 
+  const handleSaveProfile = async () => {
+    setIsSavingConfig(true);
+    setSavingSection("profile");
+    try {
+      const res = await fetch("/api/coach/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileConfig),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setToastMessage("✅ Profile updated successfully!");
+        setShowToast(true);
+        // Update local user state
+        setUser((prev) => ({
+          ...prev,
+          coach: {
+            ...prev.coach,
+            ...data.coach,
+          },
+        }));
+        setTimeout(() => setShowToast(false), 3000);
+      } else {
+        setToastMessage("❌ " + (data.error || "Failed to update profile"));
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+      }
+    } catch (error) {
+      console.error("Save profile error:", error);
+      setToastMessage("❌ Failed to save profile");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setIsSavingConfig(false);
+      setSavingSection(null);
+    }
+  };
+
   const handleSaveConfig = async (section, data, successMessage) => {
     setIsSavingConfig(true);
+    setSavingSection(section);
     try {
       const res = await fetch("/api/coach/config", {
         method: "POST",
@@ -212,6 +360,7 @@ function DashboardContent() {
       setTimeout(() => setShowToast(false), 3000);
     } finally {
       setIsSavingConfig(false);
+      setSavingSection(null);
     }
   };
 
@@ -228,24 +377,67 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        {/* Logo */}
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">Coach Hub</h2>
+      <aside
+        className={`${
+          isSidebarOpen ? "w-64" : "w-20"
+        } bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out`}
+      >
+        {/* Logo & Toggle */}
+        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+          {isSidebarOpen && (
+            <h2 className="text-xl font-bold text-gray-900 whitespace-nowrap overflow-hidden">
+              Coach Hub
+            </h2>
+          )}
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors mx-auto"
+          >
+            {isSidebarOpen ? (
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                />
+              </svg>
+            )}
+          </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden">
           <button
             onClick={() => setActiveSection("config")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors cursor-pointer ${
               activeSection === "config"
                 ? "bg-purple-100 text-purple-700 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
+            title="Config"
           >
             <svg
-              className="w-5 h-5"
+              className="w-6 h-6 shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -257,19 +449,20 @@ function DashboardContent() {
                 d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
               />
             </svg>
-            Config
+            {isSidebarOpen && <span>Config</span>}
           </button>
 
           <button
             onClick={() => setActiveSection("resource-hub")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors cursor-pointer ${
               activeSection === "resource-hub"
                 ? "bg-purple-100 text-purple-700 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
+            title="Resource Hub"
           >
             <svg
-              className="w-5 h-5"
+              className="w-6 h-6 shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -281,19 +474,20 @@ function DashboardContent() {
                 d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
               />
             </svg>
-            Resource Hub
+            {isSidebarOpen && <span>Resource Hub</span>}
           </button>
 
           <button
             onClick={() => setActiveSection("analytics")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors cursor-pointer ${
               activeSection === "analytics"
                 ? "bg-purple-100 text-purple-700 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
+            title="Analytics"
           >
             <svg
-              className="w-5 h-5"
+              className="w-6 h-6 shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -305,19 +499,20 @@ function DashboardContent() {
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
               />
             </svg>
-            Analytics
+            {isSidebarOpen && <span>Analytics</span>}
           </button>
 
           <button
             onClick={() => setActiveSection("clients")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors cursor-pointer ${
               activeSection === "clients"
                 ? "bg-purple-100 text-purple-700 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
+            title="Clients"
           >
             <svg
-              className="w-5 h-5"
+              className="w-6 h-6 shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -329,19 +524,20 @@ function DashboardContent() {
                 d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
               />
             </svg>
-            Clients
+            {isSidebarOpen && <span>Clients</span>}
           </button>
 
           <button
             onClick={() => setActiveSection("finance")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors cursor-pointer ${
               activeSection === "finance"
                 ? "bg-purple-100 text-purple-700 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
+            title="Finance"
           >
             <svg
-              className="w-5 h-5"
+              className="w-6 h-6 shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -353,19 +549,20 @@ function DashboardContent() {
                 d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            Finance
+            {isSidebarOpen && <span>Finance</span>}
           </button>
 
           <button
             onClick={() => setActiveSection("settings")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors cursor-pointer ${
               activeSection === "settings"
                 ? "bg-purple-100 text-purple-700 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
+            title="Settings"
           >
             <svg
-              className="w-5 h-5"
+              className="w-6 h-6 shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -383,27 +580,29 @@ function DashboardContent() {
                 d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
               />
             </svg>
-            Settings
+            {isSidebarOpen && <span>Settings</span>}
           </button>
         </nav>
 
         {/* User info at bottom */}
         <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-sm">
+          <div className="flex items-center gap-3 justify-center">
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-sm shrink-0">
               {user?.full_name?.charAt(0)}
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-gray-900 truncate">
-                {user?.full_name}
+            {isSidebarOpen && (
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-gray-900 truncate">
+                  {user?.full_name}
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="text-xs text-gray-500 hover:text-gray-700"
+                >
+                  Sign out
+                </button>
               </div>
-              <button
-                onClick={handleLogout}
-                className="text-xs text-gray-500 hover:text-gray-700"
-              >
-                Sign out
-              </button>
-            </div>
+            )}
           </div>
         </div>
       </aside>
@@ -427,72 +626,113 @@ function DashboardContent() {
             <div className="flex-1 overflow-y-auto p-8">
               <div className="max-w-4xl mx-auto space-y-8">
                 {/* Profile Settings */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="p-6 border-b border-gray-100 bg-gray-50/50">
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      Profile Settings
-                    </h2>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Manage your public profile information
-                    </p>
-                  </div>
-                  <div className="p-6 space-y-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Business Name
-                      </label>
-                      <input
-                        type="text"
-                        defaultValue={coach?.business_name}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Your Coaching Business"
-                      />
+                      <h2 className="text-base font-semibold text-gray-900">
+                        Profile Settings
+                      </h2>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Manage your public profile
+                      </p>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        URL Slug
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">/coach/</span>
+                    <button
+                      onClick={handleSaveProfile}
+                      disabled={isSavingConfig && savingSection === "profile"}
+                      className="px-4 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50"
+                    >
+                      {isSavingConfig && savingSection === "profile"
+                        ? "Saving..."
+                        : "Save"}
+                    </button>
+                  </div>
+                  <div className="p-5 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                          Business Name
+                        </label>
                         <input
                           type="text"
-                          defaultValue={coach?.slug}
-                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          placeholder="your-name"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Bio
-                      </label>
-                      <textarea
-                        rows={4}
-                        defaultValue={coach?.bio}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Tell your clients about yourself..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Monthly Subscription Price
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">$</span>
-                        <input
-                          type="number"
-                          defaultValue={
-                            (coach?.user_monthly_price_cents || 0) / 100
+                          value={profileConfig.business_name}
+                          onChange={(e) =>
+                            setProfileConfig({
+                              ...profileConfig,
+                              business_name: e.target.value,
+                            })
                           }
-                          className="w-32 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          placeholder="29"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          placeholder="Your Coaching Business"
                         />
-                        <span className="text-sm text-gray-500">/month</span>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                          Landing Page URL Slug
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500 shrink-0">
+                            /coach/
+                          </span>
+                          <input
+                            type="text"
+                            value={profileConfig.slug}
+                            onChange={(e) =>
+                              setProfileConfig({
+                                ...profileConfig,
+                                slug: e.target.value,
+                              })
+                            }
+                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="your-name"
+                          />
+                        </div>
                       </div>
                     </div>
-                    <button className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium">
-                      Save Changes
-                    </button>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                          Bio
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={profileConfig.bio}
+                          onChange={(e) =>
+                            setProfileConfig({
+                              ...profileConfig,
+                              bio: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                          placeholder="Tell your clients about yourself..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                          Monthly Price
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-500">$</span>
+                          <input
+                            type="number"
+                            value={profileConfig.user_monthly_price_cents / 100}
+                            onChange={(e) =>
+                              setProfileConfig({
+                                ...profileConfig,
+                                user_monthly_price_cents: Math.round(
+                                  parseFloat(e.target.value) * 100
+                                ),
+                              })
+                            }
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="29"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Subscription per month
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -594,10 +834,12 @@ function DashboardContent() {
                           "✅ Branding saved successfully!"
                         )
                       }
-                      disabled={isSavingConfig}
+                      disabled={isSavingConfig && savingSection === "branding"}
                       className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50"
                     >
-                      {isSavingConfig ? "Saving..." : "Save Changes"}
+                      {isSavingConfig && savingSection === "branding"
+                        ? "Saving..."
+                        : "Save Changes"}
                     </button>
                   </div>
                 </div>
@@ -655,33 +897,58 @@ function DashboardContent() {
                           "✅ Header config saved!"
                         )
                       }
-                      disabled={isSavingConfig}
+                      disabled={isSavingConfig && savingSection === "header"}
                       className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50"
                     >
-                      {isSavingConfig ? "Saving..." : "Save Header Config"}
+                      {isSavingConfig && savingSection === "header"
+                        ? "Saving..."
+                        : "Save Header Config"}
                     </button>
                   </div>
                 </div>
 
                 {/* Focus Tab Configuration */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="p-6 border-b border-gray-100 bg-gray-50/50">
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      Focus Tab Customization
-                    </h2>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Customize the daily focus experience for your clients
-                    </p>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                    <div>
+                      <h2 className="text-base font-semibold text-gray-900">
+                        Focus Tab Customization
+                      </h2>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Customize daily focus experience
+                      </p>
+                    </div>
+                    <button
+                      onClick={() =>
+                        handleSaveConfig(
+                          "focus_tab",
+                          focusConfig,
+                          "✅ Focus tab config saved successfully!"
+                        )
+                      }
+                      disabled={isSavingConfig && savingSection === "focus_tab"}
+                      className="px-4 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSavingConfig && savingSection === "focus_tab"
+                        ? "Saving..."
+                        : "Save"}
+                    </button>
                   </div>
-                  <div className="p-6 space-y-8">
+                  <div className="p-5 space-y-4">
                     {/* Progress Bar */}
-                    <div className="pb-6 border-b border-gray-100">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                        Progress Bar
-                      </h3>
-                      <div className="space-y-4">
+                    <div className="pb-4 border-b border-gray-100">
+                      <details className="group" open>
+                        <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
+                          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                            Progress Bar
+                          </h3>
+                          <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                            ▼
+                          </span>
+                        </summary>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
                             Main Title
                           </label>
                           <input
@@ -696,12 +963,12 @@ function DashboardContent() {
                                 },
                               })
                             }
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             placeholder="Today's Focus"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
                             Subtitle
                           </label>
                           <input
@@ -716,40 +983,46 @@ function DashboardContent() {
                                 },
                               })
                             }
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             placeholder="Direct your energy intentionally"
                           />
                         </div>
-                      </div>
+                        </div>
+                      </details>
                     </div>
 
                     {/* Task 1 */}
-                    <div className="pb-6 border-b border-gray-100">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-semibold text-gray-900">
-                          Task 1 (Morning)
-                        </h3>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={focusConfig.task_1.enabled}
-                            onChange={(e) =>
-                              setFocusConfig({
-                                ...focusConfig,
-                                task_1: {
-                                  ...focusConfig.task_1,
-                                  enabled: e.target.checked,
-                                },
-                              })
-                            }
-                            className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                          />
-                          <span className="text-sm text-gray-600">Enabled</span>
-                        </label>
-                      </div>
-                      <div className="space-y-4">
+                    <div className="pb-4 border-b border-gray-100">
+                      <details className="group">
+                        <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
+                          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                            Task 1 (Morning)
+                          </h3>
+                          <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                            ▼
+                          </span>
+                        </summary>
+                        <div className="mt-3 space-y-3">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={focusConfig.task_1.enabled}
+                              onChange={(e) =>
+                                setFocusConfig({
+                                  ...focusConfig,
+                                  task_1: {
+                                    ...focusConfig.task_1,
+                                    enabled: e.target.checked,
+                                  },
+                                })
+                              }
+                              className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            />
+                            <span className="text-xs text-gray-600">Enabled</span>
+                          </label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
                             Title
                           </label>
                           <input
@@ -764,12 +1037,12 @@ function DashboardContent() {
                                 },
                               })
                             }
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             placeholder="Task title"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
                             Subtitle
                           </label>
                           <input
@@ -784,63 +1057,70 @@ function DashboardContent() {
                                 },
                               })
                             }
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             placeholder="Task description"
                           />
+                          </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Audio File URL{" "}
+                              <span className="text-gray-400 font-normal">
+                                (Optional)
+                              </span>
+                            </label>
+                            <input
+                              type="url"
+                              value={focusConfig.task_1.audio_url || ""}
+                              onChange={(e) =>
+                                setFocusConfig({
+                                  ...focusConfig,
+                                  task_1: {
+                                    ...focusConfig.task_1,
+                                    audio_url: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              placeholder="https://..."
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Audio File URL
-                          </label>
-                          <input
-                            type="url"
-                            value={focusConfig.task_1.audio_url || ""}
-                            onChange={(e) =>
-                              setFocusConfig({
-                                ...focusConfig,
-                                task_1: {
-                                  ...focusConfig.task_1,
-                                  audio_url: e.target.value,
-                                },
-                              })
-                            }
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            placeholder="https://..."
-                          />
-                          <p className="text-xs text-gray-500 mt-1">
-                            Optional: Add a guided audio for this task
-                          </p>
-                        </div>
-                      </div>
+                      </details>
                     </div>
 
                     {/* Task 2 */}
-                    <div className="pb-6 border-b border-gray-100">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-semibold text-gray-900">
-                          Task 2 (Intention)
-                        </h3>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={focusConfig.task_2.enabled}
-                            onChange={(e) =>
-                              setFocusConfig({
-                                ...focusConfig,
-                                task_2: {
-                                  ...focusConfig.task_2,
-                                  enabled: e.target.checked,
-                                },
-                              })
-                            }
-                            className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                          />
-                          <span className="text-sm text-gray-600">Enabled</span>
-                        </label>
-                      </div>
-                      <div className="space-y-4">
+                    <div className="pb-4 border-b border-gray-100">
+                      <details className="group">
+                        <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
+                          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                            Task 2 (Intention)
+                          </h3>
+                          <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                            ▼
+                          </span>
+                        </summary>
+                        <div className="mt-3 space-y-3">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={focusConfig.task_2.enabled}
+                              onChange={(e) =>
+                                setFocusConfig({
+                                  ...focusConfig,
+                                  task_2: {
+                                    ...focusConfig.task_2,
+                                    enabled: e.target.checked,
+                                  },
+                                })
+                              }
+                              className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            />
+                            <span className="text-xs text-gray-600">Enabled</span>
+                          </label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
                             Title
                           </label>
                           <input
@@ -855,12 +1135,12 @@ function DashboardContent() {
                                 },
                               })
                             }
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             placeholder="Task title"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
                             Subtitle
                           </label>
                           <input
@@ -875,40 +1155,47 @@ function DashboardContent() {
                                 },
                               })
                             }
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             placeholder="Task description"
                           />
                         </div>
-                      </div>
+                          </div>
+                        </div>
+                      </details>
                     </div>
 
                     {/* Task 3 */}
-                    <div className="pb-6 border-b border-gray-100">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-semibold text-gray-900">
-                          Task 3 (Evening)
-                        </h3>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={focusConfig.task_3.enabled}
-                            onChange={(e) =>
-                              setFocusConfig({
-                                ...focusConfig,
-                                task_3: {
-                                  ...focusConfig.task_3,
-                                  enabled: e.target.checked,
-                                },
-                              })
-                            }
-                            className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                          />
-                          <span className="text-sm text-gray-600">Enabled</span>
-                        </label>
-                      </div>
-                      <div className="space-y-4">
+                    <div className="pb-4 border-b border-gray-100">
+                      <details className="group">
+                        <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
+                          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                            Task 3 (Evening)
+                          </h3>
+                          <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                            ▼
+                          </span>
+                        </summary>
+                        <div className="mt-3 space-y-3">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={focusConfig.task_3.enabled}
+                              onChange={(e) =>
+                                setFocusConfig({
+                                  ...focusConfig,
+                                  task_3: {
+                                    ...focusConfig.task_3,
+                                    enabled: e.target.checked,
+                                  },
+                                })
+                              }
+                              className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            />
+                            <span className="text-xs text-gray-600">Enabled</span>
+                          </label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
                             Title
                           </label>
                           <input
@@ -923,12 +1210,12 @@ function DashboardContent() {
                                 },
                               })
                             }
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             placeholder="Task title"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
                             Subtitle
                           </label>
                           <input
@@ -943,21 +1230,29 @@ function DashboardContent() {
                                 },
                               })
                             }
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             placeholder="Task description"
                           />
                         </div>
-                      </div>
+                          </div>
+                        </div>
+                      </details>
                     </div>
 
                     {/* Day Notes */}
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                        Day Notes Section
-                      </h3>
-                      <div className="space-y-4">
+                      <details className="group">
+                        <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
+                          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                            Day Notes Section
+                          </h3>
+                          <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                            ▼
+                          </span>
+                        </summary>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
                             Title
                           </label>
                           <input
@@ -972,12 +1267,12 @@ function DashboardContent() {
                                 },
                               })
                             }
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             placeholder="Day Notes"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
                             Subtitle
                           </label>
                           <input
@@ -992,26 +1287,415 @@ function DashboardContent() {
                                 },
                               })
                             }
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             placeholder="Description"
                           />
                         </div>
-                      </div>
+                        </div>
+                      </details>
                     </div>
+                  </div>
+                </div>
 
+                {/* Awareness Tab Configuration */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                    <div>
+                      <h2 className="text-base font-semibold text-gray-900">
+                        Awareness Tab Customization
+                      </h2>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Customize mindfulness logs
+                      </p>
+                    </div>
                     <button
                       onClick={() =>
                         handleSaveConfig(
-                          "focus_tab",
-                          focusConfig,
-                          "✅ Focus tab config saved successfully!"
+                          "awareness_tab",
+                          awarenessConfig,
+                          "✅ Awareness tab config saved successfully!"
                         )
                       }
-                      disabled={isSavingConfig}
-                      className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={
+                        isSavingConfig && savingSection === "awareness_tab"
+                      }
+                      className="px-4 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isSavingConfig ? "Saving..." : "Save Focus Tab Config"}
+                      {isSavingConfig && savingSection === "awareness_tab"
+                        ? "Saving..."
+                        : "Save"}
                     </button>
+                  </div>
+                  <div className="p-5 space-y-4">
+                    {/* Modal Title */}
+                    <div className="pb-4 border-b border-gray-100">
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                        Modal Title
+                      </label>
+                      <input
+                        type="text"
+                        value={awarenessConfig.modal_title}
+                        onChange={(e) =>
+                          setAwarenessConfig({
+                            ...awarenessConfig,
+                            modal_title: e.target.value,
+                          })
+                        }
+                        onFocus={(e) => e.target.select()}
+                        onKeyDown={(e) => {
+                          if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+                            e.preventDefault();
+                            e.target.select();
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Nice catch!"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        Title shown when user logs a mindfulness moment
+                      </p>
+                    </div>
+
+                    {/* Mindfulness Logs */}
+                    {awarenessConfig.logs.map((log, index) => (
+                      <div
+                        key={log.id}
+                        className="pb-4 border-b border-gray-100 last:border-0 last:pb-0"
+                      >
+                        <details className="group">
+                          <summary className="flex items-center justify-between cursor-pointer list-none">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full shrink-0"
+                                style={{ backgroundColor: log.color }}
+                              />
+                              <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                                Log {index + 1}: {log.label}
+                              </h3>
+                            </div>
+                            <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                              ▼
+                            </span>
+                          </summary>
+                          <div className="mt-4 space-y-3 pl-5">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Log Label
+                              </label>
+                              <input
+                                type="text"
+                                value={log.label}
+                                onChange={(e) => {
+                                  const newLogs = [...awarenessConfig.logs];
+                                  newLogs[index].label = e.target.value;
+                                  setAwarenessConfig({
+                                    ...awarenessConfig,
+                                    logs: newLogs,
+                                  });
+                                }}
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => {
+                                  if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+                                    e.preventDefault();
+                                    e.target.select();
+                                  }
+                                }}
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="e.g. Present moment"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Prompt Question
+                              </label>
+                              <input
+                                type="text"
+                                value={log.prompt}
+                                onChange={(e) => {
+                                  const newLogs = [...awarenessConfig.logs];
+                                  newLogs[index].prompt = e.target.value;
+                                  setAwarenessConfig({
+                                    ...awarenessConfig,
+                                    logs: newLogs,
+                                  });
+                                }}
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => {
+                                  if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+                                    e.preventDefault();
+                                    e.target.select();
+                                  }
+                                }}
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="Question to ask the user"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Placeholder Text
+                              </label>
+                              <textarea
+                                rows={2}
+                                value={log.placeholder}
+                                onChange={(e) => {
+                                  const newLogs = [...awarenessConfig.logs];
+                                  newLogs[index].placeholder = e.target.value;
+                                  setAwarenessConfig({
+                                    ...awarenessConfig,
+                                    logs: newLogs,
+                                  });
+                                }}
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => {
+                                  if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+                                    e.preventDefault();
+                                    e.target.select();
+                                  }
+                                }}
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                                placeholder="Example answer text"
+                              />
+                            </div>
+                          </div>
+                        </details>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Emotional State Configuration */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                    <div>
+                      <h2 className="text-base font-semibold text-gray-900">
+                        Emotional State Log Configuration
+                      </h2>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Customize emotional state tracking
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        // Clean up empty options before saving
+                        const cleanedConfig = {
+                          ...emotionalStateConfig,
+                          categories: emotionalStateConfig.categories.map(
+                            (cat) => ({
+                              ...cat,
+                              options: cat.options.filter(
+                                (opt) => opt.trim() !== ""
+                              ),
+                            })
+                          ),
+                        };
+                        handleSaveConfig(
+                          "emotional_state_tab",
+                          cleanedConfig,
+                          "✅ Emotional state config saved successfully!"
+                        );
+                      }}
+                      disabled={
+                        isSavingConfig && savingSection === "emotional_state_tab"
+                      }
+                      className="px-4 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSavingConfig && savingSection === "emotional_state_tab"
+                        ? "Saving..."
+                        : "Save"}
+                    </button>
+                  </div>
+                  <div className="p-5 space-y-4">
+                    {/* Log Label */}
+                    <div className="pb-4 border-b border-gray-100">
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                        Log Label
+                      </label>
+                      <input
+                        type="text"
+                        value={emotionalStateConfig.log_label}
+                        onChange={(e) =>
+                          setEmotionalStateConfig({
+                            ...emotionalStateConfig,
+                            log_label: e.target.value,
+                          })
+                        }
+                        onFocus={(e) => e.target.select()}
+                        onKeyDown={(e) => {
+                          if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+                            e.preventDefault();
+                            e.target.select();
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Emotional State"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        Label shown in the awareness tab section
+                      </p>
+                    </div>
+
+                    {/* Modal Subtitle */}
+                    <div className="pb-4 border-b border-gray-100">
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                        Modal Subtitle
+                      </label>
+                      <input
+                        type="text"
+                        value={emotionalStateConfig.modal_subtitle}
+                        onChange={(e) =>
+                          setEmotionalStateConfig({
+                            ...emotionalStateConfig,
+                            modal_subtitle: e.target.value,
+                          })
+                        }
+                        onFocus={(e) => e.target.select()}
+                        onKeyDown={(e) => {
+                          if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+                            e.preventDefault();
+                            e.target.select();
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Select all that apply"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        Instruction text shown in the selection modal
+                      </p>
+                    </div>
+
+                    {/* Categories */}
+                    {emotionalStateConfig.categories.map((category, catIndex) => (
+                      <div
+                        key={category.id}
+                        className="pb-4 border-b border-gray-100 last:border-0 last:pb-0"
+                      >
+                        <details className="group" open={catIndex === 0}>
+                          <summary className="flex items-center justify-between cursor-pointer list-none">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full shrink-0"
+                                style={{ backgroundColor: category.color }}
+                              />
+                              <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                                Category {catIndex + 1}: {category.label}
+                              </h3>
+                            </div>
+                            <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                              ▼
+                            </span>
+                          </summary>
+                          <div className="mt-4 space-y-3 pl-5">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Category Label
+                              </label>
+                              <input
+                                type="text"
+                                value={category.label}
+                                onChange={(e) => {
+                                  const newCategories = [
+                                    ...emotionalStateConfig.categories,
+                                  ];
+                                  newCategories[catIndex].label = e.target.value;
+                                  setEmotionalStateConfig({
+                                    ...emotionalStateConfig,
+                                    categories: newCategories,
+                                  });
+                                }}
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => {
+                                  if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+                                    e.preventDefault();
+                                    e.target.select();
+                                  }
+                                }}
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="e.g. CHALLENGING"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Category Color
+                              </label>
+                              <div className="flex gap-2 items-center">
+                                <input
+                                  type="color"
+                                  value={category.color}
+                                  onChange={(e) => {
+                                    const newCategories = [
+                                      ...emotionalStateConfig.categories,
+                                    ];
+                                    newCategories[catIndex].color = e.target.value;
+                                    setEmotionalStateConfig({
+                                      ...emotionalStateConfig,
+                                      categories: newCategories,
+                                    });
+                                  }}
+                                  className="w-16 h-10 rounded-lg border border-gray-300 cursor-pointer"
+                                />
+                                <input
+                                  type="text"
+                                  value={category.color}
+                                  onChange={(e) => {
+                                    const newCategories = [
+                                      ...emotionalStateConfig.categories,
+                                    ];
+                                    newCategories[catIndex].color = e.target.value;
+                                    setEmotionalStateConfig({
+                                      ...emotionalStateConfig,
+                                      categories: newCategories,
+                                    });
+                                  }}
+                                  onFocus={(e) => e.target.select()}
+                                  onKeyDown={(e) => {
+                                    if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+                                      e.preventDefault();
+                                      e.target.select();
+                                    }
+                                  }}
+                                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono"
+                                  placeholder="#3b82f6"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Options (one per line)
+                              </label>
+                              <textarea
+                                rows={8}
+                                value={category.options.join("\n")}
+                                onChange={(e) => {
+                                  const newCategories = [
+                                    ...emotionalStateConfig.categories,
+                                  ];
+                                  // Keep all lines including empty ones during editing
+                                  newCategories[catIndex].options = e.target.value
+                                    .split("\n")
+                                    .map((opt) => opt.trim());
+                                  setEmotionalStateConfig({
+                                    ...emotionalStateConfig,
+                                    categories: newCategories,
+                                  });
+                                }}
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => {
+                                  if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+                                    e.preventDefault();
+                                    e.target.select();
+                                  }
+                                }}
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono"
+                                placeholder="Stressed&#10;Anxious&#10;Overwhelmed"
+                              />
+                              <p className="text-xs text-gray-400 mt-1">
+                                Enter each option on a new line
+                              </p>
+                            </div>
+                          </div>
+                        </details>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
