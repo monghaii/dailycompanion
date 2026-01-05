@@ -10,7 +10,8 @@ export async function PATCH(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { business_name, slug, bio, user_monthly_price_cents } = await request.json();
+    const { business_name, slug, bio, user_monthly_price_cents, logo_url } =
+      await request.json();
 
     // Validate inputs
     if (!business_name || !slug) {
@@ -28,7 +29,10 @@ export async function PATCH(request) {
       .single();
 
     if (!currentCoach) {
-      return NextResponse.json({ error: "Coach profile not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Coach profile not found" },
+        { status: 404 }
+      );
     }
 
     if (currentCoach.slug !== slug) {
@@ -48,15 +52,22 @@ export async function PATCH(request) {
     }
 
     // Update coach profile
+    const updateData = {
+      business_name,
+      slug,
+      bio,
+      user_monthly_price_cents,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Only update logo_url if provided
+    if (logo_url !== undefined) {
+      updateData.logo_url = logo_url;
+    }
+
     const { data: updatedCoach, error } = await supabase
       .from("coaches")
-      .update({
-        business_name,
-        slug,
-        bio,
-        user_monthly_price_cents,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", currentCoach.id)
       .select()
       .single();
@@ -78,4 +89,3 @@ export async function PATCH(request) {
     );
   }
 }
-

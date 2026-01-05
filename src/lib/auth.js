@@ -32,7 +32,7 @@ export function verifyToken(token) {
 }
 
 // Create a new user (coach or regular user)
-export async function createUser({ email, password, fullName, role = "user" }) {
+export async function createUser({ email, password, fullName, role = "user", coachId = null }) {
   // Check if user already exists
   const { data: existingUser } = await supabase
     .from("profiles")
@@ -56,15 +56,21 @@ export async function createUser({ email, password, fullName, role = "user" }) {
     throw new Error(authError.message);
   }
 
-  // Create profile
+  // Create profile with coach_id if provided
+  const profileData = {
+    id: authData.user.id,
+    email,
+    full_name: fullName,
+    role,
+  };
+
+  if (coachId) {
+    profileData.coach_id = coachId;
+  }
+
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .insert({
-      id: authData.user.id,
-      email,
-      full_name: fullName,
-      role,
-    })
+    .insert(profileData)
     .select()
     .single();
 

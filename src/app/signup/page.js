@@ -43,7 +43,11 @@ function SignupContent() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, role: "user" }),
+        body: JSON.stringify({ 
+          ...formData, 
+          role: "user",
+          coachSlug: coachSlug || null,
+        }),
       });
 
       const data = await res.json();

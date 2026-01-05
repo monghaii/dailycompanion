@@ -3,11 +3,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
+import { Compass, Sun, MessageCircle, Menu } from "lucide-react";
 
 export default function UserDashboard() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isConfigLoading, setIsConfigLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("activeTab") || "focus";
@@ -80,6 +82,18 @@ export default function UserDashboard() {
   );
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [coachConfig, setCoachConfig] = useState(null);
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [showAudioControls, setShowAudioControls] = useState(false);
+  const [selectedPractice, setSelectedPractice] = useState(null);
+  const practiceAudioRef = useRef(null);
+  const [isPracticePlaying, setIsPracticePlaying] = useState(false);
+  const [practiceCurrentTime, setPracticeCurrentTime] = useState(0);
+  const [practiceDuration, setPracticeDuration] = useState(0);
+  const [showPracticeControls, setShowPracticeControls] = useState(false);
+  const suggestedPracticeRef = useRef(null);
 
   // Timezone utility functions
   const getTodayInUserTimezone = () => {
@@ -146,6 +160,19 @@ export default function UserDashboard() {
       localStorage.setItem("activeTab", activeTab);
     }
   }, [activeTab]);
+
+  // Scroll to suggested practice when it appears
+  useEffect(() => {
+    if (showSuggestedPractice && suggestedPracticeRef.current) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        suggestedPracticeRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+        });
+      }, 100);
+    }
+  }, [showSuggestedPractice]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -234,6 +261,8 @@ export default function UserDashboard() {
       }
     } catch (error) {
       console.error("Failed to fetch coach config:", error);
+    } finally {
+      setIsConfigLoading(false);
     }
   };
 
@@ -524,6 +553,95 @@ export default function UserDashboard() {
     }
   };
 
+  // Audio player functions
+  const togglePlayPause = () => {
+    if (!audioRef.current) return;
+    
+    // Show controls when first clicked
+    if (!showAudioControls) {
+      setShowAudioControls(true);
+    }
+    
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleTimeUpdate = () => {
+    if (!audioRef.current) return;
+    setCurrentTime(audioRef.current.currentTime);
+  };
+
+  const handleLoadedMetadata = () => {
+    if (!audioRef.current) return;
+    setDuration(audioRef.current.duration);
+  };
+
+  const handleSeek = (e) => {
+    if (!audioRef.current) return;
+    const seekTime = parseFloat(e.target.value);
+    audioRef.current.currentTime = seekTime;
+    setCurrentTime(seekTime);
+  };
+
+  const handleAudioEnded = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+    // Auto-check the morning task when audio finishes
+    if (!completedTasks.morning) {
+      toggleTask("morning");
+    }
+  };
+
+  const formatTime = (seconds) => {
+    if (isNaN(seconds) || !isFinite(seconds)) return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Practice audio player functions
+  const togglePracticePlayPause = () => {
+    if (!practiceAudioRef.current) return;
+    
+    // Show controls when first clicked
+    if (!showPracticeControls) {
+      setShowPracticeControls(true);
+    }
+    
+    if (isPracticePlaying) {
+      practiceAudioRef.current.pause();
+    } else {
+      practiceAudioRef.current.play();
+    }
+    setIsPracticePlaying(!isPracticePlaying);
+  };
+
+  const handlePracticeTimeUpdate = () => {
+    if (!practiceAudioRef.current) return;
+    setPracticeCurrentTime(practiceAudioRef.current.currentTime);
+  };
+
+  const handlePracticeLoadedMetadata = () => {
+    if (!practiceAudioRef.current) return;
+    setPracticeDuration(practiceAudioRef.current.duration);
+  };
+
+  const handlePracticeSeek = (e) => {
+    if (!practiceAudioRef.current) return;
+    const seekTime = parseFloat(e.target.value);
+    practiceAudioRef.current.currentTime = seekTime;
+    setPracticeCurrentTime(seekTime);
+  };
+
+  const handlePracticeAudioEnded = () => {
+    setIsPracticePlaying(false);
+    setPracticeCurrentTime(0);
+  };
+
   // Calculate enabled tasks based on coach config
   const enabledTasks = {
     morning: coachConfig?.focus_tab?.task_1?.enabled !== false,
@@ -650,34 +768,39 @@ export default function UserDashboard() {
 
   const emotions = coachConfig?.emotional_state_tab?.categories
     ? coachConfig.emotional_state_tab.categories.reduce((acc, cat) => {
-        // Filter out empty options
-        acc[cat.id] = (cat.options || []).filter((opt) => opt.trim() !== "");
+        // Filter out empty options and handle both old string format and new object format
+        acc[cat.id] = (cat.options || [])
+          .filter((opt) => {
+            if (typeof opt === "string") return opt.trim() !== "";
+            return opt.name && opt.name.trim() !== "";
+          })
+          .map((opt) => (typeof opt === "string" ? { name: opt } : opt));
         return acc;
       }, {})
     : {
         challenging: [
-          "Stressed",
-          "Anxious",
-          "Overwhelmed",
-          "Sad",
-          "Angry",
-          "Frustrated",
-          "Restless",
-          "Lonely",
-          "Tired",
-          "Scattered",
+          { name: "Stressed" },
+          { name: "Anxious" },
+          { name: "Overwhelmed" },
+          { name: "Sad" },
+          { name: "Angry" },
+          { name: "Frustrated" },
+          { name: "Restless" },
+          { name: "Lonely" },
+          { name: "Tired" },
+          { name: "Scattered" },
         ],
         positive: [
-          "Calm",
-          "Joyful",
-          "Creative",
-          "Energized",
-          "Grateful",
-          "Peaceful",
-          "Hopeful",
-          "Content",
-          "Confident",
-          "Inspired",
+          { name: "Calm" },
+          { name: "Joyful" },
+          { name: "Creative" },
+          { name: "Energized" },
+          { name: "Grateful" },
+          { name: "Peaceful" },
+          { name: "Hopeful" },
+          { name: "Content" },
+          { name: "Confident" },
+          { name: "Inspired" },
         ],
       };
 
@@ -744,15 +867,7 @@ export default function UserDashboard() {
 
     // Get the selected emotion info
     const selected = selectedEmotions[0];
-    const categories = coachConfig?.emotional_state_tab?.categories || [
-      { id: "challenging", options: emotions.challenging || [] },
-      { id: "positive", options: emotions.positive || [] },
-    ];
-
-    // Find the category and get the emotion label
-    const category = categories.find((cat) => cat.id === selected.categoryId);
-    const emotionIndex = parseInt(selected.id.split("-")[1]);
-    const emotionLabel = emotions[selected.categoryId]?.[emotionIndex] || "";
+    const emotionLabel = selected.id; // Now this is the emotion name directly
 
     // Format: categoryId-EmotionLabel
     const formattedEmotions = [`${selected.categoryId}-${emotionLabel}`];
@@ -783,8 +898,20 @@ export default function UserDashboard() {
         const data = await res.json();
         // Update local state with server data
         setEmotionalEntries(data.entry.log_2_entries || []);
-        setShowSuggestedPractice(true);
         setShowEmotionalModal(false);
+        
+        // Check if selected emotion has a practice audio and show it
+        const category = emotions[selected.categoryId];
+        const emotionObj = category?.find((e) => e.name === emotionLabel);
+        
+        if (emotionObj && emotionObj.audio_url) {
+          setSelectedPractice(emotionObj);
+          setShowSuggestedPractice(true);
+        } else {
+          setSelectedPractice(null);
+          setShowSuggestedPractice(false);
+        }
+        
         setSelectedEmotions([]);
       }
     } catch (error) {
@@ -939,18 +1066,49 @@ export default function UserDashboard() {
     } ${date.getDate()}`;
   };
 
-  if (isLoading) {
+  if (isLoading || isConfigLoading) {
     return (
       <div
         style={{
-          minHeight: "100vh",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#f9fafb",
+          backgroundColor: "#ffffff",
+          zIndex: 9999,
         }}
       >
-        <div style={{ color: "#6b7280" }}>Loading...</div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "16px",
+          }}
+        >
+          <div
+            style={{
+              width: "48px",
+              height: "48px",
+              border: "4px solid #f3f4f6",
+              borderTop: "4px solid #6b7280",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+            }}
+          />
+          <style>
+            {`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}
+          </style>
+        </div>
       </div>
     );
   }
@@ -1143,32 +1301,94 @@ export default function UserDashboard() {
                   />
                 </div>
                 {coachConfig?.focus_tab?.task_1?.audio_url && (
-                  <button
-                    onClick={() =>
-                      window.open(
-                        coachConfig.focus_tab.task_1.audio_url,
-                        "_blank"
-                      )
-                    }
+                  <div
                     style={{
-                      width: "100%",
-                      padding: "14px",
-                      backgroundColor: "#ff5a7e",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "8px",
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
+                      marginTop: "12px",
                     }}
                   >
-                    <span style={{ fontSize: "18px" }}>▶</span>
-                    Listen Now
-                  </button>
+                    <audio
+                      ref={audioRef}
+                      src={coachConfig.focus_tab.task_1.audio_url}
+                      onTimeUpdate={handleTimeUpdate}
+                      onLoadedMetadata={handleLoadedMetadata}
+                      onEnded={handleAudioEnded}
+                      style={{ display: "none" }}
+                    />
+                    
+                    {/* Play/Pause Button */}
+                    <button
+                      onClick={togglePlayPause}
+                      style={{
+                        width: "100%",
+                        padding: "16px",
+                        backgroundColor: coachConfig?.branding?.primary_color || "#ef4444",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontSize: "18px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "10px",
+                        marginBottom: showAudioControls ? "12px" : "0",
+                        transition: "background-color 0.2s",
+                        outline: "none",
+                      }}
+                      onMouseEnter={(e) => {
+                        const color = coachConfig?.branding?.primary_color || "#ef4444";
+                        e.target.style.backgroundColor = color;
+                        e.target.style.filter = "brightness(0.9)";
+                      }}
+                      onMouseLeave={(e) => {
+                        const color = coachConfig?.branding?.primary_color || "#ef4444";
+                        e.target.style.backgroundColor = color;
+                        e.target.style.filter = "brightness(1)";
+                      }}
+                    >
+                      <span style={{ fontSize: "20px" }}>
+                        {showAudioControls ? (isPlaying ? "⏸" : "▶") : "▶"}
+                      </span>
+                      {showAudioControls ? (isPlaying ? "Pause" : "Play") : "Listen Now"}
+                    </button>
+
+                    {/* Progress Bar - Only show after first click */}
+                    {showAudioControls && (
+                      <>
+                        <div style={{ marginBottom: "8px" }}>
+                          <input
+                            type="range"
+                            min="0"
+                            max={duration || 0}
+                            value={currentTime}
+                            onChange={handleSeek}
+                            style={{
+                              width: "100%",
+                              height: "6px",
+                              borderRadius: "3px",
+                              outline: "none",
+                              cursor: "pointer",
+                              accentColor: coachConfig?.branding?.primary_color || "#ef4444",
+                            }}
+                          />
+                        </div>
+
+                        {/* Time Display */}
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            fontSize: "12px",
+                            color: "#6b7280",
+                          }}
+                        >
+                          <span>{formatTime(currentTime)}</span>
+                          <span>{formatTime(duration)}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -1479,7 +1699,7 @@ export default function UserDashboard() {
                         margin: "0 auto",
                         borderRadius: "50%",
                         backgroundColor: day.isSelected
-                          ? "#ff5a7e"
+                          ? (coachConfig?.branding?.primary_color || "#ef4444")
                           : "transparent",
                         color: day.isSelected ? "#fff" : "#1a1a1a",
                         display: "flex",
@@ -1490,7 +1710,7 @@ export default function UserDashboard() {
                         position: "relative",
                         border:
                           day.isToday && !day.isSelected
-                            ? "2px solid #ff5a7e"
+                            ? `2px solid ${coachConfig?.branding?.primary_color || "#ef4444"}`
                             : "none",
                       }}
                     >
@@ -1664,100 +1884,6 @@ export default function UserDashboard() {
                 </div>
               </div>
 
-              {/* Suggested Practice */}
-              {showSuggestedPractice && (
-                <div
-                  style={{
-                    backgroundColor: "#d1fae5",
-                    padding: "20px",
-                    borderRadius: "12px",
-                    marginTop: "24px",
-                    position: "relative",
-                  }}
-                >
-                  <button
-                    onClick={() => setShowSuggestedPractice(false)}
-                    style={{
-                      position: "absolute",
-                      top: "16px",
-                      right: "16px",
-                      background: "none",
-                      border: "none",
-                      fontSize: "20px",
-                      color: "#6b7280",
-                      cursor: "pointer",
-                    }}
-                  >
-                    ×
-                  </button>
-                  <h3
-                    style={{
-                      fontSize: "18px",
-                      fontWeight: 700,
-                      color: "#1a1a1a",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Suggested Practice
-                  </h3>
-                  <p
-                    style={{
-                      fontSize: "14px",
-                      color: "#6b7280",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    For when feeling{" "}
-                    {(
-                      emotionalEntries[
-                        emotionalEntries.length - 1
-                      ]?.emotions[0]?.split("-")[1] || ""
-                    ).toLowerCase()}
-                  </p>
-                  <div
-                    style={{
-                      backgroundColor: "#fff",
-                      padding: "16px",
-                      borderRadius: "8px",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    <h4
-                      style={{
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        color: "#1a1a1a",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      Gratitude Pause
-                    </h4>
-                    <p style={{ fontSize: "14px", color: "#6b7280" }}>5 min</p>
-                  </div>
-                  <button
-                    style={{
-                      width: "100%",
-                      padding: "14px",
-                      backgroundColor: "#10b981",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "8px",
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    <span style={{ fontSize: "18px" }}>▶</span>
-                    Start Practice
-                  </button>
-                </div>
-              )}
-
-              {/* Entries for this day */}
               {(emotionalEntries.length > 0 ||
                 mindfulnessEntries.length > 0) && (
                 <div style={{ marginTop: "24px" }}>
@@ -1829,7 +1955,7 @@ export default function UserDashboard() {
                         style={{
                           background: "none",
                           border: "none",
-                          color: "#ef4444",
+                          color: coachConfig?.branding?.primary_color || "#ef4444",
                           fontSize: "18px",
                           cursor: "pointer",
                           padding: "0 4px",
@@ -1905,7 +2031,7 @@ export default function UserDashboard() {
                         style={{
                           background: "none",
                           border: "none",
-                          color: "#ef4444",
+                          color: coachConfig?.branding?.primary_color || "#ef4444",
                           fontSize: "18px",
                           cursor: "pointer",
                           padding: "0 4px",
@@ -1917,6 +2043,167 @@ export default function UserDashboard() {
                   ))}
                 </div>
               )}
+
+              {/* Suggested Practice */}
+              {showSuggestedPractice && selectedPractice && (
+                <div
+                  ref={suggestedPracticeRef}
+                  style={{
+                    backgroundColor: "#eff6ff",
+                    padding: "20px",
+                    borderRadius: "12px",
+                    marginTop: "24px",
+                    position: "relative",
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      setShowSuggestedPractice(false);
+                      setSelectedPractice(null);
+                      setShowPracticeControls(false);
+                      setIsPracticePlaying(false);
+                      if (practiceAudioRef.current) {
+                        practiceAudioRef.current.pause();
+                        practiceAudioRef.current.currentTime = 0;
+                      }
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: "16px",
+                      right: "16px",
+                      background: "none",
+                      border: "none",
+                      fontSize: "20px",
+                      color: "#6b7280",
+                      cursor: "pointer",
+                    }}
+                  >
+                    ×
+                  </button>
+                  <h3
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: 700,
+                      color: "#1a1a1a",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Suggested Practice
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      color: "#6b7280",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    For when feeling {selectedPractice.name?.toLowerCase()}
+                  </p>
+                  <div
+                    style={{
+                      backgroundColor: "#fff",
+                      padding: "16px",
+                      borderRadius: "8px",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    <h4
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "#1a1a1a",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      {selectedPractice.practice_name || "Mindfulness Practice"}
+                    </h4>
+                    <p style={{ fontSize: "14px", color: "#3b82f6" }}>
+                      {selectedPractice.duration || ""}
+                    </p>
+                  </div>
+
+                  {selectedPractice.audio_url && (
+                    <div>
+                      <audio
+                        ref={practiceAudioRef}
+                        src={selectedPractice.audio_url}
+                        onTimeUpdate={handlePracticeTimeUpdate}
+                        onLoadedMetadata={handlePracticeLoadedMetadata}
+                        onEnded={handlePracticeAudioEnded}
+                        style={{ display: "none" }}
+                      />
+                      
+                      {/* Play/Pause Button */}
+                      <button
+                        onClick={togglePracticePlayPause}
+                        style={{
+                          width: "100%",
+                          padding: "16px",
+                          backgroundColor: "#3b82f6",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "8px",
+                          fontSize: "18px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "10px",
+                          marginBottom: showPracticeControls ? "12px" : "0",
+                          transition: "background-color 0.2s",
+                          outline: "none",
+                        }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = "#2563eb"}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = "#3b82f6"}
+                      >
+                        <span style={{ fontSize: "20px" }}>
+                          {showPracticeControls ? (isPracticePlaying ? "⏸" : "▶") : "▶"}
+                        </span>
+                        {showPracticeControls ? (isPracticePlaying ? "Pause" : "Play") : "Start Practice"}
+                      </button>
+
+                      {/* Progress Bar - Only show after first click */}
+                      {showPracticeControls && (
+                        <>
+                          <div style={{ marginBottom: "8px" }}>
+                            <input
+                              type="range"
+                              min="0"
+                              max={practiceDuration || 0}
+                              value={practiceCurrentTime}
+                              onChange={handlePracticeSeek}
+                              style={{
+                                width: "100%",
+                                height: "6px",
+                                borderRadius: "3px",
+                                outline: "none",
+                                cursor: "pointer",
+                                accentColor: "#3b82f6",
+                              }}
+                            />
+                          </div>
+
+                          {/* Time Display */}
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              fontSize: "12px",
+                              color: "#6b7280",
+                            }}
+                          >
+                            <span>{formatTime(practiceCurrentTime)}</span>
+                            <span>{formatTime(practiceDuration)}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Entries for this day */}
             </div>
           </>
         )}
@@ -1942,7 +2229,8 @@ export default function UserDashboard() {
                   background:
                     coachConfig?.branding?.background_color ||
                     "linear-gradient(135deg, #ff6b9d 0%, #ffa057 50%, #ffd96a 100%)",
-                  padding: "32px 24px",
+                  padding: "32px 24px 48px",
+                  textAlign: "center",
                 }}
               >
                 <h1
@@ -1988,7 +2276,7 @@ export default function UserDashboard() {
                   style={{
                     background: "none",
                     border: "none",
-                    color: "#ef4444",
+                    color: coachConfig?.branding?.primary_color || "#ef4444",
                     fontSize: "14px",
                     fontWeight: 600,
                     cursor: "pointer",
@@ -2041,7 +2329,7 @@ export default function UserDashboard() {
 
                 <button
                   style={{
-                    backgroundColor: "#ef4444",
+                    backgroundColor: coachConfig?.branding?.primary_color || "#ef4444",
                     color: "#fff",
                     border: "none",
                     borderRadius: "20px",
@@ -2227,7 +2515,7 @@ export default function UserDashboard() {
                   )}
                   <div
                     style={{
-                      backgroundColor: msg.role === "user" ? "#ef4444" : "#fff",
+                      backgroundColor: msg.role === "user" ? (coachConfig?.branding?.primary_color || "#ef4444") : "#fff",
                       color: msg.role === "user" ? "#fff" : "#1a1a1a",
                       padding: "16px 20px",
                       borderRadius: "20px",
@@ -2295,7 +2583,7 @@ export default function UserDashboard() {
                           width: "16px",
                           height: "16px",
                           border: "2px solid #e5e7eb",
-                          borderTop: "2px solid #ef4444",
+                          borderTop: `2px solid ${coachConfig?.branding?.primary_color || "#ef4444"}`,
                           borderRadius: "50%",
                           animation: "spin 1s linear infinite",
                         }}
@@ -2348,7 +2636,7 @@ export default function UserDashboard() {
                   width: "56px",
                   height: "56px",
                   borderRadius: "50%",
-                  backgroundColor: "#ef4444",
+                  backgroundColor: coachConfig?.branding?.primary_color || "#ef4444",
                   border: "none",
                   display: "flex",
                   alignItems: "center",
@@ -3660,7 +3948,7 @@ export default function UserDashboard() {
                   key={idx}
                   style={{
                     padding: "8px 16px",
-                    backgroundColor: tag.active ? "#ef4444" : "#f3f4f6",
+                    backgroundColor: tag.active ? (coachConfig?.branding?.primary_color || "#ef4444") : "#f3f4f6",
                     color: tag.active ? "#fff" : "#6b7280",
                     border: "none",
                     borderRadius: "20px",
@@ -3762,7 +4050,7 @@ export default function UserDashboard() {
                   <button
                     style={{
                       padding: "10px 20px",
-                      backgroundColor: "#ef4444",
+                      backgroundColor: coachConfig?.branding?.primary_color || "#ef4444",
                       color: "#fff",
                       border: "none",
                       borderRadius: "20px",
@@ -4548,7 +4836,8 @@ export default function UserDashboard() {
                     }}
                   >
                     {(emotions[category.id] || []).map((emotion, index) => {
-                      const emotionId = `${category.id}-${index}`;
+                      const emotionName = emotion.name || emotion;
+                      const emotionId = emotionName;
                       const isSelected =
                         selectedEmotions.length > 0 &&
                         selectedEmotions[0].id === emotionId;
@@ -4569,7 +4858,7 @@ export default function UserDashboard() {
                             fontWeight: isSelected ? 600 : 400,
                           }}
                         >
-                          {emotion}
+                          {emotionName}
                         </button>
                       );
                     })}
@@ -4613,11 +4902,13 @@ export default function UserDashboard() {
         }}
       >
         {[
-          { id: "focus", icon: "🎯", label: "Focus" },
-          { id: "awareness", icon: "☀️", label: "Awareness" },
-          { id: "coach", icon: "💬", label: "Coach" },
-          { id: "more", icon: "☰", label: "More" },
-        ].map((tab) => (
+          { id: "focus", icon: Compass, label: "Focus" },
+          { id: "awareness", icon: Sun, label: "Awareness" },
+          { id: "coach", icon: MessageCircle, label: "Coach" },
+          { id: "more", icon: Menu, label: "More" },
+        ].map((tab) => {
+          const IconComponent = tab.icon;
+          return (
           <button
             key={tab.id}
             onClick={() => {
@@ -4638,25 +4929,26 @@ export default function UserDashboard() {
               padding: "8px",
             }}
           >
-            <span
+            <IconComponent
+              size={28}
+              strokeWidth={2}
               style={{
-                fontSize: "24px",
                 opacity: activeTab === tab.id ? 1 : 0.5,
+                color: activeTab === tab.id ? (coachConfig?.branding?.primary_color || "#ef4444") : "#9ca3af",
               }}
-            >
-              {tab.icon}
-            </span>
+            />
             <span
               style={{
                 fontSize: "12px",
-                color: activeTab === tab.id ? "#ff5a7e" : "#9ca3af",
+                color: activeTab === tab.id ? (coachConfig?.branding?.primary_color || "#ef4444") : "#9ca3af",
                 fontWeight: activeTab === tab.id ? 600 : 400,
               }}
             >
               {tab.label}
             </span>
           </button>
-        ))}
+        );
+        })}
       </nav>
 
       {/* Toast Notification */}

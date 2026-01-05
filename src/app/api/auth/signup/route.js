@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { email, password, fullName, role, slug, businessName } = body;
+    const { email, password, fullName, role, slug, businessName, coachSlug } = body;
 
     // Validate required fields
     if (!email || !password || !fullName) {
@@ -24,12 +24,27 @@ export async function POST(request) {
       );
     }
 
+    // If signing up through a coach's URL, get the coach_id
+    let coachId = null;
+    if (coachSlug && role !== 'coach') {
+      const { data: coach } = await supabase
+        .from('coaches')
+        .select('id')
+        .eq('slug', coachSlug)
+        .single();
+      
+      if (coach) {
+        coachId = coach.id;
+      }
+    }
+
     // Create user
     const profile = await createUser({
       email,
       password,
       fullName,
       role: role || 'user',
+      coachId,
     });
 
     // If coach, create coach record

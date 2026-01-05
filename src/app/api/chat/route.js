@@ -66,10 +66,10 @@ export async function POST(request) {
       );
     }
 
-    // Get user's token usage
+    // Get user's token usage and coach subscription
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("token_usage, token_usage_reset_date, token_limit")
+      .select("token_usage, token_usage_reset_date, token_limit, coach_id")
       .eq("id", user.id)
       .single();
 
@@ -79,6 +79,20 @@ export async function POST(request) {
         { error: "Failed to fetch user profile" },
         { status: 500 }
       );
+    }
+
+    // Get coach's custom system prompt if user has a coach
+    let systemPrompt = LIFE_COACH_SYSTEM_PROMPT;
+    if (profile.coach_id) {
+      const { data: coachConfig, error: configError } = await supabase
+        .from("coach_configs")
+        .select("config")
+        .eq("coach_id", profile.coach_id)
+        .single();
+
+      if (!configError && coachConfig?.config?.coach_tab?.system_prompt) {
+        systemPrompt = coachConfig.config.coach_tab.system_prompt;
+      }
     }
 
     // Check if token usage should be reset (new month)
@@ -130,7 +144,7 @@ export async function POST(request) {
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
         max_tokens: 1024,
-        system: LIFE_COACH_SYSTEM_PROMPT,
+        system: systemPrompt,
         messages: messages,
       }),
     });
