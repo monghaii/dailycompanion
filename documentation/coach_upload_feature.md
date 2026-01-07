@@ -153,3 +153,4 @@ Potential improvements for the future:
 - Verify the coach record exists in the database
 - Check that RLS policies are configured correctly
 
+

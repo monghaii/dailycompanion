@@ -556,12 +556,12 @@ export default function UserDashboard() {
   // Audio player functions
   const togglePlayPause = () => {
     if (!audioRef.current) return;
-    
+
     // Show controls when first clicked
     if (!showAudioControls) {
       setShowAudioControls(true);
     }
-    
+
     if (isPlaying) {
       audioRef.current.pause();
     } else {
@@ -600,18 +600,18 @@ export default function UserDashboard() {
     if (isNaN(seconds) || !isFinite(seconds)) return "0:00";
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   // Practice audio player functions
   const togglePracticePlayPause = () => {
     if (!practiceAudioRef.current) return;
-    
+
     // Show controls when first clicked
     if (!showPracticeControls) {
       setShowPracticeControls(true);
     }
-    
+
     if (isPracticePlaying) {
       practiceAudioRef.current.pause();
     } else {
@@ -899,11 +899,11 @@ export default function UserDashboard() {
         // Update local state with server data
         setEmotionalEntries(data.entry.log_2_entries || []);
         setShowEmotionalModal(false);
-        
+
         // Check if selected emotion has a practice audio and show it
         const category = emotions[selected.categoryId];
         const emotionObj = category?.find((e) => e.name === emotionLabel);
-        
+
         if (emotionObj && emotionObj.audio_url) {
           setSelectedPractice(emotionObj);
           setShowSuggestedPractice(true);
@@ -911,7 +911,7 @@ export default function UserDashboard() {
           setSelectedPractice(null);
           setShowSuggestedPractice(false);
         }
-        
+
         setSelectedEmotions([]);
       }
     } catch (error) {
@@ -919,6 +919,20 @@ export default function UserDashboard() {
       setShowEmotionalModal(false);
       setSelectedEmotions([]);
     }
+  };
+
+  const handleNewSession = () => {
+    // Reset chat to initial state
+    setChatMessages([
+      {
+        role: "assistant",
+        content:
+          "Before we dive in - what's one thing you're grateful for right now?",
+      },
+    ]);
+    setChatMessage("");
+    setTokenWarning(null);
+    setShowCoachProfile(false);
   };
 
   const handleSendChatMessage = async (e) => {
@@ -1314,14 +1328,15 @@ export default function UserDashboard() {
                       onEnded={handleAudioEnded}
                       style={{ display: "none" }}
                     />
-                    
+
                     {/* Play/Pause Button */}
                     <button
                       onClick={togglePlayPause}
                       style={{
                         width: "100%",
                         padding: "16px",
-                        backgroundColor: coachConfig?.branding?.primary_color || "#ef4444",
+                        backgroundColor:
+                          coachConfig?.branding?.primary_color || "#ef4444",
                         color: "#fff",
                         border: "none",
                         borderRadius: "8px",
@@ -1337,12 +1352,14 @@ export default function UserDashboard() {
                         outline: "none",
                       }}
                       onMouseEnter={(e) => {
-                        const color = coachConfig?.branding?.primary_color || "#ef4444";
+                        const color =
+                          coachConfig?.branding?.primary_color || "#ef4444";
                         e.target.style.backgroundColor = color;
                         e.target.style.filter = "brightness(0.9)";
                       }}
                       onMouseLeave={(e) => {
-                        const color = coachConfig?.branding?.primary_color || "#ef4444";
+                        const color =
+                          coachConfig?.branding?.primary_color || "#ef4444";
                         e.target.style.backgroundColor = color;
                         e.target.style.filter = "brightness(1)";
                       }}
@@ -1350,7 +1367,11 @@ export default function UserDashboard() {
                       <span style={{ fontSize: "20px" }}>
                         {showAudioControls ? (isPlaying ? "⏸" : "▶") : "▶"}
                       </span>
-                      {showAudioControls ? (isPlaying ? "Pause" : "Play") : "Listen Now"}
+                      {showAudioControls
+                        ? isPlaying
+                          ? "Pause"
+                          : "Play"
+                        : "Listen Now"}
                     </button>
 
                     {/* Progress Bar - Only show after first click */}
@@ -1369,7 +1390,9 @@ export default function UserDashboard() {
                               borderRadius: "3px",
                               outline: "none",
                               cursor: "pointer",
-                              accentColor: coachConfig?.branding?.primary_color || "#ef4444",
+                              accentColor:
+                                coachConfig?.branding?.primary_color ||
+                                "#ef4444",
                             }}
                           />
                         </div>
@@ -1699,7 +1722,7 @@ export default function UserDashboard() {
                         margin: "0 auto",
                         borderRadius: "50%",
                         backgroundColor: day.isSelected
-                          ? (coachConfig?.branding?.primary_color || "#ef4444")
+                          ? coachConfig?.branding?.primary_color || "#ef4444"
                           : "transparent",
                         color: day.isSelected ? "#fff" : "#1a1a1a",
                         display: "flex",
@@ -1710,7 +1733,10 @@ export default function UserDashboard() {
                         position: "relative",
                         border:
                           day.isToday && !day.isSelected
-                            ? `2px solid ${coachConfig?.branding?.primary_color || "#ef4444"}`
+                            ? `2px solid ${
+                                coachConfig?.branding?.primary_color ||
+                                "#ef4444"
+                              }`
                             : "none",
                       }}
                     >
@@ -1955,7 +1981,8 @@ export default function UserDashboard() {
                         style={{
                           background: "none",
                           border: "none",
-                          color: coachConfig?.branding?.primary_color || "#ef4444",
+                          color:
+                            coachConfig?.branding?.primary_color || "#ef4444",
                           fontSize: "18px",
                           cursor: "pointer",
                           padding: "0 4px",
@@ -2031,7 +2058,8 @@ export default function UserDashboard() {
                         style={{
                           background: "none",
                           border: "none",
-                          color: coachConfig?.branding?.primary_color || "#ef4444",
+                          color:
+                            coachConfig?.branding?.primary_color || "#ef4444",
                           fontSize: "18px",
                           cursor: "pointer",
                           padding: "0 4px",
@@ -2132,7 +2160,7 @@ export default function UserDashboard() {
                         onEnded={handlePracticeAudioEnded}
                         style={{ display: "none" }}
                       />
-                      
+
                       {/* Play/Pause Button */}
                       <button
                         onClick={togglePracticePlayPause}
@@ -2154,13 +2182,25 @@ export default function UserDashboard() {
                           transition: "background-color 0.2s",
                           outline: "none",
                         }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = "#2563eb"}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = "#3b82f6"}
+                        onMouseEnter={(e) =>
+                          (e.target.style.backgroundColor = "#2563eb")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.target.style.backgroundColor = "#3b82f6")
+                        }
                       >
                         <span style={{ fontSize: "20px" }}>
-                          {showPracticeControls ? (isPracticePlaying ? "⏸" : "▶") : "▶"}
+                          {showPracticeControls
+                            ? isPracticePlaying
+                              ? "⏸"
+                              : "▶"
+                            : "▶"}
                         </span>
-                        {showPracticeControls ? (isPracticePlaying ? "Pause" : "Play") : "Start Practice"}
+                        {showPracticeControls
+                          ? isPracticePlaying
+                            ? "Pause"
+                            : "Play"
+                          : "Start Practice"}
                       </button>
 
                       {/* Progress Bar - Only show after first click */}
@@ -2328,8 +2368,10 @@ export default function UserDashboard() {
                 </div>
 
                 <button
+                  onClick={handleNewSession}
                   style={{
-                    backgroundColor: coachConfig?.branding?.primary_color || "#ef4444",
+                    backgroundColor:
+                      coachConfig?.branding?.primary_color || "#ef4444",
                     color: "#fff",
                     border: "none",
                     borderRadius: "20px",
@@ -2515,7 +2557,10 @@ export default function UserDashboard() {
                   )}
                   <div
                     style={{
-                      backgroundColor: msg.role === "user" ? (coachConfig?.branding?.primary_color || "#ef4444") : "#fff",
+                      backgroundColor:
+                        msg.role === "user"
+                          ? coachConfig?.branding?.primary_color || "#ef4444"
+                          : "#fff",
                       color: msg.role === "user" ? "#fff" : "#1a1a1a",
                       padding: "16px 20px",
                       borderRadius: "20px",
@@ -2583,7 +2628,9 @@ export default function UserDashboard() {
                           width: "16px",
                           height: "16px",
                           border: "2px solid #e5e7eb",
-                          borderTop: `2px solid ${coachConfig?.branding?.primary_color || "#ef4444"}`,
+                          borderTop: `2px solid ${
+                            coachConfig?.branding?.primary_color || "#ef4444"
+                          }`,
                           borderRadius: "50%",
                           animation: "spin 1s linear infinite",
                         }}
@@ -2601,7 +2648,7 @@ export default function UserDashboard() {
               onSubmit={handleSendChatMessage}
               style={{
                 position: "fixed",
-                bottom: "100px",
+                bottom: "90px",
                 left: 0,
                 right: 0,
                 backgroundColor: "#fff",
@@ -2636,7 +2683,8 @@ export default function UserDashboard() {
                   width: "56px",
                   height: "56px",
                   borderRadius: "50%",
-                  backgroundColor: coachConfig?.branding?.primary_color || "#ef4444",
+                  backgroundColor:
+                    coachConfig?.branding?.primary_color || "#ef4444",
                   border: "none",
                   display: "flex",
                   alignItems: "center",
@@ -3948,7 +3996,9 @@ export default function UserDashboard() {
                   key={idx}
                   style={{
                     padding: "8px 16px",
-                    backgroundColor: tag.active ? (coachConfig?.branding?.primary_color || "#ef4444") : "#f3f4f6",
+                    backgroundColor: tag.active
+                      ? coachConfig?.branding?.primary_color || "#ef4444"
+                      : "#f3f4f6",
                     color: tag.active ? "#fff" : "#6b7280",
                     border: "none",
                     borderRadius: "20px",
@@ -4050,7 +4100,8 @@ export default function UserDashboard() {
                   <button
                     style={{
                       padding: "10px 20px",
-                      backgroundColor: coachConfig?.branding?.primary_color || "#ef4444",
+                      backgroundColor:
+                        coachConfig?.branding?.primary_color || "#ef4444",
                       color: "#fff",
                       border: "none",
                       borderRadius: "20px",
@@ -4899,6 +4950,7 @@ export default function UserDashboard() {
           display: "flex",
           justifyContent: "space-around",
           padding: "12px 0",
+          zIndex: 50,
         }}
       >
         {[
@@ -4909,45 +4961,51 @@ export default function UserDashboard() {
         ].map((tab) => {
           const IconComponent = tab.icon;
           return (
-          <button
-            key={tab.id}
-            onClick={() => {
-              setActiveTab(tab.id);
-              if (tab.id === "more") {
-                setMoreSubpage(null);
-              }
-            }}
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "4px",
-              border: "none",
-              backgroundColor: "transparent",
-              cursor: "pointer",
-              padding: "8px",
-            }}
-          >
-            <IconComponent
-              size={28}
-              strokeWidth={2}
-              style={{
-                opacity: activeTab === tab.id ? 1 : 0.5,
-                color: activeTab === tab.id ? (coachConfig?.branding?.primary_color || "#ef4444") : "#9ca3af",
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id);
+                if (tab.id === "more") {
+                  setMoreSubpage(null);
+                }
               }}
-            />
-            <span
               style={{
-                fontSize: "12px",
-                color: activeTab === tab.id ? (coachConfig?.branding?.primary_color || "#ef4444") : "#9ca3af",
-                fontWeight: activeTab === tab.id ? 600 : 400,
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "4px",
+                border: "none",
+                backgroundColor: "transparent",
+                cursor: "pointer",
+                padding: "8px",
               }}
             >
-              {tab.label}
-            </span>
-          </button>
-        );
+              <IconComponent
+                size={28}
+                strokeWidth={2}
+                style={{
+                  opacity: activeTab === tab.id ? 1 : 0.5,
+                  color:
+                    activeTab === tab.id
+                      ? coachConfig?.branding?.primary_color || "#ef4444"
+                      : "#9ca3af",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: "12px",
+                  color:
+                    activeTab === tab.id
+                      ? coachConfig?.branding?.primary_color || "#ef4444"
+                      : "#9ca3af",
+                  fontWeight: activeTab === tab.id ? 600 : 400,
+                }}
+              >
+                {tab.label}
+              </span>
+            </button>
+          );
         })}
       </nav>
 

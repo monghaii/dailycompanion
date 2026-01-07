@@ -44,3 +44,4 @@ LEFT JOIN coaches c ON p.coach_id = c.id
 WHERE p.role = 'user'
 ORDER BY p.created_at DESC;
 
+
