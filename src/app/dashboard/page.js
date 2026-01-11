@@ -42,8 +42,24 @@ function DashboardContent() {
 
   const [brandingConfig, setBrandingConfig] = useState({
     primary_color: "#7c3aed",
+    background_type: "solid", // "solid" or "gradient"
     background_color: "#f9fafb",
+    gradient_color_1: "#ff6b9d",
+    gradient_color_2: "#ffa057",
+    gradient_angle: 135,
+    gradient_spread: 50,
+    app_logo_url: null,
   });
+  const [uploadingAppLogo, setUploadingAppLogo] = useState(false);
+  const [audioLibrary, setAudioLibrary] = useState(
+    Array.from({ length: 30 }, (_, i) => ({
+      id: i,
+      audio_url: "",
+      audio_path: "",
+      name: "",
+    }))
+  );
+  const [currentDayIndex, setCurrentDayIndex] = useState(0);
   const [focusConfig, setFocusConfig] = useState({
     progress_bar: {
       title: "Today's Focus",
@@ -405,10 +421,19 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         }
 
         if (config.focus_tab) {
+          const focusTabConfig = parseSection(config.focus_tab);
           setFocusConfig((prev) => ({
             ...prev,
-            ...parseSection(config.focus_tab),
+            ...focusTabConfig,
           }));
+
+          // Load audio library if available
+          if (focusTabConfig.audio_library) {
+            setAudioLibrary(focusTabConfig.audio_library);
+          }
+          if (focusTabConfig.current_day_index !== undefined) {
+            setCurrentDayIndex(focusTabConfig.current_day_index);
+          }
         }
 
         if (config.awareness_tab) {
@@ -1579,34 +1604,282 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           />
                         </div>
                       </div>
+
+                      {/* Background Style */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Background Color
+                          Background Style
                         </label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={brandingConfig.background_color}
-                            onChange={(e) =>
+                        <div className="flex gap-2 mb-4">
+                          <button
+                            onClick={() =>
                               setBrandingConfig({
                                 ...brandingConfig,
-                                background_color: e.target.value,
+                                background_type: "solid",
                               })
                             }
-                            className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
-                          />
-                          <input
-                            type="text"
-                            value={brandingConfig.background_color}
-                            onChange={(e) =>
+                            className={`flex-1 px-4 py-2 rounded-lg border-2 font-medium transition-colors ${
+                              brandingConfig.background_type === "solid"
+                                ? "border-purple-600 bg-purple-50 text-purple-700"
+                                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                            }`}
+                          >
+                            Solid Color
+                          </button>
+                          <button
+                            onClick={() =>
                               setBrandingConfig({
                                 ...brandingConfig,
-                                background_color: e.target.value,
+                                background_type: "gradient",
                               })
                             }
-                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          />
+                            className={`flex-1 px-4 py-2 rounded-lg border-2 font-medium transition-colors ${
+                              brandingConfig.background_type === "gradient"
+                                ? "border-purple-600 bg-purple-50 text-purple-700"
+                                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                            }`}
+                          >
+                            Gradient
+                          </button>
                         </div>
+
+                        {brandingConfig.background_type === "solid" ? (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-2">
+                              Background Color
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="color"
+                                value={brandingConfig.background_color}
+                                onChange={(e) =>
+                                  setBrandingConfig({
+                                    ...brandingConfig,
+                                    background_color: e.target.value,
+                                  })
+                                }
+                                className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
+                              />
+                              <input
+                                type="text"
+                                value={brandingConfig.background_color}
+                                onChange={(e) =>
+                                  setBrandingConfig({
+                                    ...brandingConfig,
+                                    background_color: e.target.value,
+                                  })
+                                }
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {/* Gradient Color 1 */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-2">
+                                Gradient Color 1
+                              </label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={brandingConfig.gradient_color_1}
+                                  onChange={(e) =>
+                                    setBrandingConfig({
+                                      ...brandingConfig,
+                                      gradient_color_1: e.target.value,
+                                    })
+                                  }
+                                  className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
+                                />
+                                <input
+                                  type="text"
+                                  value={brandingConfig.gradient_color_1}
+                                  onChange={(e) =>
+                                    setBrandingConfig({
+                                      ...brandingConfig,
+                                      gradient_color_1: e.target.value,
+                                    })
+                                  }
+                                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Gradient Color 2 */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-2">
+                                Gradient Color 2
+                              </label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={brandingConfig.gradient_color_2}
+                                  onChange={(e) =>
+                                    setBrandingConfig({
+                                      ...brandingConfig,
+                                      gradient_color_2: e.target.value,
+                                    })
+                                  }
+                                  className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
+                                />
+                                <input
+                                  type="text"
+                                  value={brandingConfig.gradient_color_2}
+                                  onChange={(e) =>
+                                    setBrandingConfig({
+                                      ...brandingConfig,
+                                      gradient_color_2: e.target.value,
+                                    })
+                                  }
+                                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Gradient Direction */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-2">
+                                Direction: {brandingConfig.gradient_angle}°
+                              </label>
+                              <div className="flex items-center gap-3">
+                                <div className="relative w-16 h-16 rounded-full border-2 border-gray-300 bg-gray-50 flex-shrink-0">
+                                  <div
+                                    className="absolute top-1/2 left-1/2 w-1 h-6 bg-purple-600 rounded-full origin-bottom"
+                                    style={{
+                                      transform: `translate(-50%, -100%) rotate(${brandingConfig.gradient_angle}deg)`,
+                                    }}
+                                  />
+                                  <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-purple-600 rounded-full -translate-x-1/2 -translate-y-1/2" />
+                                </div>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="360"
+                                  value={brandingConfig.gradient_angle}
+                                  onChange={(e) =>
+                                    setBrandingConfig({
+                                      ...brandingConfig,
+                                      gradient_angle: parseInt(e.target.value),
+                                    })
+                                  }
+                                  className="flex-1"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Gradient Spread */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-2">
+                                Color Spread: {brandingConfig.gradient_spread}%
+                              </label>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={brandingConfig.gradient_spread}
+                                onChange={(e) =>
+                                  setBrandingConfig({
+                                    ...brandingConfig,
+                                    gradient_spread: parseInt(e.target.value),
+                                  })
+                                }
+                                className="w-full"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                Adjusts where colors transition
+                              </p>
+                            </div>
+
+                            {/* Gradient Preview */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-2">
+                                Preview
+                              </label>
+                              <div
+                                className="w-full h-24 rounded-lg border border-gray-300"
+                                style={{
+                                  background: `linear-gradient(${brandingConfig.gradient_angle}deg, ${brandingConfig.gradient_color_1} 0%, ${brandingConfig.gradient_color_2} ${brandingConfig.gradient_spread}%, ${brandingConfig.gradient_color_2} 100%)`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* App Logo */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          App Logo
+                        </label>
+                        <p className="text-xs text-gray-500 mb-3">
+                          Upload a logo to replace the app title text in the
+                          header
+                        </p>
+
+                        {brandingConfig.app_logo_url && (
+                          <div className="mb-3 flex items-center gap-3">
+                            <img
+                              src={brandingConfig.app_logo_url}
+                              alt="App Logo"
+                              className="h-12 w-auto object-contain bg-gray-50 rounded-lg p-1 border border-gray-200"
+                            />
+                            <button
+                              onClick={() =>
+                                setBrandingConfig({
+                                  ...brandingConfig,
+                                  app_logo_url: null,
+                                })
+                              }
+                              className="text-sm text-red-600 hover:text-red-700"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        )}
+
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+
+                            setUploadingAppLogo(true);
+                            const formData = new FormData();
+                            formData.append("file", file);
+                            formData.append("bucket", "public");
+
+                            try {
+                              const res = await fetch("/api/upload", {
+                                method: "POST",
+                                body: formData,
+                              });
+                              const data = await res.json();
+
+                              if (res.ok) {
+                                setBrandingConfig({
+                                  ...brandingConfig,
+                                  app_logo_url: data.url,
+                                });
+                              } else {
+                                alert("Failed to upload logo");
+                              }
+                            } catch (error) {
+                              console.error("Upload error:", error);
+                              alert("Failed to upload logo");
+                            } finally {
+                              setUploadingAppLogo(false);
+                            }
+                          }}
+                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
+                          disabled={uploadingAppLogo}
+                        />
+                        {uploadingAppLogo && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            Uploading...
+                          </p>
+                        )}
                       </div>
 
                       {/* Save Button */}
@@ -1856,68 +2129,252 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               </div>
                             </div>
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Audio File{" "}
+                              <label className="block text-xs font-medium text-gray-700 mb-2">
+                                Audio Library{" "}
                                 <span className="text-gray-400 font-normal">
-                                  (Optional)
+                                  (Up to 30 files • Daily rotation)
                                 </span>
                               </label>
-                              {focusConfig.task_1.audio_url ? (
-                                <div className="space-y-2">
-                                  <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                    <span className="text-green-600">🎵</span>
-                                    <span className="text-xs text-green-700 flex-1">
-                                      Audio file uploaded
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={handleRemoveAudio}
-                                      className="text-red-600 hover:text-red-700 text-xs font-medium"
+                              <p className="text-xs text-gray-500 mb-3">
+                                Upload multiple audio files. Each day uses the
+                                next audio in sequence.
+                              </p>
+
+                              <div className="space-y-2 max-h-96 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                                {audioLibrary
+                                  .filter((a) => a.audio_url)
+                                  .map((audio, index) => {
+                                    // Find the actual index in the full library
+                                    const actualIndex = audioLibrary.findIndex(
+                                      (a) => a.id === audio.id
+                                    );
+                                    return (
+                                      <div
+                                        key={audio.id}
+                                        className={`p-3 rounded-lg border-2 ${
+                                          actualIndex === currentDayIndex
+                                            ? "border-purple-500 bg-purple-50"
+                                            : "border-gray-200 bg-white"
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <span className="text-xs font-medium text-gray-500 min-w-[60px]">
+                                            Day {index + 1}
+                                          </span>
+                                          {actualIndex === currentDayIndex && (
+                                            <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full font-medium">
+                                              Today
+                                            </span>
+                                          )}
+                                          {audio.name && (
+                                            <span className="text-xs text-gray-600 flex-1 truncate">
+                                              {audio.name}
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        <div className="space-y-2">
+                                          <audio
+                                            controls
+                                            src={audio.audio_url}
+                                            className="w-full"
+                                            style={{ height: "32px" }}
+                                          />
+                                          <div className="flex gap-2">
+                                            {actualIndex !==
+                                              currentDayIndex && (
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  setCurrentDayIndex(
+                                                    actualIndex
+                                                  )
+                                                }
+                                                className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                                              >
+                                                Set as Today
+                                              </button>
+                                            )}
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const newLibrary =
+                                                  audioLibrary.filter(
+                                                    (_, i) => i !== actualIndex
+                                                  );
+                                                // Re-index the library
+                                                const reindexed =
+                                                  newLibrary.map((a, i) => ({
+                                                    ...a,
+                                                    id: i,
+                                                  }));
+                                                setAudioLibrary(reindexed);
+                                                // Adjust currentDayIndex if needed
+                                                if (
+                                                  actualIndex ===
+                                                  currentDayIndex
+                                                ) {
+                                                  setCurrentDayIndex(0);
+                                                } else if (
+                                                  actualIndex < currentDayIndex
+                                                ) {
+                                                  setCurrentDayIndex(
+                                                    currentDayIndex - 1
+                                                  );
+                                                }
+                                              }}
+                                              className="text-xs text-red-600 hover:text-red-700 font-medium ml-auto"
+                                            >
+                                              Remove
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+
+                                {/* Add Day Button */}
+                                {audioLibrary.filter((a) => a.audio_url)
+                                  .length < 30 && (
+                                  <div>
+                                    <input
+                                      type="file"
+                                      id="audio-upload-new"
+                                      accept="audio/mpeg,audio/wav,audio/mp3,audio/mp4,audio/x-m4a"
+                                      onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+
+                                        // Validate file type
+                                        const validTypes = [
+                                          "audio/mpeg",
+                                          "audio/wav",
+                                          "audio/mp3",
+                                          "audio/mp4",
+                                          "audio/x-m4a",
+                                        ];
+                                        if (!validTypes.includes(file.type)) {
+                                          setToastMessage(
+                                            "❌ Please upload a valid audio file (MP3, WAV, M4A)"
+                                          );
+                                          setShowToast(true);
+                                          setTimeout(
+                                            () => setShowToast(false),
+                                            3000
+                                          );
+                                          return;
+                                        }
+
+                                        // Validate file size (50MB)
+                                        if (file.size > 50 * 1024 * 1024) {
+                                          setToastMessage(
+                                            "❌ File size must be less than 50MB"
+                                          );
+                                          setShowToast(true);
+                                          setTimeout(
+                                            () => setShowToast(false),
+                                            3000
+                                          );
+                                          return;
+                                        }
+
+                                        setUploadingAudio(true);
+                                        try {
+                                          const formData = new FormData();
+                                          formData.append("file", file);
+                                          formData.append("type", "audio");
+
+                                          const res = await fetch(
+                                            "/api/upload",
+                                            {
+                                              method: "POST",
+                                              body: formData,
+                                            }
+                                          );
+
+                                          const data = await res.json();
+
+                                          if (res.ok && data.url) {
+                                            const newAudio = {
+                                              id: audioLibrary.length,
+                                              audio_url: data.url,
+                                              audio_path: data.path,
+                                              name: file.name,
+                                            };
+                                            setAudioLibrary([
+                                              ...audioLibrary,
+                                              newAudio,
+                                            ]);
+                                            setToastMessage(
+                                              "✅ Audio uploaded! Remember to save your configuration."
+                                            );
+                                            setShowToast(true);
+                                            setTimeout(
+                                              () => setShowToast(false),
+                                              3000
+                                            );
+                                          } else {
+                                            setToastMessage(
+                                              "❌ " +
+                                                (data.error ||
+                                                  "Failed to upload audio")
+                                            );
+                                            setShowToast(true);
+                                            setTimeout(
+                                              () => setShowToast(false),
+                                              3000
+                                            );
+                                          }
+                                        } catch (error) {
+                                          console.error("Upload error:", error);
+                                          setToastMessage(
+                                            "❌ Failed to upload audio"
+                                          );
+                                          setShowToast(true);
+                                          setTimeout(
+                                            () => setShowToast(false),
+                                            3000
+                                          );
+                                        } finally {
+                                          setUploadingAudio(false);
+                                          // Reset file input
+                                          e.target.value = "";
+                                        }
+                                      }}
+                                      className="hidden"
+                                    />
+                                    <label
+                                      htmlFor="audio-upload-new"
+                                      className={`flex items-center justify-center gap-2 w-full px-3 py-2 border-2 border-dashed border-gray-300 rounded-lg text-xs text-gray-600 hover:border-purple-400 hover:text-purple-600 cursor-pointer transition-colors ${
+                                        uploadingAudio
+                                          ? "opacity-50 cursor-not-allowed"
+                                          : ""
+                                      }`}
                                     >
-                                      Remove
-                                    </button>
+                                      {uploadingAudio ? (
+                                        <>
+                                          <span className="animate-spin">
+                                            ⏳
+                                          </span>
+                                          Uploading...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <span>➕</span>
+                                          Add Day (
+                                          {audioLibrary.filter(
+                                            (a) => a.audio_url
+                                          ).length + 1}
+                                          /30)
+                                        </>
+                                      )}
+                                    </label>
                                   </div>
-                                  <audio
-                                    controls
-                                    src={focusConfig.task_1.audio_url}
-                                    className="w-full"
-                                    style={{ height: "40px" }}
-                                  />
-                                </div>
-                              ) : (
-                                <div>
-                                  <input
-                                    type="file"
-                                    id="audio-upload"
-                                    accept="audio/mpeg,audio/wav,audio/mp3,audio/mp4,audio/x-m4a"
-                                    onChange={handleAudioUpload}
-                                    className="hidden"
-                                  />
-                                  <label
-                                    htmlFor="audio-upload"
-                                    className={`flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:border-purple-400 hover:text-purple-600 cursor-pointer transition-colors ${
-                                      uploadingAudio
-                                        ? "opacity-50 cursor-not-allowed"
-                                        : ""
-                                    }`}
-                                  >
-                                    {uploadingAudio ? (
-                                      <>
-                                        <span className="animate-spin">⏳</span>
-                                        Uploading...
-                                      </>
-                                    ) : (
-                                      <>
-                                        <span>🎵</span>
-                                        Upload Audio File
-                                      </>
-                                    )}
-                                  </label>
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    MP3, WAV, or M4A • Max 50MB
-                                  </p>
-                                </div>
-                              )}
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-500 mt-2">
+                                MP3, WAV, or M4A • Max 50MB per file
+                              </p>
                             </div>
                           </div>
                         </details>
@@ -2139,7 +2596,13 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           onClick={() =>
                             handleSaveConfig(
                               "focus_tab",
-                              focusConfig,
+                              {
+                                ...focusConfig,
+                                audio_library: audioLibrary.filter(
+                                  (a) => a.audio_url
+                                ),
+                                current_day_index: currentDayIndex,
+                              },
                               "✅ Focus tab config saved successfully!"
                             )
                           }

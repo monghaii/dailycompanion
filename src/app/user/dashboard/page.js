@@ -3,7 +3,14 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
-import { Compass, Sun, MessageCircle, Menu } from "lucide-react";
+import {
+  Compass,
+  Sun,
+  MessageCircle,
+  Menu,
+  Star,
+  Calendar,
+} from "lucide-react";
 
 export default function UserDashboard() {
   const router = useRouter();
@@ -36,20 +43,34 @@ export default function UserDashboard() {
   const [selectedEmotions, setSelectedEmotions] = useState([]);
   const [emotionalEntries, setEmotionalEntries] = useState([]);
   const [mindfulnessEntries, setMindfulnessEntries] = useState([]);
+  const [isLoadingAwareness, setIsLoadingAwareness] = useState(false);
   const [showSuggestedPractice, setShowSuggestedPractice] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [chatMessage, setChatMessage] = useState("");
   const [showCoachProfile, setShowCoachProfile] = useState(false);
-  const [chatMessages, setChatMessages] = useState([
-    {
-      role: "assistant",
-      content:
-        "Before we dive in - what's one thing you're grateful for right now?",
-    },
-  ]);
+  const [chatMessages, setChatMessages] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("chatMessages");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error("Failed to parse saved chat messages:", e);
+        }
+      }
+    }
+    return [
+      {
+        role: "assistant",
+        content:
+          "Before we dive in - what's one thing you're grateful for right now?",
+      },
+    ];
+  });
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [tokenWarning, setTokenWarning] = useState(null);
   const chatEndRef = useRef(null);
+  const lastMessageRef = useRef(null);
   const configFetched = useRef(false);
   const [moreSubpage, setMoreSubpage] = useState(() => {
     if (typeof window !== "undefined") {
@@ -111,6 +132,39 @@ export default function UserDashboard() {
     return date.toISOString().split("T")[0];
   };
 
+  // Get today's audio from the audio library
+  const getTodaysAudio = () => {
+    const audioLibrary = coachConfig?.focus_tab?.audio_library;
+    const currentDayIndex = coachConfig?.focus_tab?.current_day_index || 0;
+
+    if (!audioLibrary || !Array.isArray(audioLibrary)) {
+      // Fallback to old single audio format
+      return coachConfig?.focus_tab?.task_1?.audio_url || null;
+    }
+
+    // Filter out empty slots
+    const filledAudios = audioLibrary.filter(
+      (audio) => audio && audio.audio_url
+    );
+
+    if (filledAudios.length === 0) {
+      return null;
+    }
+
+    // Calculate which audio to play based on days since start
+    const daysSinceStart = Math.floor(
+      (new Date().getTime() -
+        new Date(
+          coachConfig?.focus_tab?.library_start_date || new Date()
+        ).getTime()) /
+        (1000 * 60 * 60 * 24)
+    );
+
+    // Use current_day_index as the starting point, then cycle through
+    const index = (currentDayIndex + daysSinceStart) % filledAudios.length;
+    return filledAudios[index]?.audio_url || null;
+  };
+
   useEffect(() => {
     fetchUser();
   }, []);
@@ -160,6 +214,13 @@ export default function UserDashboard() {
       localStorage.setItem("activeTab", activeTab);
     }
   }, [activeTab]);
+
+  // Persist chat messages to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("chatMessages", JSON.stringify(chatMessages));
+    }
+  }, [chatMessages]);
 
   // Scroll to suggested practice when it appears
   useEffect(() => {
@@ -288,6 +349,7 @@ export default function UserDashboard() {
   };
 
   const fetchAwarenessEntries = async (date) => {
+    setIsLoadingAwareness(true);
     try {
       const dateStr = date.toISOString().split("T")[0];
       const res = await fetch(`/api/daily-entries/date?date=${dateStr}`);
@@ -296,9 +358,16 @@ export default function UserDashboard() {
       if (res.ok && data.entry) {
         setEmotionalEntries(data.entry.log_2_entries || []);
         setMindfulnessEntries(data.entry.log_1_entries || []);
+      } else {
+        setEmotionalEntries([]);
+        setMindfulnessEntries([]);
       }
     } catch (error) {
       console.error("Failed to fetch awareness entries:", error);
+      setEmotionalEntries([]);
+      setMindfulnessEntries([]);
+    } finally {
+      setIsLoadingAwareness(false);
     }
   };
 
@@ -923,16 +992,22 @@ export default function UserDashboard() {
 
   const handleNewSession = () => {
     // Reset chat to initial state
-    setChatMessages([
+    const initialMessages = [
       {
         role: "assistant",
         content:
           "Before we dive in - what's one thing you're grateful for right now?",
       },
-    ]);
+    ];
+    setChatMessages(initialMessages);
     setChatMessage("");
     setTokenWarning(null);
     setShowCoachProfile(false);
+
+    // Clear from localStorage
+    if (typeof window !== "undefined") {
+      localStorage.setItem("chatMessages", JSON.stringify(initialMessages));
+    }
   };
 
   const handleSendChatMessage = async (e) => {
@@ -1008,7 +1083,11 @@ export default function UserDashboard() {
   };
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Scroll to the top of the last message
+    lastMessageRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   }, [chatMessages]);
 
   // Render markdown bold syntax
@@ -1138,24 +1217,50 @@ export default function UserDashboard() {
       {/* Header with gradient or custom color */}
       <div
         style={{
-          background:
-            coachConfig?.branding?.background_color ||
-            "linear-gradient(135deg, #ff6b9d 0%, #ffa057 50%, #ffd96a 100%)",
+          background: (() => {
+            const branding = coachConfig?.branding;
+            if (!branding) {
+              return "linear-gradient(135deg, #ff6b9d 0%, #ffa057 50%, #ffd96a 100%)";
+            }
+
+            if (branding.background_type === "gradient") {
+              const color1 = branding.gradient_color_1 || "#ff6b9d";
+              const color2 = branding.gradient_color_2 || "#ffa057";
+              const angle = branding.gradient_angle || 135;
+              const spread = branding.gradient_spread || 50;
+              return `linear-gradient(${angle}deg, ${color1} 0%, ${color2} ${spread}%, ${color2} 100%)`;
+            }
+
+            return branding.background_color || "#f9fafb";
+          })(),
           padding: "32px 24px 48px",
           textAlign: "center",
         }}
       >
-        <h1
-          style={{
-            fontSize: "36px",
-            fontWeight: 700,
-            color: "#1a1a1a",
-            marginBottom: "8px",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          {coachConfig?.header?.title || "BrainPeace"}
-        </h1>
+        {coachConfig?.branding?.app_logo_url ? (
+          <img
+            src={coachConfig.branding.app_logo_url}
+            alt="App Logo"
+            style={{
+              height: "48px",
+              maxWidth: "200px",
+              objectFit: "contain",
+              margin: "0 auto 8px",
+            }}
+          />
+        ) : (
+          <h1
+            style={{
+              fontSize: "36px",
+              fontWeight: 700,
+              color: "#1a1a1a",
+              marginBottom: "8px",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {coachConfig?.header?.title || "BrainPeace"}
+          </h1>
+        )}
         <p
           style={{
             fontSize: "16px",
@@ -1267,11 +1372,10 @@ export default function UserDashboard() {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: "28px",
                       flexShrink: 0,
                     }}
                   >
-                    ☀️
+                    <Sun size={28} color="#f59e0b" strokeWidth={2} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <div
@@ -1292,7 +1396,12 @@ export default function UserDashboard() {
                         {coachConfig?.focus_tab?.task_1?.title ||
                           "Morning Practice"}
                       </h3>
-                      <span style={{ fontSize: "20px" }}>⭐</span>
+                      <Star
+                        size={20}
+                        fill="#f59e0b"
+                        color="#f59e0b"
+                        strokeWidth={2}
+                      />
                     </div>
                     <p style={{ fontSize: "14px", color: "#6b7280" }}>
                       {coachConfig?.focus_tab?.task_1?.subtitle ||
@@ -1314,7 +1423,7 @@ export default function UserDashboard() {
                     }}
                   />
                 </div>
-                {coachConfig?.focus_tab?.task_1?.audio_url && (
+                {getTodaysAudio() && (
                   <div
                     style={{
                       marginTop: "12px",
@@ -1322,7 +1431,7 @@ export default function UserDashboard() {
                   >
                     <audio
                       ref={audioRef}
-                      src={coachConfig.focus_tab.task_1.audio_url}
+                      src={getTodaysAudio()}
                       onTimeUpdate={handleTimeUpdate}
                       onLoadedMetadata={handleLoadedMetadata}
                       onEnded={handleAudioEnded}
@@ -1439,11 +1548,18 @@ export default function UserDashboard() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: "28px",
                     flexShrink: 0,
                   }}
                 >
-                  🔔
+                  <svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 20 20"
+                    fill="#a855f7"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
+                  </svg>
                 </div>
                 <div style={{ flex: 1 }}>
                   <h3
@@ -1501,11 +1617,18 @@ export default function UserDashboard() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: "28px",
                     flexShrink: 0,
                   }}
                 >
-                  🌙
+                  <svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 20 20"
+                    fill="#6366f1"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                  </svg>
                 </div>
                 <div style={{ flex: 1 }}>
                   <h3
@@ -1562,15 +1685,28 @@ export default function UserDashboard() {
                   style={{
                     width: "48px",
                     height: "48px",
-                    backgroundColor: "#d1fae5",
+                    backgroundColor: "#10b981",
                     borderRadius: "12px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: "24px",
                   }}
                 >
-                  📝
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#ffffff"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    ></path>
+                  </svg>
                 </div>
                 <div>
                   <h3
@@ -1778,472 +1914,668 @@ export default function UserDashboard() {
                 >
                   Log
                 </h2>
-                <span style={{ fontSize: "16px", color: "#9ca3af" }}>
-                  {mindfulnessEntries.length + emotionalEntries.length} entries
-                </span>
+                {!isLoadingAwareness && (
+                  <span style={{ fontSize: "16px", color: "#9ca3af" }}>
+                    {mindfulnessEntries.length + emotionalEntries.length}{" "}
+                    entries
+                  </span>
+                )}
               </div>
 
-              {/* MINDFULNESS Section */}
-              <div style={{ marginBottom: "32px" }}>
-                <h3
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: 700,
-                    color: "#7c3aed",
-                    letterSpacing: "0.05em",
-                    marginBottom: "16px",
-                  }}
-                >
-                  MINDFULNESS
-                </h3>
+              {isLoadingAwareness ? (
+                // Skeleton Loader
+                <>
+                  {/* MINDFULNESS Section Skeleton */}
+                  <div style={{ marginBottom: "32px" }}>
+                    <div
+                      style={{
+                        width: "120px",
+                        height: "14px",
+                        backgroundColor: "#e5e7eb",
+                        borderRadius: "4px",
+                        marginBottom: "16px",
+                        animation: "pulse 1.5s ease-in-out infinite",
+                      }}
+                    />
+                    {[1, 2, 3].map((i) => (
+                      <div
+                        key={`mind-skeleton-${i}`}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "16px 0",
+                          borderBottom: "1px solid #f3f4f6",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "12px",
+                              height: "12px",
+                              borderRadius: "50%",
+                              backgroundColor: "#e5e7eb",
+                              animation: "pulse 1.5s ease-in-out infinite",
+                            }}
+                          />
+                          <div
+                            style={{
+                              width: "140px",
+                              height: "16px",
+                              backgroundColor: "#e5e7eb",
+                              borderRadius: "4px",
+                              animation: "pulse 1.5s ease-in-out infinite",
+                            }}
+                          />
+                        </div>
+                        <div
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "4px",
+                            backgroundColor: "#e5e7eb",
+                            animation: "pulse 1.5s ease-in-out infinite",
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
 
-                {mindfulnessItems.map((item) => (
-                  <div
-                    key={item.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "16px 0",
-                      borderBottom: "1px solid #f3f4f6",
-                    }}
-                  >
+                  {/* EMOTIONAL STATE Section Skeleton */}
+                  <div>
+                    <div
+                      style={{
+                        width: "160px",
+                        height: "14px",
+                        backgroundColor: "#e5e7eb",
+                        borderRadius: "4px",
+                        marginBottom: "16px",
+                        animation: "pulse 1.5s ease-in-out infinite",
+                      }}
+                    />
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "12px",
+                        justifyContent: "space-between",
+                        padding: "16px 0",
                       }}
                     >
                       <div
                         style={{
-                          width: "12px",
-                          height: "12px",
-                          borderRadius: "50%",
-                          backgroundColor: item.color,
+                          width: "180px",
+                          height: "16px",
+                          backgroundColor: "#e5e7eb",
+                          borderRadius: "4px",
+                          animation: "pulse 1.5s ease-in-out infinite",
                         }}
                       />
+                      <div
+                        style={{
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "4px",
+                          backgroundColor: "#e5e7eb",
+                          animation: "pulse 1.5s ease-in-out infinite",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Entries Skeleton */}
+                  <div style={{ marginTop: "24px" }}>
+                    <div
+                      style={{
+                        width: "180px",
+                        height: "14px",
+                        backgroundColor: "#e5e7eb",
+                        borderRadius: "4px",
+                        marginBottom: "16px",
+                        animation: "pulse 1.5s ease-in-out infinite",
+                      }}
+                    />
+                    {[1, 2].map((i) => (
+                      <div
+                        key={`entry-skeleton-${i}`}
+                        style={{
+                          backgroundColor: "#fff",
+                          padding: "16px",
+                          borderRadius: "12px",
+                          marginBottom: "12px",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "100px",
+                              height: "14px",
+                              backgroundColor: "#e5e7eb",
+                              borderRadius: "4px",
+                              animation: "pulse 1.5s ease-in-out infinite",
+                            }}
+                          />
+                          <div
+                            style={{
+                              width: "60px",
+                              height: "14px",
+                              backgroundColor: "#e5e7eb",
+                              borderRadius: "4px",
+                              animation: "pulse 1.5s ease-in-out infinite",
+                            }}
+                          />
+                        </div>
+                        <div
+                          style={{
+                            width: "100%",
+                            height: "40px",
+                            backgroundColor: "#e5e7eb",
+                            borderRadius: "4px",
+                            animation: "pulse 1.5s ease-in-out infinite",
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <style jsx>{`
+                    @keyframes pulse {
+                      0%,
+                      100% {
+                        opacity: 1;
+                      }
+                      50% {
+                        opacity: 0.5;
+                      }
+                    }
+                  `}</style>
+                </>
+              ) : (
+                <>
+                  {/* MINDFULNESS Section */}
+                  <div style={{ marginBottom: "32px" }}>
+                    <h3
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 700,
+                        color: "#7c3aed",
+                        letterSpacing: "0.05em",
+                        marginBottom: "16px",
+                      }}
+                    >
+                      MINDFULNESS
+                    </h3>
+
+                    {mindfulnessItems.map((item) => (
+                      <div
+                        key={item.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "16px 0",
+                          borderBottom: "1px solid #f3f4f6",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "12px",
+                              height: "12px",
+                              borderRadius: "50%",
+                              backgroundColor: item.color,
+                            }}
+                          />
+                          <span
+                            style={{
+                              fontSize: "16px",
+                              color: "#1a1a1a",
+                            }}
+                          >
+                            {item.label}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleMindfulnessClick(item)}
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "4px",
+                            border: "none",
+                            backgroundColor: "transparent",
+                            color: "#60a5fa",
+                            fontSize: "24px",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* EMOTIONAL STATE Section */}
+                  <div>
+                    <h3
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 700,
+                        color: "#7c3aed",
+                        letterSpacing: "0.05em",
+                        marginBottom: "16px",
+                      }}
+                    >
+                      {(
+                        coachConfig?.emotional_state_tab?.log_label ||
+                        "EMOTIONAL STATE"
+                      ).toUpperCase()}
+                    </h3>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "16px 0",
+                      }}
+                    >
                       <span
                         style={{
                           fontSize: "16px",
                           color: "#1a1a1a",
                         }}
                       >
-                        {item.label}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => handleMindfulnessClick(item)}
-                      style={{
-                        width: "32px",
-                        height: "32px",
-                        borderRadius: "4px",
-                        border: "none",
-                        backgroundColor: "transparent",
-                        color: "#60a5fa",
-                        fontSize: "24px",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      +
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* EMOTIONAL STATE Section */}
-              <div>
-                <h3
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: 700,
-                    color: "#7c3aed",
-                    letterSpacing: "0.05em",
-                    marginBottom: "16px",
-                  }}
-                >
-                  {(
-                    coachConfig?.emotional_state_tab?.log_label ||
-                    "EMOTIONAL STATE"
-                  ).toUpperCase()}
-                </h3>
-
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "16px 0",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: "16px",
-                      color: "#1a1a1a",
-                    }}
-                  >
-                    Log{" "}
-                    {coachConfig?.emotional_state_tab?.log_label?.toLowerCase() ||
-                      "emotional state"}
-                  </span>
-                  <button
-                    onClick={() => setShowEmotionalModal(true)}
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "4px",
-                      border: "none",
-                      backgroundColor: "transparent",
-                      color: "#60a5fa",
-                      fontSize: "24px",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              {(emotionalEntries.length > 0 ||
-                mindfulnessEntries.length > 0) && (
-                <div style={{ marginTop: "24px" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    <h3
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: 700,
-                        color: "#6b7280",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      ENTRIES FOR THIS DAY
-                    </h3>
-                  </div>
-
-                  {/* Mindfulness Entries */}
-                  {mindfulnessEntries.map((entry) => (
-                    <div
-                      key={entry.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "12px 0",
-                        borderBottom: "1px solid #f3f4f6",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          flex: 1,
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "8px",
-                            height: "8px",
-                            borderRadius: "50%",
-                            backgroundColor: "#60a5fa",
-                          }}
-                        />
-                        <span style={{ fontSize: "16px", color: "#1a1a1a" }}>
-                          {entry.label}
-                        </span>
-                      </div>
-                      <span
-                        style={{
-                          fontSize: "14px",
-                          color: "#9ca3af",
-                          marginRight: "12px",
-                        }}
-                      >
-                        {entry.time}
+                        Log{" "}
+                        {coachConfig?.emotional_state_tab?.log_label?.toLowerCase() ||
+                          "emotional state"}
                       </span>
                       <button
-                        onClick={() =>
-                          handleDeleteEntry(entry.id, "mindfulness")
-                        }
+                        onClick={() => setShowEmotionalModal(true)}
                         style={{
-                          background: "none",
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "4px",
                           border: "none",
-                          color:
-                            coachConfig?.branding?.primary_color || "#ef4444",
-                          fontSize: "18px",
-                          cursor: "pointer",
-                          padding: "0 4px",
-                        }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-
-                  {/* Emotional Entries */}
-                  {emotionalEntries.map((entry) => (
-                    <div
-                      key={entry.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "12px 0",
-                        borderBottom: "1px solid #f3f4f6",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          flex: 1,
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "8px",
-                            height: "8px",
-                            borderRadius: "50%",
-                            backgroundColor: "#a855f7",
-                          }}
-                        />
-                        <span style={{ fontSize: "16px", color: "#1a1a1a" }}>
-                          Feeling{" "}
-                          {Array.isArray(entry.emotions)
-                            ? entry.emotions
-                                .map((e) => {
-                                  // Handle both string format and object format
-                                  if (typeof e === "string") {
-                                    return e.split("-")[1] || e;
-                                  } else if (
-                                    typeof e === "object" &&
-                                    e !== null
-                                  ) {
-                                    // If it's an object, try to extract the label
-                                    return e.label || e.emotion || "";
-                                  }
-                                  return "";
-                                })
-                                .filter((e) => e !== "")
-                                .join(", ")
-                                .toLowerCase()
-                            : ""}
-                        </span>
-                      </div>
-                      <span
-                        style={{
-                          fontSize: "14px",
-                          color: "#9ca3af",
-                          marginRight: "12px",
-                        }}
-                      >
-                        {entry.time}
-                      </span>
-                      <button
-                        onClick={() => handleDeleteEntry(entry.id, "emotional")}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          color:
-                            coachConfig?.branding?.primary_color || "#ef4444",
-                          fontSize: "18px",
-                          cursor: "pointer",
-                          padding: "0 4px",
-                        }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Suggested Practice */}
-              {showSuggestedPractice && selectedPractice && (
-                <div
-                  ref={suggestedPracticeRef}
-                  style={{
-                    backgroundColor: "#eff6ff",
-                    padding: "20px",
-                    borderRadius: "12px",
-                    marginTop: "24px",
-                    position: "relative",
-                  }}
-                >
-                  <button
-                    onClick={() => {
-                      setShowSuggestedPractice(false);
-                      setSelectedPractice(null);
-                      setShowPracticeControls(false);
-                      setIsPracticePlaying(false);
-                      if (practiceAudioRef.current) {
-                        practiceAudioRef.current.pause();
-                        practiceAudioRef.current.currentTime = 0;
-                      }
-                    }}
-                    style={{
-                      position: "absolute",
-                      top: "16px",
-                      right: "16px",
-                      background: "none",
-                      border: "none",
-                      fontSize: "20px",
-                      color: "#6b7280",
-                      cursor: "pointer",
-                    }}
-                  >
-                    ×
-                  </button>
-                  <h3
-                    style={{
-                      fontSize: "18px",
-                      fontWeight: 700,
-                      color: "#1a1a1a",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Suggested Practice
-                  </h3>
-                  <p
-                    style={{
-                      fontSize: "14px",
-                      color: "#6b7280",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    For when feeling {selectedPractice.name?.toLowerCase()}
-                  </p>
-                  <div
-                    style={{
-                      backgroundColor: "#fff",
-                      padding: "16px",
-                      borderRadius: "8px",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    <h4
-                      style={{
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        color: "#1a1a1a",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      {selectedPractice.practice_name || "Mindfulness Practice"}
-                    </h4>
-                    <p style={{ fontSize: "14px", color: "#3b82f6" }}>
-                      {selectedPractice.duration || ""}
-                    </p>
-                  </div>
-
-                  {selectedPractice.audio_url && (
-                    <div>
-                      <audio
-                        ref={practiceAudioRef}
-                        src={selectedPractice.audio_url}
-                        onTimeUpdate={handlePracticeTimeUpdate}
-                        onLoadedMetadata={handlePracticeLoadedMetadata}
-                        onEnded={handlePracticeAudioEnded}
-                        style={{ display: "none" }}
-                      />
-
-                      {/* Play/Pause Button */}
-                      <button
-                        onClick={togglePracticePlayPause}
-                        style={{
-                          width: "100%",
-                          padding: "16px",
-                          backgroundColor: "#3b82f6",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: "8px",
-                          fontSize: "18px",
-                          fontWeight: 600,
+                          backgroundColor: "transparent",
+                          color: "#60a5fa",
+                          fontSize: "24px",
                           cursor: "pointer",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          gap: "10px",
-                          marginBottom: showPracticeControls ? "12px" : "0",
-                          transition: "background-color 0.2s",
-                          outline: "none",
                         }}
-                        onMouseEnter={(e) =>
-                          (e.target.style.backgroundColor = "#2563eb")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.target.style.backgroundColor = "#3b82f6")
-                        }
                       >
-                        <span style={{ fontSize: "20px" }}>
-                          {showPracticeControls
-                            ? isPracticePlaying
-                              ? "⏸"
-                              : "▶"
-                            : "▶"}
-                        </span>
-                        {showPracticeControls
-                          ? isPracticePlaying
-                            ? "Pause"
-                            : "Play"
-                          : "Start Practice"}
+                        +
                       </button>
+                    </div>
+                  </div>
 
-                      {/* Progress Bar - Only show after first click */}
-                      {showPracticeControls && (
-                        <>
-                          <div style={{ marginBottom: "8px" }}>
-                            <input
-                              type="range"
-                              min="0"
-                              max={practiceDuration || 0}
-                              value={practiceCurrentTime}
-                              onChange={handlePracticeSeek}
-                              style={{
-                                width: "100%",
-                                height: "6px",
-                                borderRadius: "3px",
-                                outline: "none",
-                                cursor: "pointer",
-                                accentColor: "#3b82f6",
-                              }}
-                            />
-                          </div>
+                  {(emotionalEntries.length > 0 ||
+                    mindfulnessEntries.length > 0) && (
+                    <div style={{ marginTop: "24px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: "16px",
+                        }}
+                      >
+                        <h3
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 700,
+                            color: "#6b7280",
+                            letterSpacing: "0.05em",
+                          }}
+                        >
+                          ENTRIES FOR THIS DAY
+                        </h3>
+                      </div>
 
-                          {/* Time Display */}
+                      {/* Mindfulness Entries */}
+                      {mindfulnessEntries.map((entry) => (
+                        <div
+                          key={entry.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "12px 0",
+                            borderBottom: "1px solid #f3f4f6",
+                          }}
+                        >
                           <div
                             style={{
                               display: "flex",
-                              justifyContent: "space-between",
-                              fontSize: "12px",
-                              color: "#6b7280",
+                              alignItems: "center",
+                              gap: "8px",
+                              flex: 1,
                             }}
                           >
-                            <span>{formatTime(practiceCurrentTime)}</span>
-                            <span>{formatTime(practiceDuration)}</span>
+                            <div
+                              style={{
+                                width: "8px",
+                                height: "8px",
+                                borderRadius: "50%",
+                                backgroundColor: "#60a5fa",
+                              }}
+                            />
+                            <span
+                              style={{ fontSize: "16px", color: "#1a1a1a" }}
+                            >
+                              {entry.label}
+                            </span>
                           </div>
-                        </>
+                          <span
+                            style={{
+                              fontSize: "14px",
+                              color: "#9ca3af",
+                              marginRight: "12px",
+                            }}
+                          >
+                            {entry.time}
+                          </span>
+                          <button
+                            onClick={() =>
+                              handleDeleteEntry(entry.id, "mindfulness")
+                            }
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color:
+                                coachConfig?.branding?.primary_color ||
+                                "#ef4444",
+                              fontSize: "18px",
+                              cursor: "pointer",
+                              padding: "0 4px",
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+
+                      {/* Emotional Entries */}
+                      {emotionalEntries.map((entry) => (
+                        <div
+                          key={entry.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "12px 0",
+                            borderBottom: "1px solid #f3f4f6",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              flex: 1,
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: "8px",
+                                height: "8px",
+                                borderRadius: "50%",
+                                backgroundColor: "#a855f7",
+                              }}
+                            />
+                            <span
+                              style={{ fontSize: "16px", color: "#1a1a1a" }}
+                            >
+                              Feeling{" "}
+                              {Array.isArray(entry.emotions)
+                                ? entry.emotions
+                                    .map((e) => {
+                                      // Handle both string format and object format
+                                      if (typeof e === "string") {
+                                        return e.split("-")[1] || e;
+                                      } else if (
+                                        typeof e === "object" &&
+                                        e !== null
+                                      ) {
+                                        // If it's an object, try to extract the label
+                                        return e.label || e.emotion || "";
+                                      }
+                                      return "";
+                                    })
+                                    .filter((e) => e !== "")
+                                    .join(", ")
+                                    .toLowerCase()
+                                : ""}
+                            </span>
+                          </div>
+                          <span
+                            style={{
+                              fontSize: "14px",
+                              color: "#9ca3af",
+                              marginRight: "12px",
+                            }}
+                          >
+                            {entry.time}
+                          </span>
+                          <button
+                            onClick={() =>
+                              handleDeleteEntry(entry.id, "emotional")
+                            }
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color:
+                                coachConfig?.branding?.primary_color ||
+                                "#ef4444",
+                              fontSize: "18px",
+                              cursor: "pointer",
+                              padding: "0 4px",
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Suggested Practice */}
+                  {showSuggestedPractice && selectedPractice && (
+                    <div
+                      ref={suggestedPracticeRef}
+                      style={{
+                        backgroundColor: "#eff6ff",
+                        padding: "20px",
+                        borderRadius: "12px",
+                        marginTop: "24px",
+                        position: "relative",
+                      }}
+                    >
+                      <button
+                        onClick={() => {
+                          setShowSuggestedPractice(false);
+                          setSelectedPractice(null);
+                          setShowPracticeControls(false);
+                          setIsPracticePlaying(false);
+                          if (practiceAudioRef.current) {
+                            practiceAudioRef.current.pause();
+                            practiceAudioRef.current.currentTime = 0;
+                          }
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: "16px",
+                          right: "16px",
+                          background: "none",
+                          border: "none",
+                          fontSize: "20px",
+                          color: "#6b7280",
+                          cursor: "pointer",
+                        }}
+                      >
+                        ×
+                      </button>
+                      <h3
+                        style={{
+                          fontSize: "18px",
+                          fontWeight: 700,
+                          color: "#1a1a1a",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        Suggested Practice
+                      </h3>
+                      <p
+                        style={{
+                          fontSize: "14px",
+                          color: "#6b7280",
+                          marginBottom: "16px",
+                        }}
+                      >
+                        For when feeling {selectedPractice.name?.toLowerCase()}
+                      </p>
+                      <div
+                        style={{
+                          backgroundColor: "#fff",
+                          padding: "16px",
+                          borderRadius: "8px",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        <h4
+                          style={{
+                            fontSize: "16px",
+                            fontWeight: 600,
+                            color: "#1a1a1a",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          {selectedPractice.practice_name ||
+                            "Mindfulness Practice"}
+                        </h4>
+                        <p style={{ fontSize: "14px", color: "#3b82f6" }}>
+                          {selectedPractice.duration || ""}
+                        </p>
+                      </div>
+
+                      {selectedPractice.audio_url && (
+                        <div>
+                          <audio
+                            ref={practiceAudioRef}
+                            src={selectedPractice.audio_url}
+                            onTimeUpdate={handlePracticeTimeUpdate}
+                            onLoadedMetadata={handlePracticeLoadedMetadata}
+                            onEnded={handlePracticeAudioEnded}
+                            style={{ display: "none" }}
+                          />
+
+                          {/* Play/Pause Button */}
+                          <button
+                            onClick={togglePracticePlayPause}
+                            style={{
+                              width: "100%",
+                              padding: "16px",
+                              backgroundColor: "#3b82f6",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "8px",
+                              fontSize: "18px",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "10px",
+                              marginBottom: showPracticeControls ? "12px" : "0",
+                              transition: "background-color 0.2s",
+                              outline: "none",
+                            }}
+                            onMouseEnter={(e) =>
+                              (e.target.style.backgroundColor = "#2563eb")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.target.style.backgroundColor = "#3b82f6")
+                            }
+                          >
+                            <span style={{ fontSize: "20px" }}>
+                              {showPracticeControls
+                                ? isPracticePlaying
+                                  ? "⏸"
+                                  : "▶"
+                                : "▶"}
+                            </span>
+                            {showPracticeControls
+                              ? isPracticePlaying
+                                ? "Pause"
+                                : "Play"
+                              : "Start Practice"}
+                          </button>
+
+                          {/* Progress Bar - Only show after first click */}
+                          {showPracticeControls && (
+                            <>
+                              <div style={{ marginBottom: "8px" }}>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max={practiceDuration || 0}
+                                  value={practiceCurrentTime}
+                                  onChange={handlePracticeSeek}
+                                  style={{
+                                    width: "100%",
+                                    height: "6px",
+                                    borderRadius: "3px",
+                                    outline: "none",
+                                    cursor: "pointer",
+                                    accentColor: "#3b82f6",
+                                  }}
+                                />
+                              </div>
+
+                              {/* Time Display */}
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  fontSize: "12px",
+                                  color: "#6b7280",
+                                }}
+                              >
+                                <span>{formatTime(practiceCurrentTime)}</span>
+                                <span>{formatTime(practiceDuration)}</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
-                </div>
-              )}
 
-              {/* Entries for this day */}
+                  {/* Entries for this day */}
+                </>
+              )}
             </div>
           </>
         )}
@@ -2266,123 +2598,162 @@ export default function UserDashboard() {
               {/* Gradient Section */}
               <div
                 style={{
-                  background:
-                    coachConfig?.branding?.background_color ||
-                    "linear-gradient(135deg, #ff6b9d 0%, #ffa057 50%, #ffd96a 100%)",
+                  background: (() => {
+                    const branding = coachConfig?.branding;
+                    if (!branding) {
+                      return "linear-gradient(135deg, #ff6b9d 0%, #ffa057 50%, #ffd96a 100%)";
+                    }
+
+                    if (branding.background_type === "gradient") {
+                      const color1 = branding.gradient_color_1 || "#ff6b9d";
+                      const color2 = branding.gradient_color_2 || "#ffa057";
+                      const angle = branding.gradient_angle || 135;
+                      const spread = branding.gradient_spread || 50;
+                      return `linear-gradient(${angle}deg, ${color1} 0%, ${color2} ${spread}%, ${color2} 100%)`;
+                    }
+
+                    return branding.background_color || "#f9fafb";
+                  })(),
                   padding: "32px 24px 48px",
                   textAlign: "center",
+                  display: "flex",
+                  justifyContent: "center",
                 }}
               >
-                <h1
-                  style={{
-                    fontSize: "36px",
-                    fontWeight: 700,
-                    color: "#1a1a1a",
-                    marginBottom: "8px",
-                    letterSpacing: "-0.02em",
-                    textAlign: "center",
-                  }}
-                >
-                  {coachConfig?.header?.title || "BrainPeace"}
-                </h1>
-                <p
-                  style={{
-                    fontSize: "16px",
-                    color: "#1a1a1a",
-                    opacity: 0.8,
-                    textAlign: "center",
-                    margin: 0,
-                  }}
-                >
-                  {coachConfig?.header?.subtitle ||
-                    "Mental Fitness for Active Minds"}
-                </p>
+                <div style={{ width: "100%", maxWidth: "600px" }}>
+                  {coachConfig?.branding?.app_logo_url ? (
+                    <img
+                      src={coachConfig.branding.app_logo_url}
+                      alt="App Logo"
+                      style={{
+                        height: "48px",
+                        maxWidth: "200px",
+                        objectFit: "contain",
+                        margin: "0 auto 8px",
+                      }}
+                    />
+                  ) : (
+                    <h1
+                      style={{
+                        fontSize: "36px",
+                        fontWeight: 700,
+                        color: "#1a1a1a",
+                        marginBottom: "8px",
+                        letterSpacing: "-0.02em",
+                        textAlign: "center",
+                      }}
+                    >
+                      {coachConfig?.header?.title || "BrainPeace"}
+                    </h1>
+                  )}
+                  <p
+                    style={{
+                      fontSize: "16px",
+                      color: "#1a1a1a",
+                      opacity: 0.8,
+                      textAlign: "center",
+                      margin: 0,
+                    }}
+                  >
+                    {coachConfig?.header?.subtitle ||
+                      "Mental Fitness for Active Minds"}
+                  </p>
+                </div>
               </div>
 
               {/* Control Bar - White Background */}
               <div
                 style={{
                   backgroundColor: "#fff",
-                  padding: "12px 24px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "16px",
                   borderBottom: "1px solid #e5e7eb",
+                  display: "flex",
+                  justifyContent: "center",
                 }}
               >
-                <button
-                  onClick={() => setShowCoachProfile(!showCoachProfile)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: coachConfig?.branding?.primary_color || "#ef4444",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    padding: 0,
-                  }}
-                >
-                  Coach Profile
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      display: "inline-block",
-                      transform: showCoachProfile
-                        ? "rotate(180deg)"
-                        : "rotate(0)",
-                      transition: "transform 0.2s",
-                    }}
-                  >
-                    ▼
-                  </span>
-                </button>
-
                 <div
                   style={{
+                    width: "100%",
+                    maxWidth: "600px",
+                    padding: "12px 24px",
                     display: "flex",
                     alignItems: "center",
-                    gap: "6px",
+                    justifyContent: "space-between",
+                    gap: "16px",
                   }}
                 >
-                  <div
+                  <button
+                    onClick={() => setShowCoachProfile(!showCoachProfile)}
                     style={{
-                      width: "10px",
-                      height: "10px",
-                      borderRadius: "50%",
-                      backgroundColor: "#10b981",
-                    }}
-                  />
-                  <span
-                    style={{
+                      background: "none",
+                      border: "none",
+                      color: coachConfig?.branding?.primary_color || "#ef4444",
                       fontSize: "14px",
-                      color: "#10b981",
-                      fontWeight: 500,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      padding: 0,
                     }}
                   >
-                    Fresh Session
-                  </span>
-                </div>
+                    Coach Profile
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        display: "inline-block",
+                        transform: showCoachProfile
+                          ? "rotate(180deg)"
+                          : "rotate(0)",
+                        transition: "transform 0.2s",
+                      }}
+                    >
+                      ▼
+                    </span>
+                  </button>
 
-                <button
-                  onClick={handleNewSession}
-                  style={{
-                    backgroundColor:
-                      coachConfig?.branding?.primary_color || "#ef4444",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "20px",
-                    padding: "8px 20px",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  New Session
-                </button>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "10px",
+                        height: "10px",
+                        borderRadius: "50%",
+                        backgroundColor: "#10b981",
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontSize: "14px",
+                        color: "#10b981",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Fresh Session
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={handleNewSession}
+                    style={{
+                      backgroundColor:
+                        coachConfig?.branding?.primary_color || "#ef4444",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "20px",
+                      padding: "8px 20px",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    New Session
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -2390,37 +2761,47 @@ export default function UserDashboard() {
             {tokenWarning && (
               <div
                 style={{
+                  display: "flex",
+                  justifyContent: "center",
                   backgroundColor:
                     tokenWarning.level === "high" ? "#fee2e2" : "#fef3c7",
                   border:
                     tokenWarning.level === "high"
                       ? "1px solid #fca5a5"
                       : "1px solid #fcd34d",
-                  color: tokenWarning.level === "high" ? "#991b1b" : "#92400e",
-                  padding: "12px 24px",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "12px",
                 }}
               >
-                <span>{tokenWarning.message}</span>
-                <button
-                  onClick={() => setTokenWarning(null)}
+                <div
                   style={{
-                    background: "none",
-                    border: "none",
-                    color: "inherit",
-                    fontSize: "18px",
-                    cursor: "pointer",
-                    padding: "0 4px",
-                    lineHeight: 1,
+                    width: "100%",
+                    maxWidth: "600px",
+                    color:
+                      tokenWarning.level === "high" ? "#991b1b" : "#92400e",
+                    padding: "12px 24px",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "12px",
                   }}
                 >
-                  ✕
-                </button>
+                  <span>{tokenWarning.message}</span>
+                  <button
+                    onClick={() => setTokenWarning(null)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "inherit",
+                      fontSize: "18px",
+                      cursor: "pointer",
+                      padding: "0 4px",
+                      lineHeight: 1,
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
             )}
 
@@ -2430,112 +2811,175 @@ export default function UserDashboard() {
                 flex: 1,
                 overflowY: "auto",
                 padding: "24px",
-                paddingBottom: "180px",
                 background: "linear-gradient(180deg, #fce7f3 0%, #e0e7ff 100%)",
+                display: "flex",
+                justifyContent: "center",
               }}
             >
-              {/* Coach Profile Dropdown */}
-              {showCoachProfile && (
-                <div
-                  style={{
-                    backgroundColor: "#fff",
-                    padding: "24px",
-                    borderRadius: "16px",
-                    marginBottom: "24px",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  }}
-                >
+              <div
+                style={{
+                  width: "100%",
+                  maxWidth: "600px",
+                }}
+              >
+                {/* Coach Profile Dropdown */}
+                {showCoachProfile && (
                   <div
                     style={{
-                      display: "flex",
-                      gap: "16px",
-                      marginBottom: "16px",
+                      backgroundColor: "#fff",
+                      padding: "24px",
+                      borderRadius: "16px",
+                      marginBottom: "24px",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                     }}
                   >
                     <div
                       style={{
-                        width: "100px",
-                        height: "100px",
-                        borderRadius: "16px",
-                        background:
-                          "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
                         display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#fff",
-                        fontSize: "36px",
-                        fontWeight: 700,
-                        flexShrink: 0,
+                        gap: "16px",
+                        marginBottom: "16px",
                       }}
                     >
-                      IJ
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <h3
+                      <div
                         style={{
-                          fontSize: "28px",
+                          width: "100px",
+                          height: "100px",
+                          borderRadius: "16px",
+                          background:
+                            "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#fff",
+                          fontSize: "36px",
                           fontWeight: 700,
-                          color: "#1a1a1a",
-                          marginBottom: "12px",
-                          marginTop: "0",
+                          flexShrink: 0,
                         }}
                       >
-                        Iv Jaeger
-                      </h3>
+                        IJ
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <h3
+                          style={{
+                            fontSize: "28px",
+                            fontWeight: 700,
+                            color: "#1a1a1a",
+                            marginBottom: "12px",
+                            marginTop: "0",
+                          }}
+                        >
+                          Iv Jaeger
+                        </h3>
+                        <p
+                          style={{
+                            fontSize: "16px",
+                            lineHeight: "1.5",
+                            color: "#4b5563",
+                            margin: 0,
+                          }}
+                        >
+                          Coach for female founders with ADHD in creative and
+                          professional services. Supports women through mental
+                          fitness practices and grounded daily habits. Certified
+                          yoga instructor and mental fitness coach who brings a
+                          calm, steady approach to navigating the demands of
+                          entrepreneurship.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        backgroundColor: "#fefce8",
+                        border: "2px solid #fbbf24",
+                        borderRadius: "12px",
+                        padding: "16px",
+                      }}
+                    >
                       <p
                         style={{
                           fontSize: "16px",
                           lineHeight: "1.5",
-                          color: "#4b5563",
+                          color: "#713f12",
                           margin: 0,
                         }}
                       >
-                        Coach for female founders with ADHD in creative and
-                        professional services. Supports women through mental
-                        fitness practices and grounded daily habits. Certified
-                        yoga instructor and mental fitness coach who brings a
-                        calm, steady approach to navigating the demands of
-                        entrepreneurship.
+                        <strong>Note:</strong> Responses are AI-generated and
+                        not directly from Iv Jaeger herself.
                       </p>
                     </div>
                   </div>
+                )}
 
+                {/* Chat Messages */}
+                {chatMessages.map((msg, idx) => (
                   <div
+                    key={idx}
+                    ref={
+                      idx === chatMessages.length - 1 ? lastMessageRef : null
+                    }
                     style={{
-                      backgroundColor: "#fefce8",
-                      border: "2px solid #fbbf24",
-                      borderRadius: "12px",
-                      padding: "16px",
+                      display: "flex",
+                      gap: "12px",
+                      marginBottom: "16px",
+                      justifyContent:
+                        msg.role === "user" ? "flex-end" : "flex-start",
                     }}
                   >
-                    <p
+                    {msg.role === "assistant" && (
+                      <div
+                        style={{
+                          width: "48px",
+                          height: "48px",
+                          borderRadius: "50%",
+                          background:
+                            "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#fff",
+                          fontSize: "20px",
+                          fontWeight: 700,
+                          flexShrink: 0,
+                        }}
+                      >
+                        IJ
+                      </div>
+                    )}
+                    <div
                       style={{
-                        fontSize: "16px",
-                        lineHeight: "1.5",
-                        color: "#713f12",
-                        margin: 0,
+                        backgroundColor:
+                          msg.role === "user"
+                            ? coachConfig?.branding?.primary_color || "#ef4444"
+                            : "#fff",
+                        color: msg.role === "user" ? "#fff" : "#1a1a1a",
+                        padding: "16px 20px",
+                        borderRadius: "20px",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                        maxWidth: "80%",
                       }}
                     >
-                      <strong>Note:</strong> Responses are AI-generated and not
-                      directly from Iv Jaeger herself.
-                    </p>
+                      <p
+                        style={{
+                          fontSize: "16px",
+                          lineHeight: "1.5",
+                          margin: 0,
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        {renderMessageContent(msg.content)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {/* Chat Messages */}
-              {chatMessages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    display: "flex",
-                    gap: "12px",
-                    marginBottom: "16px",
-                    justifyContent:
-                      msg.role === "user" ? "flex-end" : "flex-start",
-                  }}
-                >
-                  {msg.role === "assistant" && (
+                ))}
+                {isSendingChat && (
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "12px",
+                      marginBottom: "16px",
+                    }}
+                  >
                     <div
                       style={{
                         width: "48px",
@@ -2554,164 +2998,131 @@ export default function UserDashboard() {
                     >
                       IJ
                     </div>
-                  )}
-                  <div
-                    style={{
-                      backgroundColor:
-                        msg.role === "user"
-                          ? coachConfig?.branding?.primary_color || "#ef4444"
-                          : "#fff",
-                      color: msg.role === "user" ? "#fff" : "#1a1a1a",
-                      padding: "16px 20px",
-                      borderRadius: "20px",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                      maxWidth: "80%",
-                    }}
-                  >
-                    <p
+                    <div
                       style={{
-                        fontSize: "16px",
-                        lineHeight: "1.5",
-                        margin: 0,
-                        whiteSpace: "pre-wrap",
+                        backgroundColor: "#fff",
+                        padding: "16px 20px",
+                        borderRadius: "20px",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                       }}
                     >
-                      {renderMessageContent(msg.content)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              {isSendingChat && (
-                <div
-                  style={{ display: "flex", gap: "12px", marginBottom: "16px" }}
-                >
-                  <div
-                    style={{
-                      width: "48px",
-                      height: "48px",
-                      borderRadius: "50%",
-                      background:
-                        "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontSize: "20px",
-                      fontWeight: 700,
-                      flexShrink: 0,
-                    }}
-                  >
-                    IJ
-                  </div>
-                  <div
-                    style={{
-                      backgroundColor: "#fff",
-                      padding: "16px 20px",
-                      borderRadius: "20px",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontSize: "16px",
-                        lineHeight: "1.5",
-                        color: "#1a1a1a",
-                        margin: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                      }}
-                    >
-                      <span
+                      <p
                         style={{
-                          display: "inline-block",
-                          width: "16px",
-                          height: "16px",
-                          border: "2px solid #e5e7eb",
-                          borderTop: `2px solid ${
-                            coachConfig?.branding?.primary_color || "#ef4444"
-                          }`,
-                          borderRadius: "50%",
-                          animation: "spin 1s linear infinite",
+                          fontSize: "16px",
+                          lineHeight: "1.5",
+                          color: "#1a1a1a",
+                          margin: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
                         }}
-                      />
-                      Thinking...
-                    </p>
+                      >
+                        <span
+                          style={{
+                            display: "inline-block",
+                            width: "16px",
+                            height: "16px",
+                            border: "2px solid #e5e7eb",
+                            borderTop: `2px solid ${
+                              coachConfig?.branding?.primary_color || "#ef4444"
+                            }`,
+                            borderRadius: "50%",
+                            animation: "spin 1s linear infinite",
+                          }}
+                        />
+                        Thinking...
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
-              <div ref={chatEndRef} />
+                )}
+
+                {/* Spacer to allow scrolling past the input pill */}
+                <div style={{ height: "120px", width: "100%" }} />
+
+                <div ref={chatEndRef} />
+              </div>
             </div>
 
             {/* Input Area */}
-            <form
-              onSubmit={handleSendChatMessage}
+            <div
               style={{
                 position: "fixed",
                 bottom: "90px",
                 left: 0,
                 right: 0,
-                backgroundColor: "#fff",
-                padding: "16px 24px",
-                borderTop: "1px solid #e5e7eb",
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
                 zIndex: 40,
+                display: "flex",
+                justifyContent: "center",
+                padding: "0 24px 16px 24px",
               }}
             >
-              <input
-                type="text"
-                value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
-                placeholder="Type your response here..."
-                disabled={isSendingChat}
+              <form
+                onSubmit={handleSendChatMessage}
                 style={{
-                  flex: 1,
-                  padding: "14px 20px",
-                  fontSize: "16px",
-                  border: "1px solid #fecaca",
-                  borderRadius: "24px",
-                  outline: "none",
-                  color: "#1a1a1a",
-                }}
-              />
-              <button
-                type="submit"
-                disabled={isSendingChat || !chatMessage.trim()}
-                style={{
-                  width: "56px",
-                  height: "56px",
-                  borderRadius: "50%",
-                  backgroundColor:
-                    coachConfig?.branding?.primary_color || "#ef4444",
-                  border: "none",
+                  width: "100%",
+                  maxWidth: "600px",
+                  backgroundColor: "#fff",
+                  borderRadius: "32px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  padding: "8px 8px 8px 20px",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  cursor:
-                    isSendingChat || !chatMessage.trim()
-                      ? "not-allowed"
-                      : "pointer",
-                  flexShrink: 0,
-                  opacity: isSendingChat || !chatMessage.trim() ? 0.5 : 1,
+                  gap: "8px",
                 }}
               >
-                <svg
-                  style={{ width: "24px", height: "24px", color: "#fff" }}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                <input
+                  type="text"
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  placeholder="Type your response here..."
+                  disabled={isSendingChat}
+                  style={{
+                    flex: 1,
+                    padding: "12px 0",
+                    fontSize: "16px",
+                    border: "none",
+                    outline: "none",
+                    color: "#1a1a1a",
+                    backgroundColor: "transparent",
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={isSendingChat || !chatMessage.trim()}
+                  style={{
+                    width: "48px",
+                    height: "48px",
+                    borderRadius: "50%",
+                    backgroundColor:
+                      coachConfig?.branding?.primary_color || "#ef4444",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor:
+                      isSendingChat || !chatMessage.trim()
+                        ? "not-allowed"
+                        : "pointer",
+                    flexShrink: 0,
+                    opacity: isSendingChat || !chatMessage.trim() ? 0.5 : 1,
+                  }}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 10l7-7m0 0l7 7m-7-7v18"
-                  />
-                </svg>
-              </button>
-            </form>
+                  <svg
+                    style={{ width: "24px", height: "24px", color: "#fff" }}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 10l7-7m0 0l7 7m-7-7v18"
+                    />
+                  </svg>
+                </button>
+              </form>
+            </div>
           </div>
         )}
 
@@ -2734,35 +3145,79 @@ export default function UserDashboard() {
             >
               {[
                 {
-                  icon: "📢",
+                  icon: (
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#3b82f6"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"
+                      ></path>
+                    </svg>
+                  ),
                   bgColor: "#dbeafe",
                   title: "Announcements",
                   subtitle: "Community updates and news",
                   id: "announcements",
                 },
                 {
-                  icon: "📹",
+                  icon: (
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#a855f7"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      ></path>
+                    </svg>
+                  ),
                   bgColor: "#e9d5ff",
                   title: "Resource Hub",
                   subtitle: "Community calls, programs & resources",
                   id: "resources",
                 },
                 {
-                  icon: "📊",
+                  icon: <Calendar size={24} color="#3b82f6" strokeWidth={2} />,
                   bgColor: "#dbeafe",
                   title: "Insights",
                   subtitle: "Your patterns over time",
                   id: "insights",
                 },
                 {
-                  icon: "⭐",
+                  icon: <Star size={24} color="#eab308" strokeWidth={2} />,
                   bgColor: "#fef3c7",
                   title: "Library",
                   subtitle: "All practices and favorites",
                   id: "library",
                 },
                 {
-                  icon: "⚙️",
+                  icon: (
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#6b7280"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  ),
                   bgColor: "#f3f4f6",
                   title: "Settings",
                   subtitle: "Preferences and account details",
@@ -2792,7 +3247,6 @@ export default function UserDashboard() {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: "24px",
                       flexShrink: 0,
                     }}
                   >
@@ -2837,6 +3291,7 @@ export default function UserDashboard() {
                 width: "100%",
                 padding: "16px",
                 marginTop: "32px",
+                marginBottom: "32px",
                 backgroundColor: "#fff",
                 color: "#dc2626",
                 border: "1px solid #fecaca",
@@ -4939,75 +5394,91 @@ export default function UserDashboard() {
       )}
 
       {/* Bottom Navigation */}
-      <nav
+      <div
         style={{
           position: "fixed",
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: "#fff",
-          borderTop: "1px solid #e5e7eb",
           display: "flex",
-          justifyContent: "space-around",
-          padding: "12px 0",
+          justifyContent: "center",
           zIndex: 50,
+          pointerEvents: "none",
         }}
       >
-        {[
-          { id: "focus", icon: Compass, label: "Focus" },
-          { id: "awareness", icon: Sun, label: "Awareness" },
-          { id: "coach", icon: MessageCircle, label: "Coach" },
-          { id: "more", icon: Menu, label: "More" },
-        ].map((tab) => {
-          const IconComponent = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                if (tab.id === "more") {
-                  setMoreSubpage(null);
-                }
-              }}
-              style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "4px",
-                border: "none",
-                backgroundColor: "transparent",
-                cursor: "pointer",
-                padding: "8px",
-              }}
-            >
-              <IconComponent
-                size={28}
-                strokeWidth={2}
-                style={{
-                  opacity: activeTab === tab.id ? 1 : 0.5,
-                  color:
-                    activeTab === tab.id
-                      ? coachConfig?.branding?.primary_color || "#ef4444"
-                      : "#9ca3af",
+        <nav
+          style={{
+            width: "100%",
+            maxWidth: "600px",
+            backgroundColor: "#fff",
+            borderTop: "1px solid #e5e7eb",
+            borderLeft: "1px solid #e5e7eb",
+            borderRight: "1px solid #e5e7eb",
+            borderTopLeftRadius: "16px",
+            borderTopRightRadius: "16px",
+            display: "flex",
+            justifyContent: "space-around",
+            padding: "12px 0",
+            boxShadow: "0 -2px 10px rgba(0,0,0,0.05)",
+            pointerEvents: "auto",
+          }}
+        >
+          {[
+            { id: "focus", icon: Compass, label: "Focus" },
+            { id: "awareness", icon: Sun, label: "Awareness" },
+            { id: "coach", icon: MessageCircle, label: "Coach" },
+            { id: "more", icon: Menu, label: "More" },
+          ].map((tab) => {
+            const IconComponent = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  if (tab.id === "more") {
+                    setMoreSubpage(null);
+                  }
                 }}
-              />
-              <span
                 style={{
-                  fontSize: "12px",
-                  color:
-                    activeTab === tab.id
-                      ? coachConfig?.branding?.primary_color || "#ef4444"
-                      : "#9ca3af",
-                  fontWeight: activeTab === tab.id ? 600 : 400,
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "4px",
+                  border: "none",
+                  backgroundColor: "transparent",
+                  cursor: "pointer",
+                  padding: "8px",
                 }}
               >
-                {tab.label}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
+                <IconComponent
+                  size={28}
+                  strokeWidth={2}
+                  style={{
+                    opacity: activeTab === tab.id ? 1 : 0.5,
+                    color:
+                      activeTab === tab.id
+                        ? coachConfig?.branding?.primary_color || "#ef4444"
+                        : "#9ca3af",
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: "12px",
+                    color:
+                      activeTab === tab.id
+                        ? coachConfig?.branding?.primary_color || "#ef4444"
+                        : "#9ca3af",
+                    fontWeight: activeTab === tab.id ? 600 : 400,
+                  }}
+                >
+                  {tab.label}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
 
       {/* Toast Notification */}
       {showToast && (
