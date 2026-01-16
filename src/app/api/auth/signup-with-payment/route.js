@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createUser, getCoachBySlug } from '@/lib/auth';
+import { createUser, getCoachBySlug, generateToken } from '@/lib/auth';
 import { stripe } from '@/lib/stripe';
 import { supabase } from '@/lib/supabase';
+import { cookies } from 'next/headers';
+
+const DEV_BYPASS_STRIPE = process.env.DEV_BYPASS_STRIPE?.toLowerCase() === 'true';
 
 export async function POST(request) {
   try {
@@ -33,18 +36,21 @@ export async function POST(request) {
       );
     }
 
-    if (!coach.stripe_account_id) {
-      return NextResponse.json(
-        { error: 'Coach has not set up payments yet' },
-        { status: 400 }
-      );
-    }
+    // Skip Stripe checks in dev mode
+    if (!DEV_BYPASS_STRIPE) {
+      if (!coach.stripe_account_id) {
+        return NextResponse.json(
+          { error: 'Coach has not set up payments yet' },
+          { status: 400 }
+        );
+      }
 
-    if (!coach.is_active || coach.platform_subscription_status !== 'active') {
-      return NextResponse.json(
-        { error: 'Coach is not accepting subscriptions at this time' },
-        { status: 400 }
-      );
+      if (!coach.is_active || coach.platform_subscription_status !== 'active') {
+        return NextResponse.json(
+          { error: 'Coach is not accepting subscriptions at this time' },
+          { status: 400 }
+        );
+      }
     }
 
     // Check if user already exists
@@ -62,11 +68,12 @@ export async function POST(request) {
     }
 
     // Create user account (with coach assignment)
+    const fullName = `${firstName} ${lastName}`.trim();
     const user = await createUser({
       email,
       password,
-      firstName,
-      lastName,
+      fullName,
+      role: 'user',
       coachId: coach.id,
     });
 
@@ -77,6 +84,56 @@ export async function POST(request) {
       );
     }
 
+    // DEV MODE: Bypass Stripe and create mock subscription
+    if (DEV_BYPASS_STRIPE) {
+      console.log('🚧 DEV MODE: Bypassing Stripe, creating mock subscription');
+      
+      // Create mock subscription directly in database
+      const currentDate = new Date();
+      const periodEnd = new Date(currentDate);
+      periodEnd.setMonth(periodEnd.getMonth() + (plan === 'yearly' ? 12 : 1));
+
+      await supabase.from('user_subscriptions').insert({
+        user_id: user.id,
+        coach_id: coach.id,
+        stripe_subscription_id: `dev_sub_${user.id.slice(0, 8)}`,
+        stripe_customer_id: `dev_cus_${user.id.slice(0, 8)}`,
+        status: 'active',
+        current_period_start: currentDate.toISOString(),
+        current_period_end: periodEnd.toISOString(),
+      });
+
+      // Log them in
+      const token = generateToken(user.id);
+      
+      // Store session
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+      
+      await supabase.from('sessions').insert({
+        user_id: user.id,
+        token,
+        expires_at: expiresAt.toISOString(),
+      });
+
+      const cookieStore = await cookies();
+      cookieStore.set('auth_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: '/',
+      });
+
+      return NextResponse.json({ 
+        success: true,
+        devMode: true,
+        checkoutUrl: `${process.env.NEXT_PUBLIC_APP_URL}/user/dashboard?subscription=success&welcome=true`,
+        userId: user.id
+      });
+    }
+
+    // PRODUCTION MODE: Create Stripe Checkout Session
     // Get platform fee settings
     const { data: platformSettings } = await supabase
       .from('platform_settings')
@@ -134,11 +191,12 @@ export async function POST(request) {
         type: 'user_subscription',
       },
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/user/dashboard?subscription=success&welcome=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/${coachSlug}?subscription=canceled`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/coach/${coachSlug}?subscription=canceled`,
     });
 
     return NextResponse.json({ 
       success: true,
+      devMode: false,
       checkoutUrl: session.url,
       userId: user.id
     });

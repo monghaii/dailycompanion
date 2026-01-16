@@ -48,25 +48,13 @@ export default function UserDashboard() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [chatMessage, setChatMessage] = useState("");
   const [showCoachProfile, setShowCoachProfile] = useState(false);
-  const [chatMessages, setChatMessages] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("chatMessages");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          console.error("Failed to parse saved chat messages:", e);
-        }
-      }
-    }
-    return [
-      {
-        role: "assistant",
-        content:
-          "Before we dive in - what's one thing you're grateful for right now?",
-      },
-    ];
-  });
+  const [chatMessages, setChatMessages] = useState([
+    {
+      role: "assistant",
+      content:
+        "Before we dive in - what's one thing you're grateful for right now?",
+    },
+  ]);
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [tokenWarning, setTokenWarning] = useState(null);
   const chatEndRef = useRef(null);
@@ -215,12 +203,31 @@ export default function UserDashboard() {
     }
   }, [activeTab]);
 
-  // Persist chat messages to localStorage
+  // Load user-specific chat messages from localStorage after user is loaded
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("chatMessages", JSON.stringify(chatMessages));
+    if (user && typeof window !== "undefined") {
+      const storageKey = `chatMessages_${user.id}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.length > 0) {
+            setChatMessages(parsed);
+          }
+        } catch (e) {
+          console.error("Failed to parse saved chat messages:", e);
+        }
+      }
     }
-  }, [chatMessages]);
+  }, [user?.id]);
+
+  // Persist chat messages to user-specific localStorage
+  useEffect(() => {
+    if (user && typeof window !== "undefined") {
+      const storageKey = `chatMessages_${user.id}`;
+      localStorage.setItem(storageKey, JSON.stringify(chatMessages));
+    }
+  }, [chatMessages, user?.id]);
 
   // Scroll to suggested practice when it appears
   useEffect(() => {
@@ -1004,9 +1011,10 @@ export default function UserDashboard() {
     setTokenWarning(null);
     setShowCoachProfile(false);
 
-    // Clear from localStorage
-    if (typeof window !== "undefined") {
-      localStorage.setItem("chatMessages", JSON.stringify(initialMessages));
+    // Clear from user-specific localStorage
+    if (user && typeof window !== "undefined") {
+      const storageKey = `chatMessages_${user.id}`;
+      localStorage.setItem(storageKey, JSON.stringify(initialMessages));
     }
   };
 
@@ -3037,7 +3045,7 @@ export default function UserDashboard() {
                 )}
 
                 {/* Spacer to allow scrolling past the input pill */}
-                <div style={{ height: "120px", width: "100%" }} />
+                <div style={{ height: "220px", width: "100%" }} />
 
                 <div ref={chatEndRef} />
               </div>

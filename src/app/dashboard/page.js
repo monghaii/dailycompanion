@@ -1290,7 +1290,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           </label>
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-gray-500 shrink-0">
-                              /
+                              /coach/
                             </span>
                             <input
                               type="text"
@@ -1310,7 +1310,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               placeholder="your-name"
                             />
                             <a
-                              href={`/${profileConfig.slug || "your-slug"}`}
+                              href={`/coach/${profileConfig.slug || "your-slug"}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="px-4 py-2 text-sm bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 shrink-0"
@@ -3583,7 +3583,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       {/* Preview & Save */}
                       <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                         <a
-                          href={`/${coach?.slug}`}
+                          href={`/coach/${coach?.slug}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center gap-2"

@@ -231,16 +231,12 @@ export async function createCoach({ profileId, slug, businessName }) {
 export async function getCoachBySlug(slug) {
   const { data: coach, error } = await supabase
     .from("coaches")
-    .select(
-      `
-      *,
-      profile:profiles(*)
-    `
-    )
+    .select("*")
     .eq("slug", slug)
     .single();
 
   if (error) {
+    console.error("getCoachBySlug error:", error);
     return null;
   }
 

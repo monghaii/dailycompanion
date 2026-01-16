@@ -66,8 +66,11 @@ export default function CoachLandingPage() {
         return;
       }
 
-      // Redirect to Stripe checkout
+      // Redirect to checkout (Stripe or directly to dashboard in dev mode)
       if (data.checkoutUrl) {
+        if (data.devMode) {
+          console.log('🚧 DEV MODE: Bypassing Stripe, going directly to dashboard');
+        }
         window.location.href = data.checkoutUrl;
       }
     } catch (err) {
