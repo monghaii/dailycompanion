@@ -2963,8 +2963,17 @@ export default function UserDashboard() {
                           width: "48px",
                           height: "48px",
                           borderRadius: "50%",
-                          background:
-                            "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
+                          background: coachConfig?.coach_tab
+                            ?.bot_profile_picture_url
+                            ? "transparent"
+                            : "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
+                          border: coachConfig?.coach_tab
+                            ?.bot_profile_picture_url
+                            ? `2px solid ${
+                                coachConfig?.branding?.primary_color ||
+                                "#ef4444"
+                              }`
+                            : "none",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -2972,9 +2981,22 @@ export default function UserDashboard() {
                           fontSize: "20px",
                           fontWeight: 700,
                           flexShrink: 0,
+                          overflow: "hidden",
                         }}
                       >
-                        IJ
+                        {coachConfig?.coach_tab?.bot_profile_picture_url ? (
+                          <img
+                            src={coachConfig.coach_tab.bot_profile_picture_url}
+                            alt="AI Coach"
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : (
+                          "IJ"
+                        )}
                       </div>
                     )}
                     <div

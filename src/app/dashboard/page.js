@@ -277,9 +277,12 @@ function DashboardContent() {
   });
   const [uploadingEmotionAudio, setUploadingEmotionAudio] = useState(null);
   const [draggedEmotionOption, setDraggedEmotionOption] = useState(null);
+  const [uploadingBotProfilePicture, setUploadingBotProfilePicture] =
+    useState(false);
   const systemPromptRef = useRef(null);
 
   const [coachTabConfig, setCoachTabConfig] = useState({
+    bot_profile_picture_url: null,
     system_prompt: `You are a compassionate and insightful life coach. Your role is to:
 
 1. **Listen deeply** - Pay attention to what the user shares and acknowledge their feelings
@@ -3427,6 +3430,81 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             beginning of each month.
                           </p>
                         </div>
+                      </div>
+
+                      {/* Bot Profile Picture */}
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                          AI Coach Profile Picture
+                        </h3>
+                        <p className="text-xs text-gray-500 mb-3">
+                          Upload a profile picture for the AI coach that will
+                          appear in chat messages instead of initials.
+                        </p>
+
+                        {coachTabConfig.bot_profile_picture_url && (
+                          <div className="mb-3 flex items-center gap-3">
+                            <img
+                              src={coachTabConfig.bot_profile_picture_url}
+                              alt="Bot Profile"
+                              className="w-16 h-16 rounded-full object-cover bg-gray-50 border-2 border-gray-200"
+                            />
+                            <button
+                              onClick={() =>
+                                setCoachTabConfig({
+                                  ...coachTabConfig,
+                                  bot_profile_picture_url: null,
+                                })
+                              }
+                              className="text-sm text-red-600 hover:text-red-700"
+                            >
+                              Remove Picture
+                            </button>
+                          </div>
+                        )}
+
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+
+                            setUploadingBotProfilePicture(true);
+                            const formData = new FormData();
+                            formData.append("file", file);
+                            formData.append("bucket", "public");
+
+                            try {
+                              const res = await fetch("/api/upload", {
+                                method: "POST",
+                                body: formData,
+                              });
+                              const data = await res.json();
+
+                              if (res.ok) {
+                                setCoachTabConfig({
+                                  ...coachTabConfig,
+                                  bot_profile_picture_url: data.url,
+                                });
+                              } else {
+                                alert("Failed to upload picture");
+                              }
+                            } catch (error) {
+                              console.error("Upload error:", error);
+                              alert("Failed to upload picture");
+                            } finally {
+                              setUploadingBotProfilePicture(false);
+                            }
+                          }}
+                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
+                          disabled={uploadingBotProfilePicture}
+                        />
+                        {uploadingBotProfilePicture && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            Uploading...
+                          </p>
+                        )}
                       </div>
 
                       {/* System Prompt Editor */}
