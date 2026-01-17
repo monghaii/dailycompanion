@@ -1352,7 +1352,7 @@ export default function UserDashboard() {
                 style={{
                   width: "100%",
                   height: "8px",
-                  backgroundColor: "#f3d96d",
+                  backgroundColor: "#fef3c7",
                   borderRadius: "4px",
                   overflow: "hidden",
                 }}
@@ -1361,7 +1361,7 @@ export default function UserDashboard() {
                   style={{
                     width: `${progressPercent}%`,
                     height: "100%",
-                    backgroundColor: "#f4c542",
+                    backgroundColor: "#f59e0b",
                     transition: "width 0.3s ease",
                   }}
                 />
@@ -1392,9 +1392,22 @@ export default function UserDashboard() {
                       alignItems: "center",
                       justifyContent: "center",
                       flexShrink: 0,
+                      overflow: "hidden",
                     }}
                   >
-                    <Sun size={28} color="#f59e0b" strokeWidth={2} />
+                    {coachConfig?.focus_tab?.task_1?.icon_url ? (
+                      <img
+                        src={coachConfig.focus_tab.task_1.icon_url}
+                        alt="Task Icon"
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          objectFit: "contain",
+                        }}
+                      />
+                    ) : (
+                      <Sun size={28} color="#f59e0b" strokeWidth={2} />
+                    )}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div
@@ -1568,17 +1581,30 @@ export default function UserDashboard() {
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
+                    overflow: "hidden",
                   }}
                 >
-                  <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 20 20"
-                    fill="#a855f7"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
-                  </svg>
+                  {coachConfig?.focus_tab?.task_2?.icon_url ? (
+                    <img
+                      src={coachConfig.focus_tab.task_2.icon_url}
+                      alt="Task Icon"
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        objectFit: "contain",
+                      }}
+                    />
+                  ) : (
+                    <svg
+                      width="28"
+                      height="28"
+                      viewBox="0 0 20 20"
+                      fill="#a855f7"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
+                    </svg>
+                  )}
                 </div>
                 <div style={{ flex: 1 }}>
                   <h3
@@ -1637,17 +1663,30 @@ export default function UserDashboard() {
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
+                    overflow: "hidden",
                   }}
                 >
-                  <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 20 20"
-                    fill="#6366f1"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
-                  </svg>
+                  {coachConfig?.focus_tab?.task_3?.icon_url ? (
+                    <img
+                      src={coachConfig.focus_tab.task_3.icon_url}
+                      alt="Task Icon"
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        objectFit: "contain",
+                      }}
+                    />
+                  ) : (
+                    <svg
+                      width="28"
+                      height="28"
+                      viewBox="0 0 20 20"
+                      fill="#6366f1"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                    </svg>
+                  )}
                 </div>
                 <div style={{ flex: 1 }}>
                   <h3
@@ -1709,23 +1748,36 @@ export default function UserDashboard() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    overflow: "hidden",
                   }}
                 >
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#ffffff"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    ></path>
-                  </svg>
+                  {coachConfig?.focus_tab?.day_notes?.icon_url ? (
+                    <img
+                      src={coachConfig.focus_tab.day_notes.icon_url}
+                      alt="Day Notes Icon"
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        objectFit: "contain",
+                      }}
+                    />
+                  ) : (
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#ffffff"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      ></path>
+                    </svg>
+                  )}
                 </div>
                 <div>
                   <h3
@@ -5202,7 +5254,9 @@ export default function UserDashboard() {
                   color: "#1a1a1a",
                 }}
               >
-                {coachConfig?.awareness_tab?.modal_title || "Nice catch!"}
+                {selectedMindfulness?.label ||
+                  coachConfig?.awareness_tab?.modal_title ||
+                  "Nice catch!"}
               </h3>
               <button
                 onClick={() => setShowModal(false)}

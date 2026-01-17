@@ -71,20 +71,24 @@ function DashboardContent() {
       title: "Morning Meditation",
       subtitle: "Start your day centered",
       audio_url: "",
+      icon_url: null,
     },
     task_2: {
       enabled: true,
       title: "Set Daily Intention",
       subtitle: "What matters most today?",
+      icon_url: null,
     },
     task_3: {
       enabled: true,
       title: "Evening Reflection",
       subtitle: "Review your day",
+      icon_url: null,
     },
     day_notes: {
       title: "Day Notes",
       subtitle: "Capture thoughts and reflections",
+      icon_url: null,
     },
   });
 
@@ -279,6 +283,7 @@ function DashboardContent() {
   const [draggedEmotionOption, setDraggedEmotionOption] = useState(null);
   const [uploadingBotProfilePicture, setUploadingBotProfilePicture] =
     useState(false);
+  const [uploadingTaskIcon, setUploadingTaskIcon] = useState(null); // null or "task_1", "task_2", "task_3", "day_notes"
   const systemPromptRef = useRef(null);
 
   const [coachTabConfig, setCoachTabConfig] = useState({
@@ -728,6 +733,13 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
   const handleAddEmotionOption = (catIndex) => {
     const newCategories = [...emotionalStateConfig.categories];
+
+    // Limit to 10 options per category
+    if (newCategories[catIndex].options.length >= 10) {
+      alert("Maximum of 10 emotion options per category reached.");
+      return;
+    }
+
     newCategories[catIndex].options.push({
       name: "",
       audio_url: "",
@@ -2254,6 +2266,89 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 />
                               </div>
                             </div>
+
+                            {/* Custom Icon Upload */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-2">
+                                Custom Icon
+                              </label>
+                              <p className="text-xs text-gray-500 mb-2">
+                                Upload a custom icon to replace the default.
+                                Leave empty to use the default icon.
+                              </p>
+
+                              {focusConfig.task_1.icon_url && (
+                                <div className="mb-2 flex items-center gap-3">
+                                  <img
+                                    src={focusConfig.task_1.icon_url}
+                                    alt="Task Icon"
+                                    className="w-12 h-12 object-contain bg-gray-50 rounded-lg p-1 border border-gray-200"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setFocusConfig({
+                                        ...focusConfig,
+                                        task_1: {
+                                          ...focusConfig.task_1,
+                                          icon_url: null,
+                                        },
+                                      })
+                                    }
+                                    className="text-xs text-red-600 hover:text-red-700"
+                                  >
+                                    Remove Icon
+                                  </button>
+                                </div>
+                              )}
+
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+
+                                  setUploadingTaskIcon("task_1");
+                                  const formData = new FormData();
+                                  formData.append("file", file);
+                                  formData.append("bucket", "public");
+
+                                  try {
+                                    const res = await fetch("/api/upload", {
+                                      method: "POST",
+                                      body: formData,
+                                    });
+                                    const data = await res.json();
+
+                                    if (res.ok) {
+                                      setFocusConfig({
+                                        ...focusConfig,
+                                        task_1: {
+                                          ...focusConfig.task_1,
+                                          icon_url: data.url,
+                                        },
+                                      });
+                                    } else {
+                                      alert("Failed to upload icon");
+                                    }
+                                  } catch (error) {
+                                    console.error("Upload error:", error);
+                                    alert("Failed to upload icon");
+                                  } finally {
+                                    setUploadingTaskIcon(null);
+                                  }
+                                }}
+                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
+                                disabled={uploadingTaskIcon === "task_1"}
+                              />
+                              {uploadingTaskIcon === "task_1" && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                  Uploading...
+                                </p>
+                              )}
+                            </div>
+
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-2">
                                 Audio Library{" "}
@@ -2579,6 +2674,88 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 />
                               </div>
                             </div>
+
+                            {/* Custom Icon Upload for Task 2 */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-2">
+                                Custom Icon
+                              </label>
+                              <p className="text-xs text-gray-500 mb-2">
+                                Upload a custom icon to replace the default.
+                                Leave empty to use the default icon.
+                              </p>
+
+                              {focusConfig.task_2.icon_url && (
+                                <div className="mb-2 flex items-center gap-3">
+                                  <img
+                                    src={focusConfig.task_2.icon_url}
+                                    alt="Task Icon"
+                                    className="w-12 h-12 object-contain bg-gray-50 rounded-lg p-1 border border-gray-200"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setFocusConfig({
+                                        ...focusConfig,
+                                        task_2: {
+                                          ...focusConfig.task_2,
+                                          icon_url: null,
+                                        },
+                                      })
+                                    }
+                                    className="text-xs text-red-600 hover:text-red-700"
+                                  >
+                                    Remove Icon
+                                  </button>
+                                </div>
+                              )}
+
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+
+                                  setUploadingTaskIcon("task_2");
+                                  const formData = new FormData();
+                                  formData.append("file", file);
+                                  formData.append("bucket", "public");
+
+                                  try {
+                                    const res = await fetch("/api/upload", {
+                                      method: "POST",
+                                      body: formData,
+                                    });
+                                    const data = await res.json();
+
+                                    if (res.ok) {
+                                      setFocusConfig({
+                                        ...focusConfig,
+                                        task_2: {
+                                          ...focusConfig.task_2,
+                                          icon_url: data.url,
+                                        },
+                                      });
+                                    } else {
+                                      alert("Failed to upload icon");
+                                    }
+                                  } catch (error) {
+                                    console.error("Upload error:", error);
+                                    alert("Failed to upload icon");
+                                  } finally {
+                                    setUploadingTaskIcon(null);
+                                  }
+                                }}
+                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
+                                disabled={uploadingTaskIcon === "task_2"}
+                              />
+                              {uploadingTaskIcon === "task_2" && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                  Uploading...
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </details>
                       </div>
@@ -2656,6 +2833,88 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 />
                               </div>
                             </div>
+
+                            {/* Custom Icon Upload for Task 3 */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-2">
+                                Custom Icon
+                              </label>
+                              <p className="text-xs text-gray-500 mb-2">
+                                Upload a custom icon to replace the default.
+                                Leave empty to use the default icon.
+                              </p>
+
+                              {focusConfig.task_3.icon_url && (
+                                <div className="mb-2 flex items-center gap-3">
+                                  <img
+                                    src={focusConfig.task_3.icon_url}
+                                    alt="Task Icon"
+                                    className="w-12 h-12 object-contain bg-gray-50 rounded-lg p-1 border border-gray-200"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setFocusConfig({
+                                        ...focusConfig,
+                                        task_3: {
+                                          ...focusConfig.task_3,
+                                          icon_url: null,
+                                        },
+                                      })
+                                    }
+                                    className="text-xs text-red-600 hover:text-red-700"
+                                  >
+                                    Remove Icon
+                                  </button>
+                                </div>
+                              )}
+
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+
+                                  setUploadingTaskIcon("task_3");
+                                  const formData = new FormData();
+                                  formData.append("file", file);
+                                  formData.append("bucket", "public");
+
+                                  try {
+                                    const res = await fetch("/api/upload", {
+                                      method: "POST",
+                                      body: formData,
+                                    });
+                                    const data = await res.json();
+
+                                    if (res.ok) {
+                                      setFocusConfig({
+                                        ...focusConfig,
+                                        task_3: {
+                                          ...focusConfig.task_3,
+                                          icon_url: data.url,
+                                        },
+                                      });
+                                    } else {
+                                      alert("Failed to upload icon");
+                                    }
+                                  } catch (error) {
+                                    console.error("Upload error:", error);
+                                    alert("Failed to upload icon");
+                                  } finally {
+                                    setUploadingTaskIcon(null);
+                                  }
+                                }}
+                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
+                                disabled={uploadingTaskIcon === "task_3"}
+                              />
+                              {uploadingTaskIcon === "task_3" && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                  Uploading...
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </details>
                       </div>
@@ -2712,6 +2971,88 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 placeholder="Description"
                               />
                             </div>
+                          </div>
+
+                          {/* Custom Icon Upload for Day Notes */}
+                          <div className="mt-3">
+                            <label className="block text-xs font-medium text-gray-700 mb-2">
+                              Custom Icon
+                            </label>
+                            <p className="text-xs text-gray-500 mb-2">
+                              Upload a custom icon to replace the default. Leave
+                              empty to use the default icon.
+                            </p>
+
+                            {focusConfig.day_notes.icon_url && (
+                              <div className="mb-2 flex items-center gap-3">
+                                <img
+                                  src={focusConfig.day_notes.icon_url}
+                                  alt="Day Notes Icon"
+                                  className="w-12 h-12 object-contain bg-gray-50 rounded-lg p-1 border border-gray-200"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFocusConfig({
+                                      ...focusConfig,
+                                      day_notes: {
+                                        ...focusConfig.day_notes,
+                                        icon_url: null,
+                                      },
+                                    })
+                                  }
+                                  className="text-xs text-red-600 hover:text-red-700"
+                                >
+                                  Remove Icon
+                                </button>
+                              </div>
+                            )}
+
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+
+                                setUploadingTaskIcon("day_notes");
+                                const formData = new FormData();
+                                formData.append("file", file);
+                                formData.append("bucket", "public");
+
+                                try {
+                                  const res = await fetch("/api/upload", {
+                                    method: "POST",
+                                    body: formData,
+                                  });
+                                  const data = await res.json();
+
+                                  if (res.ok) {
+                                    setFocusConfig({
+                                      ...focusConfig,
+                                      day_notes: {
+                                        ...focusConfig.day_notes,
+                                        icon_url: data.url,
+                                      },
+                                    });
+                                  } else {
+                                    alert("Failed to upload icon");
+                                  }
+                                } catch (error) {
+                                  console.error("Upload error:", error);
+                                  alert("Failed to upload icon");
+                                } finally {
+                                  setUploadingTaskIcon(null);
+                                }
+                              }}
+                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
+                              disabled={uploadingTaskIcon === "day_notes"}
+                            />
+                            {uploadingTaskIcon === "day_notes" && (
+                              <p className="text-xs text-gray-500 mt-2">
+                                Uploading...
+                              </p>
+                            )}
                           </div>
                         </details>
                       </div>
@@ -3104,9 +3445,18 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                           onClick={() =>
                                             handleAddEmotionOption(catIndex)
                                           }
-                                          className="text-xs text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
+                                          disabled={
+                                            category.options.length >= 10
+                                          }
+                                          className={`text-xs font-medium flex items-center gap-1 ${
+                                            category.options.length >= 10
+                                              ? "text-gray-400 cursor-not-allowed"
+                                              : "text-purple-600 hover:text-purple-700"
+                                          }`}
                                         >
                                           + Add Option
+                                          {category.options.length >= 10 &&
+                                            " (Max 10)"}
                                         </button>
                                       </div>
                                       <div className="space-y-2">
