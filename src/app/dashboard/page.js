@@ -49,6 +49,7 @@ function DashboardContent() {
     gradient_angle: 135,
     gradient_spread: 50,
     app_logo_url: null,
+    app_logo_size: "medium", // "small", "medium", "large"
   });
   const [uploadingAppLogo, setUploadingAppLogo] = useState(false);
   const [audioLibrary, setAudioLibrary] = useState(
@@ -275,6 +276,7 @@ function DashboardContent() {
     ],
   });
   const [uploadingEmotionAudio, setUploadingEmotionAudio] = useState(null);
+  const [draggedEmotionOption, setDraggedEmotionOption] = useState(null);
   const systemPromptRef = useRef(null);
 
   const [coachTabConfig, setCoachTabConfig] = useState({
@@ -745,6 +747,38 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     });
   };
 
+  const handleDragStartEmotionOption = (catIndex, optIndex) => {
+    setDraggedEmotionOption({ catIndex, optIndex });
+  };
+
+  const handleDragOverEmotionOption = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDropEmotionOption = (catIndex, optIndex) => {
+    if (!draggedEmotionOption || draggedEmotionOption.catIndex !== catIndex) {
+      setDraggedEmotionOption(null);
+      return;
+    }
+
+    const newCategories = [...emotionalStateConfig.categories];
+    const category = newCategories[catIndex];
+    const draggedItem = category.options[draggedEmotionOption.optIndex];
+
+    // Remove from old position
+    category.options.splice(draggedEmotionOption.optIndex, 1);
+
+    // Insert at new position
+    category.options.splice(optIndex, 0, draggedItem);
+
+    setEmotionalStateConfig({
+      ...emotionalStateConfig,
+      categories: newCategories,
+    });
+
+    setDraggedEmotionOption(null);
+  };
+
   const handleUpdateEmotionOption = (catIndex, optIndex, field, value) => {
     const newCategories = [...emotionalStateConfig.categories];
     newCategories[catIndex].options[optIndex][field] = value;
@@ -907,6 +941,18 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     } finally {
       setIsSavingConfig(false);
       setSavingSection(null);
+    }
+  };
+
+  const getLogoHeight = (size) => {
+    switch (size) {
+      case "small":
+        return "40px";
+      case "large":
+        return "80px";
+      case "medium":
+      default:
+        return "60px";
     }
   };
 
@@ -1310,7 +1356,9 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               placeholder="your-name"
                             />
                             <a
-                              href={`/coach/${profileConfig.slug || "your-slug"}`}
+                              href={`/coach/${
+                                profileConfig.slug || "your-slug"
+                              }`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="px-4 py-2 text-sm bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 shrink-0"
@@ -1817,13 +1865,88 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           header
                         </p>
 
+                        {/* Header Preview */}
+                        {brandingConfig.app_logo_url && (
+                          <div className="mb-4">
+                            <label className="block text-xs font-medium text-gray-700 mb-2">
+                              Header Preview
+                            </label>
+                            <div
+                              className="rounded-lg overflow-hidden border border-gray-300"
+                              style={{
+                                background: (() => {
+                                  if (
+                                    brandingConfig.background_type ===
+                                    "gradient"
+                                  ) {
+                                    return `linear-gradient(${brandingConfig.gradient_angle}deg, ${brandingConfig.gradient_color_1} 0%, ${brandingConfig.gradient_color_2} ${brandingConfig.gradient_spread}%, ${brandingConfig.gradient_color_2} 100%)`;
+                                  }
+                                  return (
+                                    brandingConfig.background_color || "#f9fafb"
+                                  );
+                                })(),
+                                padding: "32px 24px",
+                                textAlign: "center",
+                              }}
+                            >
+                              <img
+                                src={brandingConfig.app_logo_url}
+                                alt="App Logo Preview"
+                                style={{
+                                  height: getLogoHeight(
+                                    brandingConfig.app_logo_size
+                                  ),
+                                  maxWidth: "300px",
+                                  objectFit: "contain",
+                                  margin: "0 auto",
+                                }}
+                              />
+                              <p
+                                style={{
+                                  fontSize: "14px",
+                                  color: "#1a1a1a",
+                                  opacity: 0.8,
+                                  marginTop: "8px",
+                                }}
+                              >
+                                {headerConfig.subtitle ||
+                                  "Mental Fitness for Active Minds"}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {brandingConfig.app_logo_url && (
+                          <div className="mb-3">
+                            <label className="block text-xs font-medium text-gray-700 mb-2">
+                              Logo Size
+                            </label>
+                            <div className="flex gap-2">
+                              {["small", "medium", "large"].map((size) => (
+                                <button
+                                  key={size}
+                                  type="button"
+                                  onClick={() =>
+                                    setBrandingConfig({
+                                      ...brandingConfig,
+                                      app_logo_size: size,
+                                    })
+                                  }
+                                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                                    brandingConfig.app_logo_size === size
+                                      ? "bg-purple-600 text-white border-purple-600"
+                                      : "bg-white text-gray-700 border-gray-300 hover:border-purple-400"
+                                  }`}
+                                >
+                                  {size.charAt(0).toUpperCase() + size.slice(1)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {brandingConfig.app_logo_url && (
                           <div className="mb-3 flex items-center gap-3">
-                            <img
-                              src={brandingConfig.app_logo_url}
-                              alt="App Logo"
-                              className="h-12 w-auto object-contain bg-gray-50 rounded-lg p-1 border border-gray-200"
-                            />
                             <button
                               onClick={() =>
                                 setBrandingConfig({
@@ -1833,7 +1956,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               }
                               className="text-sm text-red-600 hover:text-red-700"
                             >
-                              Remove
+                              Remove Logo
                             </button>
                           </div>
                         )}
@@ -2988,9 +3111,65 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                           (option, optIndex) => (
                                             <div
                                               key={optIndex}
-                                              className="border border-gray-200 rounded-lg p-3 space-y-2"
+                                              draggable
+                                              onDragStart={() =>
+                                                handleDragStartEmotionOption(
+                                                  catIndex,
+                                                  optIndex
+                                                )
+                                              }
+                                              onDragOver={
+                                                handleDragOverEmotionOption
+                                              }
+                                              onDrop={() =>
+                                                handleDropEmotionOption(
+                                                  catIndex,
+                                                  optIndex
+                                                )
+                                              }
+                                              className="border border-gray-200 rounded-lg p-3 space-y-2 cursor-move hover:border-purple-300 transition-colors"
                                             >
                                               <div className="flex gap-2 items-start">
+                                                {/* Drag Handle */}
+                                                <div className="flex items-center justify-center text-gray-400 hover:text-purple-600 cursor-grab active:cursor-grabbing pt-1">
+                                                  <svg
+                                                    width="16"
+                                                    height="16"
+                                                    viewBox="0 0 16 16"
+                                                    fill="currentColor"
+                                                  >
+                                                    <circle
+                                                      cx="5"
+                                                      cy="3"
+                                                      r="1"
+                                                    />
+                                                    <circle
+                                                      cx="5"
+                                                      cy="8"
+                                                      r="1"
+                                                    />
+                                                    <circle
+                                                      cx="5"
+                                                      cy="13"
+                                                      r="1"
+                                                    />
+                                                    <circle
+                                                      cx="11"
+                                                      cy="3"
+                                                      r="1"
+                                                    />
+                                                    <circle
+                                                      cx="11"
+                                                      cy="8"
+                                                      r="1"
+                                                    />
+                                                    <circle
+                                                      cx="11"
+                                                      cy="13"
+                                                      r="1"
+                                                    />
+                                                  </svg>
+                                                </div>
                                                 <input
                                                   type="text"
                                                   value={option.name}

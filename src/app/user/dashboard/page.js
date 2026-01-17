@@ -1250,8 +1250,19 @@ export default function UserDashboard() {
             src={coachConfig.branding.app_logo_url}
             alt="App Logo"
             style={{
-              height: "48px",
-              maxWidth: "200px",
+              height: (() => {
+                const size = coachConfig.branding.app_logo_size || "medium";
+                switch (size) {
+                  case "small":
+                    return "40px";
+                  case "large":
+                    return "80px";
+                  case "medium":
+                  default:
+                    return "60px";
+                }
+              })(),
+              maxWidth: "300px",
               objectFit: "contain",
               margin: "0 auto 8px",
             }}
@@ -2634,8 +2645,20 @@ export default function UserDashboard() {
                       src={coachConfig.branding.app_logo_url}
                       alt="App Logo"
                       style={{
-                        height: "48px",
-                        maxWidth: "200px",
+                        height: (() => {
+                          const size =
+                            coachConfig.branding.app_logo_size || "medium";
+                          switch (size) {
+                            case "small":
+                              return "40px";
+                            case "large":
+                              return "80px";
+                            case "medium":
+                            default:
+                              return "60px";
+                          }
+                        })(),
+                        maxWidth: "300px",
                         objectFit: "contain",
                         margin: "0 auto 8px",
                       }}
