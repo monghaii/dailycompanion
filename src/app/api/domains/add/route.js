@@ -91,8 +91,9 @@ export async function POST(request) {
     let vercelDomainId = null;
     let vercelConfigured = false;
     
+    // Check if Vercel credentials are configured
     if (!VERCEL_TOKEN || !VERCEL_PROJECT_ID) {
-      console.error('[Add Domain] VERCEL_TOKEN or VERCEL_PROJECT_ID is missing in environment variables');
+      console.warn('[Add Domain] Vercel credentials not configured. Domain will need manual setup.');
     } else {
       try {
         const vercelResponse = await fetch(
@@ -129,10 +130,7 @@ export async function POST(request) {
         }
       } catch (vercelError) {
         console.error('[Add Domain] Failed to add to Vercel:', vercelError);
-        // Continue anyway - manual configuration possible
       }
-    } else {
-      console.warn('[Add Domain] Vercel credentials not configured. Domain will need manual setup.');
     }
     
     // Get Vercel IP address (check Vercel docs for current IP)
