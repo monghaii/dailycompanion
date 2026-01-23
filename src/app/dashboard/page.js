@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import CustomDomainWizard from "./components/CustomDomainWizard";
 
 function DashboardContent() {
   const router = useRouter();
@@ -4563,14 +4564,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
         {/* Settings */}
         {activeSection === "settings" && (
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div className="text-center">
-              <div className="text-5xl mb-4">⚙️</div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Settings
-              </h2>
-              <p className="text-gray-600">Coming soon</p>
-            </div>
+          <div className="flex-1 bg-gray-50">
+            <CustomDomainWizard />
           </div>
         )}
       </div>

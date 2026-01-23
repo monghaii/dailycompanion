@@ -11,6 +11,10 @@ export async function POST(request) {
     const body = await request.json();
     const { email, password, firstName, lastName, coachSlug, plan } = body;
 
+    // Detect if user is on custom domain
+    const customDomain = request.headers.get('x-custom-domain');
+    const baseUrl = customDomain ? `https://${customDomain}` : process.env.NEXT_PUBLIC_APP_URL;
+
     // Validate input
     if (!email || !password || !firstName || !lastName || !coachSlug || !plan) {
       return NextResponse.json(
@@ -128,7 +132,7 @@ export async function POST(request) {
       return NextResponse.json({ 
         success: true,
         devMode: true,
-        checkoutUrl: `${process.env.NEXT_PUBLIC_APP_URL}/user/dashboard?subscription=success&welcome=true`,
+        devBypass: true,
         userId: user.id
       });
     }
@@ -190,8 +194,8 @@ export async function POST(request) {
         coachId: coach.id,
         type: 'user_subscription',
       },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/user/dashboard?subscription=success&welcome=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/coach/${coachSlug}?subscription=canceled`,
+      success_url: `${baseUrl}/user/dashboard?subscription=success&welcome=true`,
+      cancel_url: `${baseUrl}${customDomain ? '' : `/coach/${coachSlug}`}?subscription=canceled`,
     });
 
     return NextResponse.json({ 
