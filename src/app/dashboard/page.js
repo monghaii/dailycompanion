@@ -5,6 +5,194 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import CustomDomainWizard from "./components/CustomDomainWizard";
 
+function ClientsSection() {
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  async function fetchClients() {
+    try {
+      const res = await fetch('/api/coach/clients');
+      const data = await res.json();
+      
+      if (!res.ok) {
+        setError(data.error || 'Failed to fetch clients');
+        return;
+      }
+      
+      setClients(data.clients);
+    } catch (err) {
+      console.error('Failed to fetch clients:', err);
+      setError('Failed to load clients');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function getStatusBadge(status) {
+    const badges = {
+      active: { bg: '#D1FAE5', color: '#065F46', text: 'Active' },
+      past_due: { bg: '#FEF3C7', color: '#92400E', text: 'Past Due' },
+      canceled: { bg: '#FEE2E2', color: '#991B1B', text: 'Canceled' },
+      trialing: { bg: '#DBEAFE', color: '#1E40AF', text: 'Trial' },
+      no_subscription: { bg: '#F3F4F6', color: '#6B7280', text: 'No Subscription' },
+    };
+
+    const badge = badges[status] || badges.no_subscription;
+    
+    return (
+      <span
+        style={{
+          display: 'inline-block',
+          padding: '4px 12px',
+          borderRadius: '12px',
+          fontSize: '12px',
+          fontWeight: '600',
+          backgroundColor: badge.bg,
+          color: badge.color,
+        }}
+      >
+        {badge.text}
+      </span>
+    );
+  }
+
+  function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading clients...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-8 py-6">
+        <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
+        <p className="text-gray-600 mt-1">Manage your client subscriptions</p>
+      </div>
+
+      {/* Content */}
+      <div className="p-8">
+        <div className="max-w-7xl mx-auto">
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+              {error}
+            </div>
+          )}
+
+          {/* Stats Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="text-gray-500 text-sm font-medium mb-1">Total Clients</div>
+              <div className="text-3xl font-bold text-gray-900">{clients.length}</div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="text-gray-500 text-sm font-medium mb-1">Active</div>
+              <div className="text-3xl font-bold text-green-600">
+                {clients.filter(c => c.subscriptionStatus === 'active').length}
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="text-gray-500 text-sm font-medium mb-1">No Subscription</div>
+              <div className="text-3xl font-bold text-gray-600">
+                {clients.filter(c => c.subscriptionStatus === 'no_subscription').length}
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="text-gray-500 text-sm font-medium mb-1">Inactive</div>
+              <div className="text-3xl font-bold text-red-600">
+                {clients.filter(c => ['canceled', 'past_due'].includes(c.subscriptionStatus)).length}
+              </div>
+            </div>
+          </div>
+
+          {/* Clients List */}
+          {clients.length === 0 ? (
+            <div className="bg-white rounded-lg shadow p-12 text-center">
+              <div className="text-5xl mb-4">👥</div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No clients yet</h3>
+              <p className="text-gray-600">
+                Your clients will appear here once they subscribe to your coaching services.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Client
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Joined
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Subscription Period
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {clients.map((client) => (
+                      <tr key={client.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
+                              <span className="text-purple-700 font-semibold">
+                                {client.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                              </span>
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{client.name}</div>
+                              <div className="text-sm text-gray-500">{client.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getStatusBadge(client.subscriptionStatus)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(client.userCreatedAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {client.currentPeriodEnd ? formatDate(client.currentPeriodEnd) : '-'}
+                          {client.canceledAt && (
+                            <div className="text-xs text-red-600 mt-1">
+                              Canceled: {formatDate(client.canceledAt)}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DashboardContent() {
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -16,7 +204,12 @@ function DashboardContent() {
     return true;
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState("config");
+  const [activeSection, setActiveSection] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("coachDashboardActiveSection") || "config";
+    }
+    return "config";
+  });
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [savingSection, setSavingSection] = useState(null);
@@ -4369,15 +4562,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         )}
 
         {/* Clients */}
-        {activeSection === "clients" && (
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div className="text-center">
-              <div className="text-5xl mb-4">👥</div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Clients</h2>
-              <p className="text-gray-600">Coming soon</p>
-            </div>
-          </div>
-        )}
+        {activeSection === "clients" && <ClientsSection />}
 
         {/* Finance */}
         {activeSection === "finance" && (

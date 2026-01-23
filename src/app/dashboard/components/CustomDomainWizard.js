@@ -16,6 +16,21 @@ export default function CustomDomainWizard() {
     fetchDomains();
   }, []);
 
+  // Auto-refresh SSL status for domains with pending SSL
+  useEffect(() => {
+    const hasPendingSSL = domains.some(d => d.status === 'verified' && d.ssl_status === 'pending');
+    
+    if (!hasPendingSSL) return;
+
+    // Check every 60 seconds for SSL updates
+    const interval = setInterval(() => {
+      console.log('[CustomDomain] Auto-checking SSL status...');
+      fetchDomains();
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(interval);
+  }, [domains]);
+
   async function fetchDomains() {
     try {
       const res = await fetch('/api/domains');
@@ -80,13 +95,44 @@ export default function CustomDomainWizard() {
       const data = await res.json();
 
       if (data.verified) {
-        setSuccess(data.message);
+        setSuccess(data.message + (data.ssl_status === 'pending' ? ' SSL certificate is being issued...' : ''));
         fetchDomains();
       } else {
         setError(data.message);
       }
     } catch (err) {
       setError('Failed to verify domain');
+    } finally {
+      setVerifying(null);
+    }
+  }
+
+  async function handleRefreshStatus(domainId) {
+    setVerifying(domainId);
+    setError('');
+    setSuccess('');
+
+    try {
+      const res = await fetch('/api/domains/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domainId }),
+      });
+
+      const data = await res.json();
+
+      if (data.verified) {
+        if (data.ssl_status === 'active') {
+          setSuccess('✓ SSL certificate is now active! Your domain is fully ready.');
+        } else {
+          setSuccess('Domain is verified. SSL certificate is still being issued...');
+        }
+        fetchDomains();
+      } else {
+        setError(data.message);
+      }
+    } catch (err) {
+      setError('Failed to refresh status');
     } finally {
       setVerifying(null);
     }
@@ -174,9 +220,23 @@ export default function CustomDomainWizard() {
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         {/* Header */}
         <div style={{ marginBottom: '32px' }}>
-          <h2 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>
-            Custom Domain
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+            <h2 style={{ fontSize: '28px', fontWeight: 'bold', margin: 0 }}>
+              Custom Domain
+            </h2>
+            {domains.some(d => d.status === 'verified' && d.ssl_status === 'pending') && (
+              <span style={{ 
+                fontSize: '12px', 
+                color: '#92400E', 
+                backgroundColor: '#FEF3C7',
+                padding: '4px 8px',
+                borderRadius: '6px',
+                fontWeight: '600'
+              }}>
+                🔄 Auto-checking SSL status...
+              </span>
+            )}
+          </div>
           <p style={{ color: '#6B7280', fontSize: '16px' }}>
             Connect your own domain to serve your coaching landing page and user experience.
           </p>
@@ -304,6 +364,23 @@ export default function CustomDomainWizard() {
                         >
                           {verifying === domain.id ? 'Verifying...' : 'Verify'}
                         </button>
+                      ) : domain.status === 'verified' && domain.ssl_status === 'pending' ? (
+                        <button
+                          onClick={() => handleRefreshStatus(domain.id)}
+                          disabled={verifying === domain.id}
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: verifying === domain.id ? '#9CA3AF' : '#3B82F6',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            cursor: verifying === domain.id ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {verifying === domain.id ? 'Checking...' : 'Check SSL Status'}
+                        </button>
                       ) : null}
                       <button
                         onClick={() => handleRemoveDomain(domain.id)}
@@ -395,8 +472,21 @@ export default function CustomDomainWizard() {
                         </a>
                       </p>
                       {domain.ssl_status === 'pending' && (
+                        <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#FEF3C7', borderRadius: '6px' }}>
+                          <p style={{ fontSize: '13px', color: '#92400E', marginBottom: '8px' }}>
+                            🔒 <strong>SSL Certificate Pending</strong>
+                          </p>
+                          <p style={{ fontSize: '12px', color: '#92400E', marginBottom: '8px' }}>
+                            Your domain is verified, but the SSL certificate is still being issued by Vercel. This typically takes 5-30 minutes.
+                          </p>
+                          <p style={{ fontSize: '12px', color: '#92400E' }}>
+                            💡 <em>Tip: This page auto-refreshes every 60 seconds, or click "Check SSL Status" above to check manually.</em>
+                          </p>
+                        </div>
+                      )}
+                      {domain.ssl_status === 'active' && (
                         <p style={{ fontSize: '12px', color: '#047857', marginTop: '8px' }}>
-                          🔒 SSL certificate is being issued. This may take a few minutes.
+                          🔒 SSL certificate is active. Your domain is fully secured with HTTPS!
                         </p>
                       )}
                     </div>
