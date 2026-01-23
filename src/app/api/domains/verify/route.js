@@ -180,8 +180,40 @@ export async function POST(request) {
           }
         );
         
-        const vercelData = await vercelResponse.json();
-        
+        // Check if verification is needed (e.g. domain used by another account)
+        if (vercelData.verified === false && vercelData.verification) {
+          const verification = vercelData.verification;
+          
+          if (verification.length > 0) {
+            // Found verification requirements (TXT record needed)
+            const txtRecord = verification.find(v => v.type === 'TXT');
+            
+            if (txtRecord) {
+              await supabase
+                .from('custom_domains')
+                .update({
+                  status: 'pending', // Revert to pending
+                  verification_method: 'txt',
+                  txt_verification_code: txtRecord.value,
+                  failed_reason: 'Domain ownership verification required. Please add the TXT record below.',
+                })
+                .eq('id', domainId);
+                
+              return NextResponse.json({
+                success: false,
+                verified: false,
+                message: 'Domain is linked to another Vercel account. Please add the TXT record to prove ownership.',
+                dnsRecords: [],
+                verification_needed: {
+                  type: 'TXT',
+                  name: txtRecord.domain.startsWith('_vercel') ? txtRecord.domain : `_vercel.${domain.subdomain ? domain.subdomain : ''}`,
+                  value: txtRecord.value
+                }
+              });
+            }
+          }
+        }
+
         if (vercelResponse.ok) {
           vercelVerified = vercelData.verified || false;
           

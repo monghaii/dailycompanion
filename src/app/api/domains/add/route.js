@@ -91,7 +91,9 @@ export async function POST(request) {
     let vercelDomainId = null;
     let vercelConfigured = false;
     
-    if (VERCEL_TOKEN && VERCEL_PROJECT_ID) {
+    if (!VERCEL_TOKEN || !VERCEL_PROJECT_ID) {
+      console.error('[Add Domain] VERCEL_TOKEN or VERCEL_PROJECT_ID is missing in environment variables');
+    } else {
       try {
         const vercelResponse = await fetch(
           `${VERCEL_API_URL}/v10/projects/${VERCEL_PROJECT_ID}/domains${VERCEL_TEAM_ID ? `?teamId=${VERCEL_TEAM_ID}` : ''}`,

@@ -11,6 +11,7 @@ export default function CustomDomainWizard() {
   const [verifying, setVerifying] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [verificationData, setVerificationData] = useState(null);
 
   useEffect(() => {
     fetchDomains();
@@ -84,6 +85,7 @@ export default function CustomDomainWizard() {
     setVerifying(domainId);
     setError('');
     setSuccess('');
+    setVerificationData(null);
 
     try {
       const res = await fetch('/api/domains/verify', {
@@ -99,6 +101,9 @@ export default function CustomDomainWizard() {
         fetchDomains();
       } else {
         setError(data.message);
+        if (data.verification_needed) {
+          setVerificationData(data.verification_needed);
+        }
       }
     } catch (err) {
       setError('Failed to verify domain');
@@ -430,6 +435,33 @@ export default function CustomDomainWizard() {
                         <div>Value: <span style={{ color: 'white' }}>{domain.expected_a_record}</span></div>
                         <div>TTL: <span style={{ color: 'white' }}>3600</span></div>
                       </div>
+
+                      {verificationData && domain.verification_method === 'txt' && (
+                        <div style={{ marginTop: '16px' }}>
+                          <p style={{ fontSize: '14px', color: '#991B1B', fontWeight: '600', marginBottom: '8px' }}>
+                            ⚠️ Ownership Verification Required
+                          </p>
+                          <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '8px' }}>
+                            This domain is currently linked to another provider. Please add this TXT record to verify ownership:
+                          </p>
+                          <div
+                            style={{
+                              padding: '12px',
+                              backgroundColor: '#FEF2F2',
+                              border: '1px solid #FECACA',
+                              color: '#991B1B',
+                              borderRadius: '6px',
+                              fontFamily: 'monospace',
+                              fontSize: '14px',
+                            }}
+                          >
+                            <div>Type: <strong>{verificationData.type}</strong></div>
+                            <div>Name: <strong>{verificationData.name}</strong></div>
+                            <div style={{ marginTop: '4px', wordBreak: 'break-all' }}>Value: <strong>{verificationData.value}</strong></div>
+                          </div>
+                        </div>
+                      )}
+
                       <p style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '12px' }}>
                         ⏱️ DNS propagation can take up to 48 hours. Click "Verify" to check status.
                       </p>
