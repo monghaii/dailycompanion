@@ -597,6 +597,13 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     }
   }, [user]);
 
+  // Save active section to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("coachDashboardActiveSection", activeSection);
+    }
+  }, [activeSection]);
+
   const fetchCoachConfig = async () => {
     try {
       const res = await fetch("/api/coach/config");

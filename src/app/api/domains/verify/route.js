@@ -127,16 +127,53 @@ export async function POST(request) {
       });
     }
     
-    // DNS verified! Now verify with Vercel
+    // DNS verified! Now verify with Vercel and trigger verification
     let vercelVerified = false;
     let sslStatus = 'pending';
     
-    if (domain.vercel_domain_id && VERCEL_TOKEN && VERCEL_PROJECT_ID) {
+    if (VERCEL_TOKEN && VERCEL_PROJECT_ID) {
       try {
-        const vercelResponse = await fetch(
+        // First, verify the domain exists in Vercel (or add it if missing)
+        const checkResponse = await fetch(
           `${VERCEL_API_URL}/v9/projects/${VERCEL_PROJECT_ID}/domains/${domain.full_domain}${VERCEL_TEAM_ID ? `?teamId=${VERCEL_TEAM_ID}` : ''}`,
           {
             method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${VERCEL_TOKEN}`,
+            },
+          }
+        );
+        
+        if (!checkResponse.ok && checkResponse.status === 404) {
+          // Domain doesn't exist in Vercel yet, add it
+          console.log(`[Verify Domain] Domain not in Vercel, adding: ${domain.full_domain}`);
+          const addResponse = await fetch(
+            `${VERCEL_API_URL}/v10/projects/${VERCEL_PROJECT_ID}/domains${VERCEL_TEAM_ID ? `?teamId=${VERCEL_TEAM_ID}` : ''}`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${VERCEL_TOKEN}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                name: domain.full_domain,
+              }),
+            }
+          );
+          
+          if (addResponse.ok) {
+            console.log(`[Verify Domain] Successfully added to Vercel: ${domain.full_domain}`);
+          } else {
+            const addError = await addResponse.json();
+            console.error('[Verify Domain] Failed to add to Vercel:', addError);
+          }
+        }
+        
+        // Now trigger verification by checking the domain status
+        const vercelResponse = await fetch(
+          `${VERCEL_API_URL}/v9/projects/${VERCEL_PROJECT_ID}/domains/${domain.full_domain}/verify${VERCEL_TEAM_ID ? `?teamId=${VERCEL_TEAM_ID}` : ''}`,
+          {
+            method: 'POST',
             headers: {
               'Authorization': `Bearer ${VERCEL_TOKEN}`,
             },
@@ -154,7 +191,9 @@ export async function POST(request) {
             sslStatus = cert.status === 'issued' ? 'active' : 'pending';
           }
           
-          console.log(`[Verify Domain] Vercel verification: ${vercelVerified}, SSL: ${sslStatus}`);
+          console.log(`[Verify Domain] Vercel verification: ${vercelVerified}, SSL: ${sslStatus}`, vercelData);
+        } else {
+          console.error('[Verify Domain] Vercel verify API error:', vercelData);
         }
       } catch (vercelError) {
         console.error('[Verify Domain] Vercel API error:', vercelError);

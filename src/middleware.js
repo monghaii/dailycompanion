@@ -7,9 +7,10 @@ export async function middleware(request) {
   // Platform domain - no modifications needed
   const platformDomain = process.env.NEXT_PUBLIC_PLATFORM_DOMAIN || 'dailycompanion.app';
   const isLocalhost = hostname === 'localhost' || hostname.includes('127.0.0.1');
+  const isPlatformDomain = hostname === platformDomain || hostname === `www.${platformDomain}`;
   
-  // If on platform domain or localhost, proceed normally
-  if (hostname === platformDomain || isLocalhost || hostname.includes('vercel.app')) {
+  // If on platform domain (with or without www), localhost, or vercel.app, proceed normally
+  if (isPlatformDomain || isLocalhost || hostname.includes('vercel.app')) {
     return NextResponse.next();
   }
   

@@ -110,12 +110,20 @@ export async function POST(request) {
         const vercelData = await vercelResponse.json();
         
         if (vercelResponse.ok) {
-          vercelDomainId = vercelData.uid;
+          vercelDomainId = vercelData.uid || vercelData.name;
           vercelConfigured = true;
-          console.log(`[Add Domain] Successfully added to Vercel: ${sanitizedDomain}`);
+          console.log(`[Add Domain] Successfully added to Vercel: ${sanitizedDomain}`, vercelData);
         } else {
-          console.error('[Add Domain] Vercel API error:', vercelData);
-          // Continue anyway - manual configuration possible
+          console.error('[Add Domain] Vercel API error:', {
+            status: vercelResponse.status,
+            statusText: vercelResponse.statusText,
+            data: vercelData
+          });
+          // If domain already exists in Vercel, that's okay
+          if (vercelResponse.status === 409 || vercelData.error?.code === 'domain_already_in_use') {
+            console.log(`[Add Domain] Domain already exists in Vercel: ${sanitizedDomain}`);
+            vercelConfigured = true;
+          }
         }
       } catch (vercelError) {
         console.error('[Add Domain] Failed to add to Vercel:', vercelError);
