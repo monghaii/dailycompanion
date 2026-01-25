@@ -44,26 +44,8 @@ export default function CoachSignup() {
         throw new Error(data.error || 'Failed to create account');
       }
 
-      // After successful signup, redirect to Stripe checkout
-      if (data.requiresSubscription) {
-        // Create checkout session and redirect to Stripe
-        const checkoutRes = await fetch('/api/stripe/coach-checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        });
-
-        const checkoutData = await checkoutRes.json();
-
-        if (checkoutRes.ok && checkoutData.url) {
-          // Redirect to Stripe checkout
-          window.location.href = checkoutData.url;
-        } else {
-          // Fallback to dashboard if checkout creation fails
-          router.push('/dashboard?subscription=pending');
-        }
-      } else {
-        router.push('/dashboard?welcome=true');
-      }
+      // Redirect to dashboard - they'll see subscription prompt there
+      router.push('/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {

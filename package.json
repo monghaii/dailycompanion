@@ -5,13 +5,16 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "coach:activate": "node scripts/manage-coach-subscription.js",
+    "coach:list": "node scripts/manage-coach-subscription.js list"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
     "@supabase/supabase-js": "^2.87.0",
     "bcryptjs": "^3.0.3",
     "canvas-confetti": "^1.9.4",
+    "dotenv": "^16.4.7",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.562.0",
     "next": "16.0.8",

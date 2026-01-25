@@ -206,9 +206,9 @@ function DashboardContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("coachDashboardActiveSection") || "config";
+      return localStorage.getItem("coachDashboardActiveSection") || "finance";
     }
-    return "config";
+    return "finance";
   });
   
   // Save activeSection to localStorage whenever it changes
@@ -217,6 +217,13 @@ function DashboardContent() {
       localStorage.setItem("coachDashboardActiveSection", activeSection);
     }
   }, [activeSection]);
+  
+  // Force finance tab if not subscribed
+  useEffect(() => {
+    if (user?.coach && user.coach.platform_subscription_status !== "active" && activeSection !== "finance") {
+      setActiveSection("finance");
+    }
+  }, [user, activeSection]);
   
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
@@ -771,13 +778,12 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     router.push("/");
   };
 
-  const handleSubscribe = async (plan) => {
+  const handleSubscribe = async () => {
     setCheckoutLoading(true);
     try {
       const res = await fetch("/api/stripe/coach-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
       });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
@@ -1323,12 +1329,17 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden">
           <button
             onClick={() => setActiveSection("config")}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors cursor-pointer ${
+            disabled={coach?.platform_subscription_status !== "active"}
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors ${
+              coach?.platform_subscription_status !== "active"
+                ? "opacity-40 cursor-not-allowed"
+                : "cursor-pointer"
+            } ${
               activeSection === "config"
                 ? "bg-purple-100 text-purple-700 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
-            title="Config"
+            title={coach?.platform_subscription_status !== "active" ? "Subscribe to unlock" : "Config"}
           >
             <svg
               className="w-6 h-6 shrink-0"
@@ -1348,12 +1359,17 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
           <button
             onClick={() => setActiveSection("resource-hub")}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors cursor-pointer ${
+            disabled={coach?.platform_subscription_status !== "active"}
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors ${
+              coach?.platform_subscription_status !== "active"
+                ? "opacity-40 cursor-not-allowed"
+                : "cursor-pointer"
+            } ${
               activeSection === "resource-hub"
                 ? "bg-purple-100 text-purple-700 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
-            title="Resource Hub"
+            title={coach?.platform_subscription_status !== "active" ? "Subscribe to unlock" : "Resource Hub"}
           >
             <svg
               className="w-6 h-6 shrink-0"
@@ -1373,12 +1389,17 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
           <button
             onClick={() => setActiveSection("analytics")}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors cursor-pointer ${
+            disabled={coach?.platform_subscription_status !== "active"}
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors ${
+              coach?.platform_subscription_status !== "active"
+                ? "opacity-40 cursor-not-allowed"
+                : "cursor-pointer"
+            } ${
               activeSection === "analytics"
                 ? "bg-purple-100 text-purple-700 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
-            title="Analytics"
+            title={coach?.platform_subscription_status !== "active" ? "Subscribe to unlock" : "Analytics"}
           >
             <svg
               className="w-6 h-6 shrink-0"
@@ -1398,12 +1419,17 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
           <button
             onClick={() => setActiveSection("clients")}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors cursor-pointer ${
+            disabled={coach?.platform_subscription_status !== "active"}
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors ${
+              coach?.platform_subscription_status !== "active"
+                ? "opacity-40 cursor-not-allowed"
+                : "cursor-pointer"
+            } ${
               activeSection === "clients"
                 ? "bg-purple-100 text-purple-700 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
-            title="Clients"
+            title={coach?.platform_subscription_status !== "active" ? "Subscribe to unlock" : "Clients"}
           >
             <svg
               className="w-6 h-6 shrink-0"
@@ -1448,12 +1474,17 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
           <button
             onClick={() => setActiveSection("settings")}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors cursor-pointer ${
+            disabled={coach?.platform_subscription_status !== "active"}
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors ${
+              coach?.platform_subscription_status !== "active"
+                ? "opacity-40 cursor-not-allowed"
+                : "cursor-pointer"
+            } ${
               activeSection === "settings"
                 ? "bg-purple-100 text-purple-700 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
-            title="Settings"
+            title={coach?.platform_subscription_status !== "active" ? "Subscribe to unlock" : "Settings"}
           >
             <svg
               className="w-6 h-6 shrink-0"
@@ -4617,41 +4648,32 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
                   {coach?.platform_subscription_status !== "active" && (
                     <div className="p-6">
-                      <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="max-w-md mx-auto">
                         <button
-                          onClick={() => handleSubscribe("monthly")}
+                          onClick={() => handleSubscribe()}
                           disabled={checkoutLoading}
-                          className="group relative p-6 rounded-xl border-2 border-gray-200 hover:border-purple-500 bg-white hover:bg-purple-50/50 text-left transition-all duration-200"
+                          className="group relative w-full p-8 rounded-xl border-2 border-purple-500 bg-purple-50/50 hover:bg-purple-100/50 text-left transition-all duration-200"
                         >
-                          <div className="text-2xl font-bold text-gray-900">
-                            $50
-                          </div>
-                          <div className="text-sm text-gray-600 mt-1">
-                            per month
-                          </div>
-                          <div className="text-xs text-gray-500 mt-4">
-                            Pay monthly
+                          <div className="text-center">
+                            <div className="text-3xl font-bold text-gray-900">
+                              $500 + $50/mo
+                            </div>
+                            <div className="text-sm text-gray-600 mt-2">
+                              One-time setup fee + monthly subscription
+                            </div>
+                            <div className="text-xs text-gray-500 mt-4">
+                              {coach?.setup_fee_paid 
+                                ? "Setup fee already paid - only $50/mo" 
+                                : "Includes $500 setup + $50/month recurring"}
+                            </div>
+                            <div className="mt-6 inline-flex items-center justify-center px-6 py-3 bg-purple-600 text-white rounded-lg font-medium group-hover:bg-purple-700 transition-colors">
+                              {checkoutLoading ? "Loading..." : "Subscribe Now"}
+                            </div>
                           </div>
                         </button>
-
-                        <button
-                          onClick={() => handleSubscribe("yearly")}
-                          disabled={checkoutLoading}
-                          className="group relative p-6 rounded-xl border-2 border-gray-200 hover:border-purple-500 bg-white hover:bg-purple-50/50 text-left transition-all duration-200"
-                        >
-                          <div className="absolute -top-3 right-4 bg-green-100 text-green-800 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide">
-                            Save $100
-                          </div>
-                          <div className="text-2xl font-bold text-gray-900">
-                            $500
-                          </div>
-                          <div className="text-sm text-gray-600 mt-1">
-                            per year
-                          </div>
-                          <div className="text-xs text-gray-500 mt-4">
-                            Pay yearly
-                          </div>
-                        </button>
+                        <p className="text-xs text-gray-500 text-center mt-4">
+                          You can apply coupon codes at checkout
+                        </p>
                       </div>
                     </div>
                   )}
