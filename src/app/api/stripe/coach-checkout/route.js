@@ -20,21 +20,11 @@ export async function POST(request) {
       );
     }
 
-    const body = await request.json();
-    const { plan } = body; // 'monthly' or 'yearly'
-
-    if (!['monthly', 'yearly'].includes(plan)) {
-      return NextResponse.json(
-        { error: 'Invalid plan. Must be monthly or yearly' },
-        { status: 400 }
-      );
-    }
-
+    // Create checkout session with setup fee + monthly subscription
     const session = await createCoachCheckoutSession({
       coachId: user.coach?.id,
       profileId: user.id,
       email: user.email,
-      plan,
     });
 
     return NextResponse.json({ url: session.url });

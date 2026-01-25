@@ -32,14 +32,36 @@ export async function POST(request) {
         
         if (session.metadata?.type === 'coach_subscription') {
           // Coach subscribed to platform
+          const updateData = {
+            platform_subscription_status: 'active',
+            platform_subscription_id: session.subscription,
+            stripe_customer_id: session.customer,
+            is_active: true,
+          };
+          
+          // If this checkout included setup fee, mark it as paid
+          if (session.metadata.includesSetupFee === 'true') {
+            updateData.setup_fee_paid = true;
+            updateData.setup_fee_paid_at = new Date().toISOString();
+            
+            // Calculate setup fee amount from line items
+            const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+            const setupFeeItem = lineItems.data.find(item => 
+              item.description?.includes('Setup Fee') || 
+              item.price?.product?.name?.includes('Setup Fee')
+            );
+            
+            if (setupFeeItem) {
+              updateData.setup_fee_amount_cents = setupFeeItem.amount_total;
+            }
+          }
+          
           await supabase
             .from('coaches')
-            .update({
-              platform_subscription_status: 'active',
-              platform_subscription_id: session.subscription,
-              is_active: true,
-            })
+            .update(updateData)
             .eq('id', session.metadata.coachId);
+            
+          console.log(`[Webhook] Coach subscription activated: ${session.metadata.coachId}`);
         } else if (session.metadata?.type === 'user_subscription') {
           // User subscribed to coach
           await supabase.from('user_subscriptions').upsert({
@@ -50,6 +72,8 @@ export async function POST(request) {
             status: 'active',
             current_period_start: new Date().toISOString(),
           });
+          
+          console.log(`[Webhook] User subscription activated: user=${session.metadata.userId}, coach=${session.metadata.coachId}`);
         }
         break;
       }
@@ -76,6 +100,8 @@ export async function POST(request) {
               is_active: subscription.status === 'active',
             })
             .eq('id', coach.id);
+            
+          console.log(`[Webhook] Coach subscription updated: ${coach.id}, status=${subscription.status}`);
         } else {
           // Update user subscription status
           await supabase
@@ -90,6 +116,8 @@ export async function POST(request) {
                 : null,
             })
             .eq('stripe_subscription_id', subscription.id);
+            
+          console.log(`[Webhook] User subscription updated: ${subscription.id}, status=${subscription.status}`);
         }
         break;
       }
@@ -112,6 +140,8 @@ export async function POST(request) {
               is_active: false,
             })
             .eq('id', coach.id);
+            
+          console.log(`[Webhook] Coach subscription canceled: ${coach.id}`);
         } else {
           await supabase
             .from('user_subscriptions')
@@ -120,6 +150,8 @@ export async function POST(request) {
               canceled_at: new Date().toISOString(),
             })
             .eq('stripe_subscription_id', subscription.id);
+            
+          console.log(`[Webhook] User subscription canceled: ${subscription.id}`);
         }
         break;
       }
@@ -137,6 +169,8 @@ export async function POST(request) {
               stripe_account_status: isActive ? 'active' : 'pending',
             })
             .eq('id', account.metadata.coachId);
+            
+          console.log(`[Webhook] Connect account updated: ${account.metadata.coachId}, active=${isActive}`);
         }
         break;
       }
