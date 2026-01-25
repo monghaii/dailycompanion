@@ -70,10 +70,19 @@ export default function CustomDomainWizard() {
         return;
       }
 
-      setSuccess('Domain added! Follow the instructions below to verify.');
+      // Show success message
+      if (data.message) {
+        setSuccess(data.message);
+      } else {
+        setSuccess('Domain added! Follow the instructions below to verify.');
+      }
+      
       setNewDomain('');
       setShowAddModal(false);
-      fetchDomains();
+      
+      // Refresh the domains list
+      await fetchDomains();
+      
     } catch (err) {
       setError('Failed to add domain');
     } finally {
@@ -104,6 +113,8 @@ export default function CustomDomainWizard() {
         if (data.verification_needed) {
           setVerificationData(data.verification_needed);
         }
+        // Refresh domains to get updated verification_method and txt_verification_code
+        fetchDomains();
       }
     } catch (err) {
       setError('Failed to verify domain');
@@ -436,7 +447,38 @@ export default function CustomDomainWizard() {
                         <div>TTL: <span style={{ color: 'white' }}>3600</span></div>
                       </div>
 
-                      {verificationData && domain.verification_method === 'txt' && (
+                      {/* Show TXT verification if stored in domain record */}
+                      {domain.verification_method === 'txt' && domain.txt_verification_code && (
+                        <div style={{ marginTop: '16px' }}>
+                          <p style={{ fontSize: '14px', color: '#991B1B', fontWeight: '600', marginBottom: '8px' }}>
+                            ⚠️ Ownership Verification Required
+                          </p>
+                          <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '8px' }}>
+                            This domain is currently linked to another Vercel account. Please add this TXT record to verify ownership:
+                          </p>
+                          <div
+                            style={{
+                              padding: '12px',
+                              backgroundColor: '#FEF2F2',
+                              border: '1px solid #FECACA',
+                              color: '#991B1B',
+                              borderRadius: '6px',
+                              fontFamily: 'monospace',
+                              fontSize: '14px',
+                            }}
+                          >
+                            <div>Type: <strong>TXT</strong></div>
+                            <div>Name: <strong>_vercel</strong></div>
+                            <div style={{ marginTop: '4px', wordBreak: 'break-all' }}>Value: <strong>{domain.txt_verification_code}</strong></div>
+                          </div>
+                          <p style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '8px' }}>
+                            💡 After adding both the A record and TXT record, click "Verify" to complete the setup.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Show verification data from API response (transient state) */}
+                      {verificationData && !domain.txt_verification_code && (
                         <div style={{ marginTop: '16px' }}>
                           <p style={{ fontSize: '14px', color: '#991B1B', fontWeight: '600', marginBottom: '8px' }}>
                             ⚠️ Ownership Verification Required

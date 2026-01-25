@@ -90,6 +90,8 @@ export async function POST(request) {
     // Add domain to Vercel via API
     let vercelDomainId = null;
     let vercelConfigured = false;
+    let txtVerificationCode = null;
+    let verificationMethod = 'dns'; // Default to DNS
     
     // Check if Vercel credentials are configured
     if (!VERCEL_TOKEN || !VERCEL_PROJECT_ID) {
@@ -111,11 +113,68 @@ export async function POST(request) {
         );
         
         const vercelData = await vercelResponse.json();
+        console.log(`[Add Domain] Vercel API response:`, {
+          status: vercelResponse.status,
+          ok: vercelResponse.ok,
+          data: vercelData
+        });
         
         if (vercelResponse.ok) {
           vercelDomainId = vercelData.uid || vercelData.name;
           vercelConfigured = true;
+          
+          // Check if verification is required in the add response
+          if (vercelData.verified === false && vercelData.verification) {
+            const verification = vercelData.verification;
+            console.log('[Add Domain] Verification required:', verification);
+            
+            if (verification.length > 0) {
+              const txtRecord = verification.find(v => v.type === 'TXT');
+              
+              if (txtRecord) {
+                verificationMethod = 'txt';
+                txtVerificationCode = txtRecord.value;
+                console.log(`[Add Domain] TXT verification needed for ${sanitizedDomain}: ${txtVerificationCode}`);
+              }
+            }
+          }
+          
           console.log(`[Add Domain] Successfully added to Vercel: ${sanitizedDomain}`, vercelData);
+          
+          // ALSO call the verify endpoint to check if Vercel requires ownership verification
+          // (This catches cases where the domain is linked to another account)
+          try {
+            const verifyResponse = await fetch(
+              `${VERCEL_API_URL}/v9/projects/${VERCEL_PROJECT_ID}/domains/${sanitizedDomain}/verify${VERCEL_TEAM_ID ? `?teamId=${VERCEL_TEAM_ID}` : ''}`,
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${VERCEL_TOKEN}`,
+                },
+              }
+            );
+            
+            const verifyData = await verifyResponse.json();
+            console.log('[Add Domain] Vercel verify check:', verifyData);
+            
+            // Check if verification is needed after verify attempt
+            if (verifyData.verified === false && verifyData.verification) {
+              const verification = verifyData.verification;
+              
+              if (verification.length > 0) {
+                const txtRecord = verification.find(v => v.type === 'TXT');
+                
+                if (txtRecord) {
+                  verificationMethod = 'txt';
+                  txtVerificationCode = txtRecord.value;
+                  console.log(`[Add Domain] TXT verification needed (from verify): ${txtVerificationCode}`);
+                }
+              }
+            }
+          } catch (verifyError) {
+            console.error('[Add Domain] Failed to check verify status:', verifyError);
+            // Continue anyway - user can manually verify later
+          }
         } else {
           console.error('[Add Domain] Vercel API error:', {
             status: vercelResponse.status,
@@ -147,7 +206,8 @@ export async function POST(request) {
         vercel_domain_id: vercelDomainId,
         vercel_configured: vercelConfigured,
         expected_a_record: vercelIP,
-        verification_method: 'dns',
+        verification_method: verificationMethod,
+        txt_verification_code: txtVerificationCode,
       })
       .select()
       .single();
@@ -157,7 +217,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Failed to save domain' }, { status: 500 });
     }
     
-    return NextResponse.json({
+    const response = {
       success: true,
       domain: newDomain,
       instructions: {
@@ -166,7 +226,19 @@ export async function POST(request) {
         value: vercelIP,
         ttl: 3600,
       },
-    });
+    };
+    
+    // Add TXT verification instructions if needed
+    if (txtVerificationCode) {
+      response.txt_verification = {
+        type: 'TXT',
+        name: '_vercel',
+        value: txtVerificationCode,
+      };
+      response.message = 'Domain added! This domain requires ownership verification. Please add both the A record and the TXT record shown below.';
+    }
+    
+    return NextResponse.json(response);
     
   } catch (error) {
     console.error('[Add Domain] Error:', error);

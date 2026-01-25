@@ -210,6 +210,14 @@ function DashboardContent() {
     }
     return "config";
   });
+  
+  // Save activeSection to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("coachDashboardActiveSection", activeSection);
+    }
+  }, [activeSection]);
+  
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [savingSection, setSavingSection] = useState(null);
@@ -1515,62 +1523,62 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                   <details className="group">
                     <summary className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center cursor-pointer list-none">
-                      <div>
+                    <div>
                         <h2 className="text-lg font-semibold text-gray-900">
-                          Profile Settings
-                        </h2>
+                        Profile Settings
+                      </h2>
                         <p className="text-sm text-gray-500 mt-1">
-                          Manage your public profile
-                        </p>
-                      </div>
+                        Manage your public profile
+                      </p>
+                    </div>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
                         ▼
                       </span>
                     </summary>
                     <div className="p-6 space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                            Business Name
-                          </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                          Business Name
+                        </label>
+                        <input
+                          type="text"
+                          value={profileConfig.business_name}
+                          onChange={(e) =>
+                            setProfileConfig({
+                              ...profileConfig,
+                              business_name: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          placeholder="Your Coaching Business"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                          Landing Page URL Slug
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500 shrink-0">
+                            /coach/
+                          </span>
                           <input
                             type="text"
-                            value={profileConfig.business_name}
-                            onChange={(e) =>
-                              setProfileConfig({
-                                ...profileConfig,
-                                business_name: e.target.value,
-                              })
-                            }
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            placeholder="Your Coaching Business"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                            Landing Page URL Slug
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500 shrink-0">
-                              /coach/
-                            </span>
-                            <input
-                              type="text"
-                              value={profileConfig.slug}
+                            value={profileConfig.slug}
                               onChange={(e) => {
                                 // Auto-format slug: lowercase, replace spaces with hyphens, remove special chars
                                 const formattedSlug = e.target.value
                                   .toLowerCase()
                                   .replace(/\s+/g, "-")
                                   .replace(/[^a-z0-9-]/g, "");
-                                setProfileConfig({
-                                  ...profileConfig,
+                              setProfileConfig({
+                                ...profileConfig,
                                   slug: formattedSlug,
                                 });
                               }}
-                              className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              placeholder="your-name"
-                            />
+                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="your-name"
+                          />
                             <a
                               href={`/coach/${
                                 profileConfig.slug || "your-slug"
@@ -1594,135 +1602,135 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               </svg>
                               View Page
                             </a>
-                          </div>
                         </div>
                       </div>
+                    </div>
 
-                      {/* Logo Upload */}
+                    {/* Logo Upload */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                        Business Logo
+                      </label>
+                      <div className="flex items-start gap-4">
+                        {profileConfig.logo_url && !logoLoadError ? (
+                          <div className="relative">
+                            <img
+                              src={profileConfig.logo_url}
+                              alt="Business Logo"
+                              onError={(e) => {
+                                console.error(
+                                  "Image failed to load:",
+                                  profileConfig.logo_url
+                                );
+                                setLogoLoadError(true);
+                              }}
+                              onLoad={() => setLogoLoadError(false)}
+                              className="w-24 h-24 object-cover rounded-lg border border-gray-300"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleRemoveLogo}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : logoLoadError && profileConfig.logo_url ? (
+                          <div className="relative">
+                            <div className="w-24 h-24 border-2 border-red-300 rounded-lg flex flex-col items-center justify-center text-red-500 text-xs p-2 text-center bg-red-50">
+                              <span className="text-lg mb-1">⚠️</span>
+                              <span>Failed to load</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleRemoveLogo}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400">
+                            <span className="text-2xl">🖼️</span>
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            id="logo-upload"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            onChange={handleLogoUpload}
+                            className="hidden"
+                            disabled={uploadingLogo}
+                          />
+                          <label
+                            htmlFor="logo-upload"
+                            onClick={() => console.log("Label clicked")}
+                            className={`inline-block px-4 py-2 text-sm border border-gray-300 rounded-lg cursor-pointer transition-colors ${
+                              uploadingLogo
+                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                : "bg-white text-gray-700 hover:bg-gray-50"
+                            }`}
+                          >
+                            {uploadingLogo ? "Uploading..." : "Choose Image"}
+                          </label>
+                          <p className="text-xs text-gray-500 mt-2">
+                            JPEG, PNG, GIF, or WebP. Max 5MB.
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            Recommended: Square image, at least 200x200px
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                          Bio
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={profileConfig.bio}
+                          onChange={(e) =>
+                            setProfileConfig({
+                              ...profileConfig,
+                              bio: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                          placeholder="Tell your clients about yourself..."
+                        />
+                      </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                          Business Logo
+                          Monthly Price
                         </label>
-                        <div className="flex items-start gap-4">
-                          {profileConfig.logo_url && !logoLoadError ? (
-                            <div className="relative">
-                              <img
-                                src={profileConfig.logo_url}
-                                alt="Business Logo"
-                                onError={(e) => {
-                                  console.error(
-                                    "Image failed to load:",
-                                    profileConfig.logo_url
-                                  );
-                                  setLogoLoadError(true);
-                                }}
-                                onLoad={() => setLogoLoadError(false)}
-                                className="w-24 h-24 object-cover rounded-lg border border-gray-300"
-                              />
-                              <button
-                                type="button"
-                                onClick={handleRemoveLogo}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ) : logoLoadError && profileConfig.logo_url ? (
-                            <div className="relative">
-                              <div className="w-24 h-24 border-2 border-red-300 rounded-lg flex flex-col items-center justify-center text-red-500 text-xs p-2 text-center bg-red-50">
-                                <span className="text-lg mb-1">⚠️</span>
-                                <span>Failed to load</span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={handleRemoveLogo}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400">
-                              <span className="text-2xl">🖼️</span>
-                            </div>
-                          )}
-                          <div className="flex-1">
-                            <input
-                              type="file"
-                              id="logo-upload"
-                              accept="image/jpeg,image/png,image/gif,image/webp"
-                              onChange={handleLogoUpload}
-                              className="hidden"
-                              disabled={uploadingLogo}
-                            />
-                            <label
-                              htmlFor="logo-upload"
-                              onClick={() => console.log("Label clicked")}
-                              className={`inline-block px-4 py-2 text-sm border border-gray-300 rounded-lg cursor-pointer transition-colors ${
-                                uploadingLogo
-                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                  : "bg-white text-gray-700 hover:bg-gray-50"
-                              }`}
-                            >
-                              {uploadingLogo ? "Uploading..." : "Choose Image"}
-                            </label>
-                            <p className="text-xs text-gray-500 mt-2">
-                              JPEG, PNG, GIF, or WebP. Max 5MB.
-                            </p>
-                            <p className="text-xs text-gray-400 mt-1">
-                              Recommended: Square image, at least 200x200px
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="md:col-span-2">
-                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                            Bio
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={profileConfig.bio}
-                            onChange={(e) =>
-                              setProfileConfig({
-                                ...profileConfig,
-                                bio: e.target.value,
-                              })
-                            }
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                            placeholder="Tell your clients about yourself..."
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                            Monthly Price
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-500">$</span>
-                            <input
-                              type="number"
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-500">$</span>
+                          <input
+                            type="number"
                               step="0.01"
                               value={(
                                 profileConfig.user_monthly_price_cents / 100
                               ).toFixed(2)}
-                              onChange={(e) =>
-                                setProfileConfig({
-                                  ...profileConfig,
-                                  user_monthly_price_cents: Math.round(
-                                    parseFloat(e.target.value) * 100
-                                  ),
-                                })
-                              }
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            onChange={(e) =>
+                              setProfileConfig({
+                                ...profileConfig,
+                                user_monthly_price_cents: Math.round(
+                                  parseFloat(e.target.value) * 100
+                                ),
+                              })
+                            }
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                               placeholder="29.99"
-                            />
-                          </div>
-                          <p className="text-xs text-gray-400 mt-1">
-                            Subscription per month
-                          </p>
+                          />
                         </div>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Subscription per month
+                        </p>
                       </div>
+                    </div>
 
                       {/* Landing Page Content */}
                       <div className="pt-4 border-t border-gray-100">
@@ -1746,7 +1754,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                               placeholder="Life & Wellness Coach"
                             />
-                          </div>
+                  </div>
 
                           <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1.5">
@@ -1827,51 +1835,51 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                   <details className="group">
                     <summary className="p-6 border-b border-gray-100 bg-gray-50/50 cursor-pointer list-none flex justify-between items-center">
                       <div>
-                        <h2 className="text-lg font-semibold text-gray-900">
-                          Branding
-                        </h2>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Customize the look and feel
-                        </p>
-                      </div>
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Branding
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Customize the look and feel
+                    </p>
+                  </div>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
                         ▼
                       </span>
                     </summary>
-                    <div className="p-6 space-y-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Primary Color
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={brandingConfig.primary_color}
-                            onChange={(e) =>
-                              setBrandingConfig({
-                                ...brandingConfig,
-                                primary_color: e.target.value,
-                              })
-                            }
-                            className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
-                          />
-                          <input
-                            type="text"
-                            value={brandingConfig.primary_color}
-                            onChange={(e) =>
-                              setBrandingConfig({
-                                ...brandingConfig,
-                                primary_color: e.target.value,
-                              })
-                            }
-                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          />
-                        </div>
+                  <div className="p-6 space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Primary Color
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={brandingConfig.primary_color}
+                          onChange={(e) =>
+                            setBrandingConfig({
+                              ...brandingConfig,
+                              primary_color: e.target.value,
+                            })
+                          }
+                          className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={brandingConfig.primary_color}
+                          onChange={(e) =>
+                            setBrandingConfig({
+                              ...brandingConfig,
+                              primary_color: e.target.value,
+                            })
+                          }
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
                       </div>
+                    </div>
 
                       {/* Background Style */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                           Background Style
                         </label>
                         <div className="flex gap-2 mb-4">
@@ -1910,33 +1918,33 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         {brandingConfig.background_type === "solid" ? (
                           <div>
                             <label className="block text-xs font-medium text-gray-700 mb-2">
-                              Background Color
-                            </label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="color"
-                                value={brandingConfig.background_color}
-                                onChange={(e) =>
-                                  setBrandingConfig({
-                                    ...brandingConfig,
-                                    background_color: e.target.value,
-                                  })
-                                }
-                                className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
-                              />
-                              <input
-                                type="text"
-                                value={brandingConfig.background_color}
-                                onChange={(e) =>
-                                  setBrandingConfig({
-                                    ...brandingConfig,
-                                    background_color: e.target.value,
-                                  })
-                                }
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              />
-                            </div>
-                          </div>
+                        Background Color
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={brandingConfig.background_color}
+                          onChange={(e) =>
+                            setBrandingConfig({
+                              ...brandingConfig,
+                              background_color: e.target.value,
+                            })
+                          }
+                          className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={brandingConfig.background_color}
+                          onChange={(e) =>
+                            setBrandingConfig({
+                              ...brandingConfig,
+                              background_color: e.target.value,
+                            })
+                          }
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
                         ) : (
                           <div className="space-y-4">
                             {/* Gradient Color 1 */}
@@ -2223,24 +2231,24 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
                       {/* Save Button */}
                       <div className="flex justify-end pt-4 border-t border-gray-100 mt-6">
-                        <button
-                          onClick={() =>
-                            handleSaveConfig(
-                              "branding",
-                              brandingConfig,
-                              "✅ Branding saved successfully!"
-                            )
-                          }
+                    <button
+                      onClick={() =>
+                        handleSaveConfig(
+                          "branding",
+                          brandingConfig,
+                          "✅ Branding saved successfully!"
+                        )
+                      }
                           disabled={
                             isSavingConfig && savingSection === "branding"
                           }
                           className="px-6 py-2.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isSavingConfig && savingSection === "branding"
-                            ? "Saving..."
+                    >
+                      {isSavingConfig && savingSection === "branding"
+                        ? "Saving..."
                             : "Save Branding"}
-                        </button>
-                      </div>
+                    </button>
+                  </div>
                     </div>
                   </details>
                 </div>
@@ -2250,73 +2258,73 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                   <details className="group">
                     <summary className="p-6 border-b border-gray-100 bg-gray-50/50 cursor-pointer list-none flex justify-between items-center">
                       <div>
-                        <h2 className="text-lg font-semibold text-gray-900">
-                          Header Customization
-                        </h2>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Customize the app header title and subtitle
-                        </p>
-                      </div>
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Header Customization
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Customize the app header title and subtitle
+                    </p>
+                  </div>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
                         ▼
                       </span>
                     </summary>
-                    <div className="p-6 space-y-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          App Title
-                        </label>
-                        <input
-                          type="text"
-                          value={headerConfig.title}
-                          onChange={(e) =>
-                            setHeaderConfig({
-                              ...headerConfig,
-                              title: e.target.value,
-                            })
-                          }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          placeholder="BrainPeace"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          App Subtitle
-                        </label>
-                        <input
-                          type="text"
-                          value={headerConfig.subtitle}
-                          onChange={(e) =>
-                            setHeaderConfig({
-                              ...headerConfig,
-                              subtitle: e.target.value,
-                            })
-                          }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          placeholder="Mental Fitness for Active Minds"
-                        />
-                      </div>
+                  <div className="p-6 space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        App Title
+                      </label>
+                      <input
+                        type="text"
+                        value={headerConfig.title}
+                        onChange={(e) =>
+                          setHeaderConfig({
+                            ...headerConfig,
+                            title: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="BrainPeace"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        App Subtitle
+                      </label>
+                      <input
+                        type="text"
+                        value={headerConfig.subtitle}
+                        onChange={(e) =>
+                          setHeaderConfig({
+                            ...headerConfig,
+                            subtitle: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Mental Fitness for Active Minds"
+                      />
+                    </div>
 
                       {/* Save Button */}
                       <div className="flex justify-end pt-4 border-t border-gray-100 mt-6">
-                        <button
-                          onClick={() =>
-                            handleSaveConfig(
-                              "header",
-                              headerConfig,
-                              "✅ Header config saved!"
-                            )
-                          }
+                    <button
+                      onClick={() =>
+                        handleSaveConfig(
+                          "header",
+                          headerConfig,
+                          "✅ Header config saved!"
+                        )
+                      }
                           disabled={
                             isSavingConfig && savingSection === "header"
                           }
                           className="px-6 py-2.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isSavingConfig && savingSection === "header"
-                            ? "Saving..."
+                    >
+                      {isSavingConfig && savingSection === "header"
+                        ? "Saving..."
                             : "Save Header"}
-                        </button>
-                      </div>
+                    </button>
+                  </div>
                     </div>
                   </details>
                 </div>
@@ -2325,49 +2333,125 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                   <details className="group">
                     <summary className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center cursor-pointer list-none">
-                      <div>
+                    <div>
                         <h2 className="text-lg font-semibold text-gray-900">
-                          Focus Tab Customization
-                        </h2>
+                        Focus Tab Customization
+                      </h2>
                         <p className="text-sm text-gray-500 mt-1">
-                          Customize daily focus experience
-                        </p>
-                      </div>
+                        Customize daily focus experience
+                      </p>
+                    </div>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
                         ▼
                       </span>
                     </summary>
                     <div className="p-6 space-y-6">
-                      {/* Progress Bar */}
-                      <div className="pb-4 border-b border-gray-100">
-                        <details className="group" open>
-                          <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
-                            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
-                              Progress Bar
-                            </h3>
-                            <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
-                              ▼
+                    {/* Progress Bar */}
+                    <div className="pb-4 border-b border-gray-100">
+                      <details className="group" open>
+                        <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
+                          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                            Progress Bar
+                          </h3>
+                          <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                            ▼
+                          </span>
+                        </summary>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Main Title
+                            </label>
+                            <input
+                              type="text"
+                              value={focusConfig.progress_bar.title}
+                              onChange={(e) =>
+                                setFocusConfig({
+                                  ...focusConfig,
+                                  progress_bar: {
+                                    ...focusConfig.progress_bar,
+                                    title: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              placeholder="Today's Focus"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Subtitle
+                            </label>
+                            <input
+                              type="text"
+                              value={focusConfig.progress_bar.subtitle}
+                              onChange={(e) =>
+                                setFocusConfig({
+                                  ...focusConfig,
+                                  progress_bar: {
+                                    ...focusConfig.progress_bar,
+                                    subtitle: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              placeholder="Direct your energy intentionally"
+                            />
+                          </div>
+                        </div>
+                      </details>
+                    </div>
+
+                    {/* Task 1 */}
+                    <div className="pb-4 border-b border-gray-100">
+                      <details className="group">
+                        <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
+                          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                            Task 1 (Morning)
+                          </h3>
+                          <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                            ▼
+                          </span>
+                        </summary>
+                        <div className="mt-3 space-y-3">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={focusConfig.task_1.enabled}
+                              onChange={(e) =>
+                                setFocusConfig({
+                                  ...focusConfig,
+                                  task_1: {
+                                    ...focusConfig.task_1,
+                                    enabled: e.target.checked,
+                                  },
+                                })
+                              }
+                              className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            />
+                            <span className="text-xs text-gray-600">
+                              Enabled
                             </span>
-                          </summary>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                          </label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Main Title
+                                Title
                               </label>
                               <input
                                 type="text"
-                                value={focusConfig.progress_bar.title}
+                                value={focusConfig.task_1.title}
                                 onChange={(e) =>
                                   setFocusConfig({
                                     ...focusConfig,
-                                    progress_bar: {
-                                      ...focusConfig.progress_bar,
+                                    task_1: {
+                                      ...focusConfig.task_1,
                                       title: e.target.value,
                                     },
                                   })
                                 }
                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder="Today's Focus"
+                                placeholder="Task title"
                               />
                             </div>
                             <div>
@@ -2376,103 +2460,27 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               </label>
                               <input
                                 type="text"
-                                value={focusConfig.progress_bar.subtitle}
-                                onChange={(e) =>
-                                  setFocusConfig({
-                                    ...focusConfig,
-                                    progress_bar: {
-                                      ...focusConfig.progress_bar,
-                                      subtitle: e.target.value,
-                                    },
-                                  })
-                                }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder="Direct your energy intentionally"
-                              />
-                            </div>
-                          </div>
-                        </details>
-                      </div>
-
-                      {/* Task 1 */}
-                      <div className="pb-4 border-b border-gray-100">
-                        <details className="group">
-                          <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
-                            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
-                              Task 1 (Morning)
-                            </h3>
-                            <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
-                              ▼
-                            </span>
-                          </summary>
-                          <div className="mt-3 space-y-3">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={focusConfig.task_1.enabled}
+                                value={focusConfig.task_1.subtitle}
                                 onChange={(e) =>
                                   setFocusConfig({
                                     ...focusConfig,
                                     task_1: {
                                       ...focusConfig.task_1,
-                                      enabled: e.target.checked,
+                                      subtitle: e.target.value,
                                     },
                                   })
                                 }
-                                className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="Task description"
                               />
-                              <span className="text-xs text-gray-600">
-                                Enabled
-                              </span>
-                            </label>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                  Title
-                                </label>
-                                <input
-                                  type="text"
-                                  value={focusConfig.task_1.title}
-                                  onChange={(e) =>
-                                    setFocusConfig({
-                                      ...focusConfig,
-                                      task_1: {
-                                        ...focusConfig.task_1,
-                                        title: e.target.value,
-                                      },
-                                    })
-                                  }
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                  placeholder="Task title"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                  Subtitle
-                                </label>
-                                <input
-                                  type="text"
-                                  value={focusConfig.task_1.subtitle}
-                                  onChange={(e) =>
-                                    setFocusConfig({
-                                      ...focusConfig,
-                                      task_1: {
-                                        ...focusConfig.task_1,
-                                        subtitle: e.target.value,
-                                      },
-                                    })
-                                  }
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                  placeholder="Task description"
-                                />
-                              </div>
                             </div>
+                          </div>
 
                             {/* Custom Icon Upload */}
-                            <div>
+                          <div>
                               <label className="block text-xs font-medium text-gray-700 mb-2">
                                 Custom Icon
-                              </label>
+                            </label>
                               <p className="text-xs text-gray-500 mb-2">
                                 Upload a custom icon to replace the default.
                                 Leave empty to use the default icon.
@@ -2488,14 +2496,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   <button
                                     type="button"
                                     onClick={() =>
-                                      setFocusConfig({
-                                        ...focusConfig,
-                                        task_1: {
-                                          ...focusConfig.task_1,
+                                setFocusConfig({
+                                  ...focusConfig,
+                                  task_1: {
+                                    ...focusConfig.task_1,
                                           icon_url: null,
-                                        },
-                                      })
-                                    }
+                                  },
+                                })
+                              }
                                     className="text-xs text-red-600 hover:text-red-700"
                                   >
                                     Remove Icon
@@ -2797,84 +2805,84 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               <p className="text-xs text-gray-500 mt-2">
                                 MP3, WAV, or M4A • Max 50MB per file
                               </p>
-                            </div>
                           </div>
-                        </details>
-                      </div>
+                        </div>
+                      </details>
+                    </div>
 
-                      {/* Task 2 */}
-                      <div className="pb-4 border-b border-gray-100">
-                        <details className="group">
-                          <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
-                            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
-                              Task 2 (Intention)
-                            </h3>
-                            <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
-                              ▼
+                    {/* Task 2 */}
+                    <div className="pb-4 border-b border-gray-100">
+                      <details className="group">
+                        <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
+                          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                            Task 2 (Intention)
+                          </h3>
+                          <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                            ▼
+                          </span>
+                        </summary>
+                        <div className="mt-3 space-y-3">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={focusConfig.task_2.enabled}
+                              onChange={(e) =>
+                                setFocusConfig({
+                                  ...focusConfig,
+                                  task_2: {
+                                    ...focusConfig.task_2,
+                                    enabled: e.target.checked,
+                                  },
+                                })
+                              }
+                              className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            />
+                            <span className="text-xs text-gray-600">
+                              Enabled
                             </span>
-                          </summary>
-                          <div className="mt-3 space-y-3">
-                            <label className="flex items-center gap-2 cursor-pointer">
+                          </label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Title
+                              </label>
                               <input
-                                type="checkbox"
-                                checked={focusConfig.task_2.enabled}
+                                type="text"
+                                value={focusConfig.task_2.title}
                                 onChange={(e) =>
                                   setFocusConfig({
                                     ...focusConfig,
                                     task_2: {
                                       ...focusConfig.task_2,
-                                      enabled: e.target.checked,
+                                      title: e.target.value,
                                     },
                                   })
                                 }
-                                className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="Task title"
                               />
-                              <span className="text-xs text-gray-600">
-                                Enabled
-                              </span>
-                            </label>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                  Title
-                                </label>
-                                <input
-                                  type="text"
-                                  value={focusConfig.task_2.title}
-                                  onChange={(e) =>
-                                    setFocusConfig({
-                                      ...focusConfig,
-                                      task_2: {
-                                        ...focusConfig.task_2,
-                                        title: e.target.value,
-                                      },
-                                    })
-                                  }
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                  placeholder="Task title"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                  Subtitle
-                                </label>
-                                <input
-                                  type="text"
-                                  value={focusConfig.task_2.subtitle}
-                                  onChange={(e) =>
-                                    setFocusConfig({
-                                      ...focusConfig,
-                                      task_2: {
-                                        ...focusConfig.task_2,
-                                        subtitle: e.target.value,
-                                      },
-                                    })
-                                  }
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                  placeholder="Task description"
-                                />
-                              </div>
                             </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Subtitle
+                              </label>
+                              <input
+                                type="text"
+                                value={focusConfig.task_2.subtitle}
+                                onChange={(e) =>
+                                  setFocusConfig({
+                                    ...focusConfig,
+                                    task_2: {
+                                      ...focusConfig.task_2,
+                                      subtitle: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="Task description"
+                              />
+                            </div>
+                          </div>
 
                             {/* Custom Icon Upload for Task 2 */}
                             <div>
@@ -2956,84 +2964,84 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   Uploading...
                                 </p>
                               )}
-                            </div>
                           </div>
-                        </details>
-                      </div>
+                        </div>
+                      </details>
+                    </div>
 
-                      {/* Task 3 */}
-                      <div className="pb-4 border-b border-gray-100">
-                        <details className="group">
-                          <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
-                            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
-                              Task 3 (Evening)
-                            </h3>
-                            <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
-                              ▼
+                    {/* Task 3 */}
+                    <div className="pb-4 border-b border-gray-100">
+                      <details className="group">
+                        <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
+                          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                            Task 3 (Evening)
+                          </h3>
+                          <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                            ▼
+                          </span>
+                        </summary>
+                        <div className="mt-3 space-y-3">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={focusConfig.task_3.enabled}
+                              onChange={(e) =>
+                                setFocusConfig({
+                                  ...focusConfig,
+                                  task_3: {
+                                    ...focusConfig.task_3,
+                                    enabled: e.target.checked,
+                                  },
+                                })
+                              }
+                              className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            />
+                            <span className="text-xs text-gray-600">
+                              Enabled
                             </span>
-                          </summary>
-                          <div className="mt-3 space-y-3">
-                            <label className="flex items-center gap-2 cursor-pointer">
+                          </label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Title
+                              </label>
                               <input
-                                type="checkbox"
-                                checked={focusConfig.task_3.enabled}
+                                type="text"
+                                value={focusConfig.task_3.title}
                                 onChange={(e) =>
                                   setFocusConfig({
                                     ...focusConfig,
                                     task_3: {
                                       ...focusConfig.task_3,
-                                      enabled: e.target.checked,
+                                      title: e.target.value,
                                     },
                                   })
                                 }
-                                className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="Task title"
                               />
-                              <span className="text-xs text-gray-600">
-                                Enabled
-                              </span>
-                            </label>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                  Title
-                                </label>
-                                <input
-                                  type="text"
-                                  value={focusConfig.task_3.title}
-                                  onChange={(e) =>
-                                    setFocusConfig({
-                                      ...focusConfig,
-                                      task_3: {
-                                        ...focusConfig.task_3,
-                                        title: e.target.value,
-                                      },
-                                    })
-                                  }
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                  placeholder="Task title"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                  Subtitle
-                                </label>
-                                <input
-                                  type="text"
-                                  value={focusConfig.task_3.subtitle}
-                                  onChange={(e) =>
-                                    setFocusConfig({
-                                      ...focusConfig,
-                                      task_3: {
-                                        ...focusConfig.task_3,
-                                        subtitle: e.target.value,
-                                      },
-                                    })
-                                  }
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                  placeholder="Task description"
-                                />
-                              </div>
                             </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Subtitle
+                              </label>
+                              <input
+                                type="text"
+                                value={focusConfig.task_3.subtitle}
+                                onChange={(e) =>
+                                  setFocusConfig({
+                                    ...focusConfig,
+                                    task_3: {
+                                      ...focusConfig.task_3,
+                                      subtitle: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="Task description"
+                              />
+                            </div>
+                          </div>
 
                             {/* Custom Icon Upload for Task 3 */}
                             <div>
@@ -3115,64 +3123,64 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   Uploading...
                                 </p>
                               )}
-                            </div>
                           </div>
-                        </details>
-                      </div>
+                        </div>
+                      </details>
+                    </div>
 
-                      {/* Day Notes */}
-                      <div>
-                        <details className="group">
-                          <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
-                            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
-                              Day Notes Section
-                            </h3>
-                            <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
-                              ▼
-                            </span>
-                          </summary>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Title
-                              </label>
-                              <input
-                                type="text"
-                                value={focusConfig.day_notes.title}
-                                onChange={(e) =>
-                                  setFocusConfig({
-                                    ...focusConfig,
-                                    day_notes: {
-                                      ...focusConfig.day_notes,
-                                      title: e.target.value,
-                                    },
-                                  })
-                                }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder="Day Notes"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Subtitle
-                              </label>
-                              <input
-                                type="text"
-                                value={focusConfig.day_notes.subtitle}
-                                onChange={(e) =>
-                                  setFocusConfig({
-                                    ...focusConfig,
-                                    day_notes: {
-                                      ...focusConfig.day_notes,
-                                      subtitle: e.target.value,
-                                    },
-                                  })
-                                }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder="Description"
-                              />
-                            </div>
+                    {/* Day Notes */}
+                    <div>
+                      <details className="group">
+                        <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
+                          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                            Day Notes Section
+                          </h3>
+                          <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                            ▼
+                          </span>
+                        </summary>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Title
+                            </label>
+                            <input
+                              type="text"
+                              value={focusConfig.day_notes.title}
+                              onChange={(e) =>
+                                setFocusConfig({
+                                  ...focusConfig,
+                                  day_notes: {
+                                    ...focusConfig.day_notes,
+                                    title: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              placeholder="Day Notes"
+                            />
                           </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Subtitle
+                            </label>
+                            <input
+                              type="text"
+                              value={focusConfig.day_notes.subtitle}
+                              onChange={(e) =>
+                                setFocusConfig({
+                                  ...focusConfig,
+                                  day_notes: {
+                                    ...focusConfig.day_notes,
+                                    subtitle: e.target.value,
+                                  },
+                                })
+                              }
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              placeholder="Description"
+                            />
+                          </div>
+                        </div>
 
                           {/* Custom Icon Upload for Day Notes */}
                           <div className="mt-3">
@@ -3206,7 +3214,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 >
                                   Remove Icon
                                 </button>
-                              </div>
+                    </div>
                             )}
 
                             <input
@@ -3254,15 +3262,15 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 Uploading...
                               </p>
                             )}
-                          </div>
+                    </div>
                         </details>
                       </div>
 
                       {/* Save Button */}
                       <div className="flex justify-end pt-4 border-t border-gray-100 mt-6">
-                        <button
-                          onClick={() =>
-                            handleSaveConfig(
+                    <button
+                      onClick={() =>
+                        handleSaveConfig(
                               "focus_tab",
                               {
                                 ...focusConfig,
@@ -3272,18 +3280,18 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 current_day_index: currentDayIndex,
                               },
                               "✅ Focus tab config saved successfully!"
-                            )
-                          }
-                          disabled={
+                        )
+                      }
+                      disabled={
                             isSavingConfig && savingSection === "focus_tab"
-                          }
+                      }
                           className="px-6 py-2.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
+                    >
                           {isSavingConfig && savingSection === "focus_tab"
-                            ? "Saving..."
+                        ? "Saving..."
                             : "Save Focus Tab"}
-                        </button>
-                      </div>
+                    </button>
+                  </div>
                     </div>
                   </details>
                 </div>
@@ -3312,335 +3320,335 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           Mindfulness Logs
                         </h3>
                         <div className="space-y-4">
-                          {/* Modal Title */}
-                          <div className="pb-4 border-b border-gray-100">
-                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                              Modal Title
-                            </label>
-                            <input
-                              type="text"
-                              value={awarenessConfig.modal_title}
-                              onChange={(e) =>
-                                setAwarenessConfig({
-                                  ...awarenessConfig,
-                                  modal_title: e.target.value,
-                                })
-                              }
-                              onFocus={(e) => e.target.select()}
-                              onKeyDown={(e) => {
-                                if ((e.metaKey || e.ctrlKey) && e.key === "a") {
-                                  e.target.select();
-                                }
-                              }}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              placeholder="Nice catch!"
-                            />
-                            <p className="text-xs text-gray-400 mt-1">
-                              Title shown when user logs a mindfulness moment
-                            </p>
-                          </div>
+                    {/* Modal Title */}
+                    <div className="pb-4 border-b border-gray-100">
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                        Modal Title
+                      </label>
+                      <input
+                        type="text"
+                        value={awarenessConfig.modal_title}
+                        onChange={(e) =>
+                          setAwarenessConfig({
+                            ...awarenessConfig,
+                            modal_title: e.target.value,
+                          })
+                        }
+                        onFocus={(e) => e.target.select()}
+                        onKeyDown={(e) => {
+                          if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+                            e.target.select();
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Nice catch!"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        Title shown when user logs a mindfulness moment
+                      </p>
+                    </div>
 
-                          {/* Mindfulness Logs */}
-                          {awarenessConfig.logs.map((log, index) => (
-                            <div
-                              key={log.id}
-                              className="pb-4 border-b border-gray-100 last:border-0 last:pb-0"
-                            >
-                              <details className="group">
-                                <summary className="flex items-center justify-between cursor-pointer list-none">
-                                  <div className="flex items-center gap-2">
-                                    <div
-                                      className="w-3 h-3 rounded-full shrink-0"
-                                      style={{ backgroundColor: log.color }}
-                                    />
-                                    <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
-                                      Log {index + 1}: {log.label}
-                                    </h3>
-                                  </div>
-                                  <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
-                                    ▼
-                                  </span>
-                                </summary>
-                                <div className="mt-4 space-y-3 pl-5">
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                      Log Label
-                                    </label>
-                                    <input
-                                      type="text"
-                                      value={log.label}
-                                      onChange={(e) => {
+                    {/* Mindfulness Logs */}
+                    {awarenessConfig.logs.map((log, index) => (
+                      <div
+                        key={log.id}
+                        className="pb-4 border-b border-gray-100 last:border-0 last:pb-0"
+                      >
+                        <details className="group">
+                          <summary className="flex items-center justify-between cursor-pointer list-none">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full shrink-0"
+                                style={{ backgroundColor: log.color }}
+                              />
+                              <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                                Log {index + 1}: {log.label}
+                              </h3>
+                            </div>
+                            <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                              ▼
+                            </span>
+                          </summary>
+                          <div className="mt-4 space-y-3 pl-5">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Log Label
+                              </label>
+                              <input
+                                type="text"
+                                value={log.label}
+                                onChange={(e) => {
                                         const newLogs = [
                                           ...awarenessConfig.logs,
                                         ];
-                                        newLogs[index].label = e.target.value;
-                                        setAwarenessConfig({
-                                          ...awarenessConfig,
-                                          logs: newLogs,
-                                        });
-                                      }}
-                                      onFocus={(e) => e.target.select()}
-                                      onKeyDown={(e) => {
-                                        if (
-                                          (e.metaKey || e.ctrlKey) &&
-                                          e.key === "a"
-                                        ) {
-                                          e.target.select();
-                                        }
-                                      }}
-                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                      placeholder="e.g. Present moment"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                      Prompt Question
-                                    </label>
-                                    <input
-                                      type="text"
-                                      value={log.prompt}
-                                      onChange={(e) => {
+                                  newLogs[index].label = e.target.value;
+                                  setAwarenessConfig({
+                                    ...awarenessConfig,
+                                    logs: newLogs,
+                                  });
+                                }}
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => {
+                                  if (
+                                    (e.metaKey || e.ctrlKey) &&
+                                    e.key === "a"
+                                  ) {
+                                    e.target.select();
+                                  }
+                                }}
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="e.g. Present moment"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Prompt Question
+                              </label>
+                              <input
+                                type="text"
+                                value={log.prompt}
+                                onChange={(e) => {
                                         const newLogs = [
                                           ...awarenessConfig.logs,
                                         ];
-                                        newLogs[index].prompt = e.target.value;
-                                        setAwarenessConfig({
-                                          ...awarenessConfig,
-                                          logs: newLogs,
-                                        });
-                                      }}
-                                      onFocus={(e) => e.target.select()}
-                                      onKeyDown={(e) => {
-                                        if (
-                                          (e.metaKey || e.ctrlKey) &&
-                                          e.key === "a"
-                                        ) {
-                                          e.target.select();
-                                        }
-                                      }}
-                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                      placeholder="Question to ask the user"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                      Placeholder Text
-                                    </label>
-                                    <textarea
-                                      rows={2}
-                                      value={log.placeholder}
-                                      onChange={(e) => {
+                                  newLogs[index].prompt = e.target.value;
+                                  setAwarenessConfig({
+                                    ...awarenessConfig,
+                                    logs: newLogs,
+                                  });
+                                }}
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => {
+                                  if (
+                                    (e.metaKey || e.ctrlKey) &&
+                                    e.key === "a"
+                                  ) {
+                                    e.target.select();
+                                  }
+                                }}
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="Question to ask the user"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Placeholder Text
+                              </label>
+                              <textarea
+                                rows={2}
+                                value={log.placeholder}
+                                onChange={(e) => {
                                         const newLogs = [
                                           ...awarenessConfig.logs,
                                         ];
                                         newLogs[index].placeholder =
                                           e.target.value;
-                                        setAwarenessConfig({
-                                          ...awarenessConfig,
-                                          logs: newLogs,
-                                        });
-                                      }}
-                                      onFocus={(e) => e.target.select()}
-                                      onKeyDown={(e) => {
-                                        if (
-                                          (e.metaKey || e.ctrlKey) &&
-                                          e.key === "a"
-                                        ) {
-                                          e.target.select();
-                                        }
-                                      }}
-                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                                      placeholder="Example answer text"
-                                    />
-                                  </div>
-                                </div>
-                              </details>
+                                  setAwarenessConfig({
+                                    ...awarenessConfig,
+                                    logs: newLogs,
+                                  });
+                                }}
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => {
+                                  if (
+                                    (e.metaKey || e.ctrlKey) &&
+                                    e.key === "a"
+                                  ) {
+                                    e.target.select();
+                                  }
+                                }}
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                                placeholder="Example answer text"
+                              />
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        </details>
                       </div>
+                    ))}
+                  </div>
+                </div>
 
                       {/* Divider */}
                       <div className="border-t border-gray-200"></div>
 
                       {/* EMOTIONAL STATE TRACKING Section */}
-                      <div>
+                    <div>
                         <h3 className="text-sm font-bold text-purple-600 uppercase tracking-wider mb-4">
                           Emotional State Tracking
                         </h3>
                         <div className="space-y-4">
-                          {/* Log Label */}
-                          <div className="pb-4 border-b border-gray-100">
-                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                              Log Label
-                            </label>
-                            <input
-                              type="text"
-                              value={emotionalStateConfig.log_label}
-                              onChange={(e) =>
-                                setEmotionalStateConfig({
-                                  ...emotionalStateConfig,
-                                  log_label: e.target.value,
-                                })
-                              }
-                              onFocus={(e) => e.target.select()}
-                              onKeyDown={(e) => {
-                                if ((e.metaKey || e.ctrlKey) && e.key === "a") {
-                                  e.target.select();
-                                }
-                              }}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              placeholder="Emotional State"
-                            />
-                            <p className="text-xs text-gray-400 mt-1">
-                              Label shown in the awareness tab section
-                            </p>
-                          </div>
+                    {/* Log Label */}
+                    <div className="pb-4 border-b border-gray-100">
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                        Log Label
+                      </label>
+                      <input
+                        type="text"
+                        value={emotionalStateConfig.log_label}
+                        onChange={(e) =>
+                          setEmotionalStateConfig({
+                            ...emotionalStateConfig,
+                            log_label: e.target.value,
+                          })
+                        }
+                        onFocus={(e) => e.target.select()}
+                        onKeyDown={(e) => {
+                          if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+                            e.target.select();
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Emotional State"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        Label shown in the awareness tab section
+                      </p>
+                    </div>
 
-                          {/* Modal Subtitle */}
-                          <div className="pb-4 border-b border-gray-100">
-                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                              Modal Subtitle
-                            </label>
-                            <input
-                              type="text"
-                              value={emotionalStateConfig.modal_subtitle}
-                              onChange={(e) =>
-                                setEmotionalStateConfig({
-                                  ...emotionalStateConfig,
-                                  modal_subtitle: e.target.value,
-                                })
-                              }
-                              onFocus={(e) => e.target.select()}
-                              onKeyDown={(e) => {
-                                if ((e.metaKey || e.ctrlKey) && e.key === "a") {
-                                  e.target.select();
-                                }
-                              }}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              placeholder="Select all that apply"
-                            />
-                            <p className="text-xs text-gray-400 mt-1">
-                              Instruction text shown in the selection modal
-                            </p>
-                          </div>
+                    {/* Modal Subtitle */}
+                    <div className="pb-4 border-b border-gray-100">
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                        Modal Subtitle
+                      </label>
+                      <input
+                        type="text"
+                        value={emotionalStateConfig.modal_subtitle}
+                        onChange={(e) =>
+                          setEmotionalStateConfig({
+                            ...emotionalStateConfig,
+                            modal_subtitle: e.target.value,
+                          })
+                        }
+                        onFocus={(e) => e.target.select()}
+                        onKeyDown={(e) => {
+                          if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+                            e.target.select();
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Select all that apply"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        Instruction text shown in the selection modal
+                      </p>
+                    </div>
 
-                          {/* Categories */}
-                          {emotionalStateConfig.categories.map(
-                            (category, catIndex) => (
-                              <div
-                                key={category.id}
-                                className="pb-4 border-b border-gray-100 last:border-0 last:pb-0"
-                              >
+                    {/* Categories */}
+                    {emotionalStateConfig.categories.map(
+                      (category, catIndex) => (
+                        <div
+                          key={category.id}
+                          className="pb-4 border-b border-gray-100 last:border-0 last:pb-0"
+                        >
                                 <details
                                   className="group"
                                   open={catIndex === 0}
                                 >
-                                  <summary className="flex items-center justify-between cursor-pointer list-none">
-                                    <div className="flex items-center gap-2">
-                                      <div
-                                        className="w-3 h-3 rounded-full shrink-0"
+                            <summary className="flex items-center justify-between cursor-pointer list-none">
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-3 h-3 rounded-full shrink-0"
                                         style={{
                                           backgroundColor: category.color,
                                         }}
-                                      />
-                                      <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                                />
+                                <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
                                         Category {catIndex + 1}:{" "}
                                         {category.label}
-                                      </h3>
-                                    </div>
-                                    <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
-                                      ▼
-                                    </span>
-                                  </summary>
-                                  <div className="mt-4 space-y-3 pl-5">
-                                    <div>
-                                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                        Category Label
-                                      </label>
-                                      <input
-                                        type="text"
-                                        value={category.label}
-                                        onChange={(e) => {
-                                          const newCategories = [
-                                            ...emotionalStateConfig.categories,
-                                          ];
-                                          newCategories[catIndex].label =
-                                            e.target.value;
-                                          setEmotionalStateConfig({
-                                            ...emotionalStateConfig,
-                                            categories: newCategories,
-                                          });
-                                        }}
-                                        onFocus={(e) => e.target.select()}
-                                        onKeyDown={(e) => {
-                                          if (
-                                            (e.metaKey || e.ctrlKey) &&
-                                            e.key === "a"
-                                          ) {
-                                            e.preventDefault();
-                                            e.target.select();
-                                          }
-                                        }}
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                        placeholder="e.g. CHALLENGING"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                        Category Color
-                                      </label>
-                                      <div className="flex gap-2 items-center">
-                                        <input
-                                          type="color"
-                                          value={category.color}
-                                          onChange={(e) => {
-                                            const newCategories = [
-                                              ...emotionalStateConfig.categories,
-                                            ];
-                                            newCategories[catIndex].color =
-                                              e.target.value;
-                                            setEmotionalStateConfig({
-                                              ...emotionalStateConfig,
-                                              categories: newCategories,
-                                            });
-                                          }}
-                                          className="w-16 h-10 rounded-lg border border-gray-300 cursor-pointer"
-                                        />
-                                        <input
-                                          type="text"
-                                          value={category.color}
-                                          onChange={(e) => {
-                                            const newCategories = [
-                                              ...emotionalStateConfig.categories,
-                                            ];
-                                            newCategories[catIndex].color =
-                                              e.target.value;
-                                            setEmotionalStateConfig({
-                                              ...emotionalStateConfig,
-                                              categories: newCategories,
-                                            });
-                                          }}
-                                          onFocus={(e) => e.target.select()}
-                                          onKeyDown={(e) => {
-                                            if (
-                                              (e.metaKey || e.ctrlKey) &&
-                                              e.key === "a"
-                                            ) {
-                                              e.preventDefault();
-                                              e.target.select();
-                                            }
-                                          }}
-                                          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono"
-                                          placeholder="#3b82f6"
-                                        />
-                                      </div>
-                                    </div>
-                                    <div>
+                                </h3>
+                              </div>
+                              <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                                ▼
+                              </span>
+                            </summary>
+                            <div className="mt-4 space-y-3 pl-5">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                  Category Label
+                                </label>
+                                <input
+                                  type="text"
+                                  value={category.label}
+                                  onChange={(e) => {
+                                    const newCategories = [
+                                      ...emotionalStateConfig.categories,
+                                    ];
+                                    newCategories[catIndex].label =
+                                      e.target.value;
+                                    setEmotionalStateConfig({
+                                      ...emotionalStateConfig,
+                                      categories: newCategories,
+                                    });
+                                  }}
+                                  onFocus={(e) => e.target.select()}
+                                  onKeyDown={(e) => {
+                                    if (
+                                      (e.metaKey || e.ctrlKey) &&
+                                      e.key === "a"
+                                    ) {
+                                      e.preventDefault();
+                                      e.target.select();
+                                    }
+                                  }}
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                  placeholder="e.g. CHALLENGING"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                  Category Color
+                                </label>
+                                <div className="flex gap-2 items-center">
+                                  <input
+                                    type="color"
+                                    value={category.color}
+                                    onChange={(e) => {
+                                      const newCategories = [
+                                        ...emotionalStateConfig.categories,
+                                      ];
+                                      newCategories[catIndex].color =
+                                        e.target.value;
+                                      setEmotionalStateConfig({
+                                        ...emotionalStateConfig,
+                                        categories: newCategories,
+                                      });
+                                    }}
+                                    className="w-16 h-10 rounded-lg border border-gray-300 cursor-pointer"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={category.color}
+                                    onChange={(e) => {
+                                      const newCategories = [
+                                        ...emotionalStateConfig.categories,
+                                      ];
+                                      newCategories[catIndex].color =
+                                        e.target.value;
+                                      setEmotionalStateConfig({
+                                        ...emotionalStateConfig,
+                                        categories: newCategories,
+                                      });
+                                    }}
+                                    onFocus={(e) => e.target.select()}
+                                    onKeyDown={(e) => {
+                                      if (
+                                        (e.metaKey || e.ctrlKey) &&
+                                        e.key === "a"
+                                      ) {
+                                        e.preventDefault();
+                                        e.target.select();
+                                      }
+                                    }}
+                                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono"
+                                    placeholder="#3b82f6"
+                                  />
+                                </div>
+                              </div>
+                              <div>
                                       <div className="flex justify-between items-center mb-2">
                                         <label className="block text-xs font-medium text-gray-700">
                                           Emotion Options
-                                        </label>
+                                </label>
                                         <button
                                           type="button"
                                           onClick={() =>
@@ -3732,7 +3740,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                                       catIndex,
                                                       optIndex,
                                                       "name",
-                                                      e.target.value
+                                      e.target.value
                                                     )
                                                   }
                                                   placeholder="Emotion name"
@@ -3873,7 +3881,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               ""
                             );
                             const cleanedConfig = {
-                              ...emotionalStateConfig,
+                                      ...emotionalStateConfig,
                               categories: emotionalStateConfig.categories.map(
                                 (cat) => ({
                                   ...cat,
@@ -4077,9 +4085,9 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               system_prompt: e.target.value,
                             })
                           }
-                          onKeyDown={(e) => {
+                                  onKeyDown={(e) => {
                             if ((e.metaKey || e.ctrlKey) && e.key === "a") {
-                              e.preventDefault();
+                                      e.preventDefault();
                               if (systemPromptRef.current) {
                                 systemPromptRef.current.select();
                               }
@@ -4094,8 +4102,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           💡 Tip: The system prompt defines the AI's role,
                           personality, and coaching approach. Be specific and
                           clear about the style of responses you want.
-                        </div>
-                      </div>
+                              </div>
+                            </div>
 
                       {/* Save Button */}
                       <div className="flex justify-end pt-4 border-t border-gray-100">
@@ -4116,7 +4124,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             ? "Saving..."
                             : "Save Coach Configuration"}
                         </button>
-                      </div>
+                  </div>
                     </div>
                   </details>
                 </div>
@@ -4126,34 +4134,34 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                   <details className="group">
                     <summary className="p-6 border-b border-gray-100 bg-gray-50/50 cursor-pointer list-none flex justify-between items-center">
                       <div>
-                        <h2 className="text-lg font-semibold text-gray-900">
-                          Page Visibility
-                        </h2>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Control who can see your page
-                        </p>
-                      </div>
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Page Visibility
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Control who can see your page
+                    </p>
+                  </div>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
                         ▼
                       </span>
                     </summary>
-                    <div className="p-6">
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          defaultChecked={coach?.is_active}
-                          className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                        />
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            Make page public
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Allow new subscribers to find and join your page
-                          </div>
+                  <div className="p-6">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        defaultChecked={coach?.is_active}
+                        className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          Make page public
                         </div>
-                      </label>
-                    </div>
+                        <div className="text-xs text-gray-500">
+                          Allow new subscribers to find and join your page
+                        </div>
+                      </div>
+                    </label>
+                  </div>
                   </details>
                 </div>
 

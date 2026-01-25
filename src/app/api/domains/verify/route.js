@@ -75,65 +75,17 @@ export async function POST(request) {
       })
       .eq('id', domainId);
     
-    // Perform DNS lookup
     const fullDomain = domain.full_domain;
     let dnsVerified = false;
     let dnsRecords = [];
-    
-    try {
-      const records = await dns.resolve4(fullDomain);
-      dnsRecords = records;
-      
-      // Check if any record matches expected IP
-      const expectedIP = domain.expected_a_record;
-      dnsVerified = records.some(ip => ip === expectedIP);
-      
-      console.log(`[Verify Domain] DNS records for ${fullDomain}:`, records);
-      console.log(`[Verify Domain] Expected IP: ${expectedIP}, Found: ${dnsVerified}`);
-      
-    } catch (dnsError) {
-      console.error(`[Verify Domain] DNS lookup failed for ${fullDomain}:`, dnsError);
-      
-      await supabase
-        .from('custom_domains')
-        .update({
-          status: 'failed',
-          failed_reason: 'DNS record not found or incorrect',
-        })
-        .eq('id', domainId);
-      
-      return NextResponse.json({
-        success: false,
-        verified: false,
-        message: 'DNS record not found. Please ensure you\'ve added the A record and waited for DNS propagation (can take up to 48 hours).',
-        dnsRecords: [],
-      });
-    }
-    
-    if (!dnsVerified) {
-      await supabase
-        .from('custom_domains')
-        .update({
-          status: 'failed',
-          failed_reason: `DNS record points to ${dnsRecords.join(', ')} instead of ${domain.expected_a_record}`,
-        })
-        .eq('id', domainId);
-      
-      return NextResponse.json({
-        success: false,
-        verified: false,
-        message: `DNS record found but points to incorrect IP. Expected: ${domain.expected_a_record}, Found: ${dnsRecords.join(', ')}`,
-        dnsRecords,
-      });
-    }
-    
-    // DNS verified! Now verify with Vercel and trigger verification
     let vercelVerified = false;
     let sslStatus = 'pending';
     
+    // FIRST: Check with Vercel immediately (don't wait for DNS)
+    // This will tell us if Vercel requires TXT verification
     if (VERCEL_TOKEN && VERCEL_PROJECT_ID) {
       try {
-        // First, verify the domain exists in Vercel (or add it if missing)
+        // First, check domain status in Vercel
         const checkResponse = await fetch(
           `${VERCEL_API_URL}/v9/projects/${VERCEL_PROJECT_ID}/domains/${domain.full_domain}${VERCEL_TEAM_ID ? `?teamId=${VERCEL_TEAM_ID}` : ''}`,
           {
@@ -144,7 +96,42 @@ export async function POST(request) {
           }
         );
         
-        if (!checkResponse.ok && checkResponse.status === 404) {
+        let domainExists = checkResponse.ok;
+        let domainData = null;
+        
+        if (domainExists) {
+          domainData = await checkResponse.json();
+          console.log('[Verify Domain] Existing domain data:', domainData);
+          
+          // Check if TXT verification is needed
+          if (domainData.verification && domainData.verification.length > 0) {
+            const txtRecord = domainData.verification.find(v => v.type === 'TXT');
+            
+            if (txtRecord) {
+              await supabase
+                .from('custom_domains')
+                .update({
+                  status: 'pending',
+                  verification_method: 'txt',
+                  txt_verification_code: txtRecord.value,
+                  failed_reason: 'Domain ownership verification required. Please add the TXT record below.',
+                })
+                .eq('id', domainId);
+                
+              return NextResponse.json({
+                success: false,
+                verified: false,
+                message: 'Domain requires ownership verification. Please add the TXT record shown below to your DNS.',
+                dnsRecords,
+                verification_needed: {
+                  type: 'TXT',
+                  name: txtRecord.domain || `_vercel.${domain.full_domain}`,
+                  value: txtRecord.value
+                }
+              });
+            }
+          }
+        } else if (checkResponse.status === 404) {
           // Domain doesn't exist in Vercel yet, add it
           console.log(`[Verify Domain] Domain not in Vercel, adding: ${domain.full_domain}`);
           const addResponse = await fetch(
@@ -162,14 +149,44 @@ export async function POST(request) {
           );
           
           if (addResponse.ok) {
-            console.log(`[Verify Domain] Successfully added to Vercel: ${domain.full_domain}`);
+            domainData = await addResponse.json();
+            console.log(`[Verify Domain] Successfully added to Vercel:`, domainData);
+            
+            // Check if new domain requires TXT verification
+            if (domainData.verification && domainData.verification.length > 0) {
+              const txtRecord = domainData.verification.find(v => v.type === 'TXT');
+              
+              if (txtRecord) {
+                await supabase
+                  .from('custom_domains')
+                  .update({
+                    status: 'pending',
+                    verification_method: 'txt',
+                    txt_verification_code: txtRecord.value,
+                    failed_reason: 'Domain ownership verification required. Please add the TXT record below.',
+                  })
+                  .eq('id', domainId);
+                  
+                return NextResponse.json({
+                  success: false,
+                  verified: false,
+                  message: 'Domain requires ownership verification. Please add the TXT record shown below to your DNS.',
+                  dnsRecords,
+                  verification_needed: {
+                    type: 'TXT',
+                    name: txtRecord.domain || `_vercel.${domain.full_domain}`,
+                    value: txtRecord.value
+                  }
+                });
+              }
+            }
           } else {
             const addError = await addResponse.json();
             console.error('[Verify Domain] Failed to add to Vercel:', addError);
           }
         }
         
-        // Now trigger verification by checking the domain status
+        // Now trigger verification
         const vercelResponse = await fetch(
           `${VERCEL_API_URL}/v9/projects/${VERCEL_PROJECT_ID}/domains/${domain.full_domain}/verify${VERCEL_TEAM_ID ? `?teamId=${VERCEL_TEAM_ID}` : ''}`,
           {
@@ -180,19 +197,21 @@ export async function POST(request) {
           }
         );
         
-        // Check if verification is needed (e.g. domain used by another account)
+        const vercelData = await vercelResponse.json();
+        console.log('[Verify Domain] Vercel verify response:', vercelResponse.status, vercelData);
+        
+        // Check if verification is needed after verify attempt
         if (vercelData.verified === false && vercelData.verification) {
           const verification = vercelData.verification;
           
           if (verification.length > 0) {
-            // Found verification requirements (TXT record needed)
             const txtRecord = verification.find(v => v.type === 'TXT');
             
             if (txtRecord) {
               await supabase
                 .from('custom_domains')
                 .update({
-                  status: 'pending', // Revert to pending
+                  status: 'pending',
                   verification_method: 'txt',
                   txt_verification_code: txtRecord.value,
                   failed_reason: 'Domain ownership verification required. Please add the TXT record below.',
@@ -202,11 +221,11 @@ export async function POST(request) {
               return NextResponse.json({
                 success: false,
                 verified: false,
-                message: 'Domain is linked to another Vercel account. Please add the TXT record to prove ownership.',
-                dnsRecords: [],
+                message: 'Domain requires ownership verification. Please add the TXT record shown below to your DNS.',
+                dnsRecords,
                 verification_needed: {
                   type: 'TXT',
-                  name: txtRecord.domain.startsWith('_vercel') ? txtRecord.domain : `_vercel.${domain.subdomain ? domain.subdomain : ''}`,
+                  name: txtRecord.domain || `_vercel.${domain.full_domain}`,
                   value: txtRecord.value
                 }
               });
