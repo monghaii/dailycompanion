@@ -2906,7 +2906,7 @@ export default function UserDashboard() {
                 }}
               >
                 {/* Coach Profile Dropdown */}
-                {showCoachProfile && (
+                {showCoachProfile && user?.coach && (
                   <div
                     style={{
                       backgroundColor: "#fff",
@@ -2928,8 +2928,9 @@ export default function UserDashboard() {
                           width: "100px",
                           height: "100px",
                           borderRadius: "16px",
-                          background:
-                            "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
+                          background: user.coach.profile?.avatar_url
+                            ? "transparent"
+                            : "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -2937,9 +2938,27 @@ export default function UserDashboard() {
                           fontSize: "36px",
                           fontWeight: 700,
                           flexShrink: 0,
+                          overflow: "hidden",
                         }}
                       >
-                        IJ
+                        {user.coach.profile?.avatar_url ? (
+                          <img
+                            src={user.coach.profile.avatar_url}
+                            alt={user.coach.profile?.full_name || user.coach.business_name}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : (
+                          (user.coach.profile?.full_name || user.coach.business_name)
+                            ?.split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                            .slice(0, 2)
+                        )}
                       </div>
                       <div style={{ flex: 1 }}>
                         <h3
@@ -2951,23 +2970,20 @@ export default function UserDashboard() {
                             marginTop: "0",
                           }}
                         >
-                          Iv Jaeger
+                          {user.coach.profile?.full_name || user.coach.business_name}
                         </h3>
-                        <p
-                          style={{
-                            fontSize: "16px",
-                            lineHeight: "1.5",
-                            color: "#4b5563",
-                            margin: 0,
-                          }}
-                        >
-                          Coach for female founders with ADHD in creative and
-                          professional services. Supports women through mental
-                          fitness practices and grounded daily habits. Certified
-                          yoga instructor and mental fitness coach who brings a
-                          calm, steady approach to navigating the demands of
-                          entrepreneurship.
-                        </p>
+                        {user.coach.bio && (
+                          <p
+                            style={{
+                              fontSize: "16px",
+                              lineHeight: "1.5",
+                              color: "#4b5563",
+                              margin: 0,
+                            }}
+                          >
+                            {user.coach.bio}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -2988,7 +3004,7 @@ export default function UserDashboard() {
                         }}
                       >
                         <strong>Note:</strong> Responses are AI-generated and
-                        not directly from Iv Jaeger herself.
+                        not directly from {user.coach.profile?.full_name || user.coach.business_name}.
                       </p>
                     </div>
                   </div>
@@ -3015,12 +3031,14 @@ export default function UserDashboard() {
                           width: "48px",
                           height: "48px",
                           borderRadius: "50%",
-                          background: coachConfig?.coach_tab
-                            ?.bot_profile_picture_url
+                          background: (coachConfig?.coach_tab
+                            ?.bot_profile_picture_url ||
+                            user?.coach?.profile?.avatar_url)
                             ? "transparent"
                             : "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
-                          border: coachConfig?.coach_tab
-                            ?.bot_profile_picture_url
+                          border: (coachConfig?.coach_tab
+                            ?.bot_profile_picture_url ||
+                            user?.coach?.profile?.avatar_url)
                             ? `2px solid ${
                                 coachConfig?.branding?.primary_color ||
                                 "#ef4444"
@@ -3046,8 +3064,23 @@ export default function UserDashboard() {
                               objectFit: "cover",
                             }}
                           />
+                        ) : user?.coach?.profile?.avatar_url ? (
+                          <img
+                            src={user.coach.profile.avatar_url}
+                            alt="AI Coach"
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
                         ) : (
-                          "IJ"
+                          (user?.coach?.profile?.full_name || user?.coach?.business_name)
+                            ?.split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                            .slice(0, 2)
                         )}
                       </div>
                     )}
@@ -3090,8 +3123,19 @@ export default function UserDashboard() {
                         width: "48px",
                         height: "48px",
                         borderRadius: "50%",
-                        background:
-                          "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
+                        background: (coachConfig?.coach_tab
+                          ?.bot_profile_picture_url ||
+                          user?.coach?.profile?.avatar_url)
+                          ? "transparent"
+                          : "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
+                        border: (coachConfig?.coach_tab
+                          ?.bot_profile_picture_url ||
+                          user?.coach?.profile?.avatar_url)
+                          ? `2px solid ${
+                              coachConfig?.branding?.primary_color ||
+                              "#ef4444"
+                            }`
+                          : "none",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -3099,9 +3143,37 @@ export default function UserDashboard() {
                         fontSize: "20px",
                         fontWeight: 700,
                         flexShrink: 0,
+                        overflow: "hidden",
                       }}
                     >
-                      IJ
+                      {coachConfig?.coach_tab?.bot_profile_picture_url ? (
+                        <img
+                          src={coachConfig.coach_tab.bot_profile_picture_url}
+                          alt="AI Coach"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      ) : user?.coach?.profile?.avatar_url ? (
+                        <img
+                          src={user.coach.profile.avatar_url}
+                          alt="AI Coach"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      ) : (
+                        (user?.coach?.profile?.full_name || user?.coach?.business_name)
+                          ?.split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2)
+                      )}
                     </div>
                     <div
                       style={{
