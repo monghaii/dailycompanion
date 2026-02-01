@@ -14,7 +14,7 @@ export async function GET() {
     if (user.role === "user" && user.coach_id) {
       const { data: coach } = await supabase
         .from("coaches")
-        .select("business_name, slug, logo_url")
+        .select("business_name, slug, logo_url, bio, tagline")
         .eq("id", user.coach_id)
         .single();
 

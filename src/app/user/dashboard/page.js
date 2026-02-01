@@ -98,6 +98,12 @@ export default function UserDashboard() {
   const [showAudioControls, setShowAudioControls] = useState(false);
   const [selectedPractice, setSelectedPractice] = useState(null);
   const practiceAudioRef = useRef(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+  const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
+  const [upgradingToPremium, setUpgradingToPremium] = useState(false);
+  const [cancelingSubscription, setCancelingSubscription] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeModalContext, setUpgradeModalContext] = useState(""); // which feature they tried to access
   const [isPracticePlaying, setIsPracticePlaying] = useState(false);
   const [practiceCurrentTime, setPracticeCurrentTime] = useState(0);
   const [practiceDuration, setPracticeDuration] = useState(0);
@@ -155,6 +161,7 @@ export default function UserDashboard() {
 
   useEffect(() => {
     fetchUser();
+    fetchSubscriptionStatus();
   }, []);
 
   useEffect(() => {
@@ -261,6 +268,7 @@ export default function UserDashboard() {
   useEffect(() => {
     if (user && moreSubpage === "settings") {
       fetchProfileSettings();
+      fetchSubscriptionStatus();
     }
   }, [user, moreSubpage]);
 
@@ -515,6 +523,80 @@ export default function UserDashboard() {
       }
     } catch (error) {
       console.error("Failed to fetch profile:", error);
+    }
+  };
+
+  const fetchSubscriptionStatus = async () => {
+    if (!user) return;
+    
+    setIsLoadingSubscription(true);
+    try {
+      const res = await fetch("/api/user/subscription-status");
+      const data = await res.json();
+
+      if (res.ok) {
+        setSubscriptionStatus(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch subscription status:", error);
+    } finally {
+      setIsLoadingSubscription(false);
+    }
+  };
+
+  const handleUpgradeToPremium = async () => {
+    if (!user?.coach) {
+      alert("Please sign up through a coach first");
+      return;
+    }
+
+    setUpgradingToPremium(true);
+    try {
+      const res = await fetch("/api/stripe/user-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coachSlug: user.coach.slug }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || "Failed to start checkout");
+      }
+    } catch (error) {
+      console.error("Upgrade error:", error);
+      alert("Failed to start checkout");
+    } finally {
+      setUpgradingToPremium(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!confirm("Are you sure you want to cancel your subscription? You'll keep access until the end of your billing period.")) {
+      return;
+    }
+
+    setCancelingSubscription(true);
+    try {
+      const res = await fetch("/api/user/cancel-subscription", {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(data.message);
+        fetchSubscriptionStatus(); // Refresh status
+      } else {
+        alert(data.error || "Failed to cancel subscription");
+      }
+    } catch (error) {
+      console.error("Cancel error:", error);
+      alert("Failed to cancel subscription");
+    } finally {
+      setCancelingSubscription(false);
     }
   };
 
@@ -1872,7 +1954,25 @@ export default function UserDashboard() {
         )}
 
         {activeTab === "awareness" && (
-          <>
+          <div style={{ position: "relative", minHeight: "100vh" }}>
+            {/* Locked Overlay */}
+            {!subscriptionStatus?.isPremium && (
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: "rgba(255, 255, 255, 0.7)",
+                  backdropFilter: "blur(4px)",
+                  zIndex: 10,
+                  pointerEvents: "all",
+                  cursor: "not-allowed",
+                }}
+              />
+            )}
+            
             {/* Date Header */}
             <div style={{ marginTop: "24px", marginBottom: "24px" }}>
               <h2
@@ -2648,7 +2748,7 @@ export default function UserDashboard() {
                 </>
               )}
             </div>
-          </>
+          </div>
         )}
 
         {activeTab === "coach" && (
@@ -2664,6 +2764,24 @@ export default function UserDashboard() {
               flexDirection: "column",
             }}
           >
+            {/* Locked Overlay */}
+            {!subscriptionStatus?.isPremium && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: "rgba(255, 255, 255, 0.7)",
+                  backdropFilter: "blur(4px)",
+                  zIndex: 100,
+                  pointerEvents: "all",
+                  cursor: "not-allowed",
+                }}
+              />
+            )}
+            
             {/* Header */}
             <div>
               {/* Gradient Section */}
@@ -2906,7 +3024,7 @@ export default function UserDashboard() {
                 }}
               >
                 {/* Coach Profile Dropdown */}
-                {showCoachProfile && (
+                {showCoachProfile && user?.coach && (
                   <div
                     style={{
                       backgroundColor: "#fff",
@@ -2923,24 +3041,43 @@ export default function UserDashboard() {
                         marginBottom: "16px",
                       }}
                     >
-                      <div
-                        style={{
-                          width: "100px",
-                          height: "100px",
-                          borderRadius: "16px",
-                          background:
-                            "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "#fff",
-                          fontSize: "36px",
-                          fontWeight: 700,
-                          flexShrink: 0,
-                        }}
-                      >
-                        IJ
-                      </div>
+                      {user.coach.logo_url ? (
+                        <img
+                          src={user.coach.logo_url}
+                          alt={user.coach.business_name}
+                          style={{
+                            width: "100px",
+                            height: "100px",
+                            borderRadius: "16px",
+                            objectFit: "cover",
+                            flexShrink: 0,
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: "100px",
+                            height: "100px",
+                            borderRadius: "16px",
+                            background:
+                              "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "#fff",
+                            fontSize: "36px",
+                            fontWeight: 700,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {user.coach.business_name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                            .slice(0, 2)}
+                        </div>
+                      )}
                       <div style={{ flex: 1 }}>
                         <h3
                           style={{
@@ -2951,7 +3088,7 @@ export default function UserDashboard() {
                             marginTop: "0",
                           }}
                         >
-                          Iv Jaeger
+                          {user.coach.business_name}
                         </h3>
                         <p
                           style={{
@@ -2961,12 +3098,9 @@ export default function UserDashboard() {
                             margin: 0,
                           }}
                         >
-                          Coach for female founders with ADHD in creative and
-                          professional services. Supports women through mental
-                          fitness practices and grounded daily habits. Certified
-                          yoga instructor and mental fitness coach who brings a
-                          calm, steady approach to navigating the demands of
-                          entrepreneurship.
+                          {user.coach.bio ||
+                            coachConfig?.bio ||
+                            "Your dedicated AI coach here to support your journey."}
                         </p>
                       </div>
                     </div>
@@ -2988,7 +3122,7 @@ export default function UserDashboard() {
                         }}
                       >
                         <strong>Note:</strong> Responses are AI-generated and
-                        not directly from Iv Jaeger herself.
+                        not directly from {user.coach.business_name}.
                       </p>
                     </div>
                   </div>
@@ -3015,17 +3149,19 @@ export default function UserDashboard() {
                           width: "48px",
                           height: "48px",
                           borderRadius: "50%",
-                          background: coachConfig?.coach_tab
-                            ?.bot_profile_picture_url
-                            ? "transparent"
-                            : "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
-                          border: coachConfig?.coach_tab
-                            ?.bot_profile_picture_url
-                            ? `2px solid ${
-                                coachConfig?.branding?.primary_color ||
-                                "#ef4444"
-                              }`
-                            : "none",
+                          background:
+                            coachConfig?.coach_tab?.bot_profile_picture_url ||
+                            user?.coach?.logo_url
+                              ? "transparent"
+                              : "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
+                          border:
+                            coachConfig?.coach_tab?.bot_profile_picture_url ||
+                            user?.coach?.logo_url
+                              ? `2px solid ${
+                                  coachConfig?.branding?.primary_color ||
+                                  "#ef4444"
+                                }`
+                              : "none",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -3046,8 +3182,25 @@ export default function UserDashboard() {
                               objectFit: "cover",
                             }}
                           />
+                        ) : user?.coach?.logo_url ? (
+                          <img
+                            src={user.coach.logo_url}
+                            alt={user.coach.business_name}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : user?.coach?.business_name ? (
+                          user.coach.business_name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                            .slice(0, 2)
                         ) : (
-                          "IJ"
+                          "AI"
                         )}
                       </div>
                     )}
@@ -3271,6 +3424,7 @@ export default function UserDashboard() {
                   title: "Announcements",
                   subtitle: "Community updates and news",
                   id: "announcements",
+                  isPremium: true,
                 },
                 {
                   icon: (
@@ -3294,6 +3448,7 @@ export default function UserDashboard() {
                   title: "Resource Hub",
                   subtitle: "Community calls, programs & resources",
                   id: "resources",
+                  isPremium: true,
                 },
                 {
                   icon: <Calendar size={24} color="#3b82f6" strokeWidth={2} />,
@@ -3301,6 +3456,7 @@ export default function UserDashboard() {
                   title: "Insights",
                   subtitle: "Your patterns over time",
                   id: "insights",
+                  isPremium: true,
                 },
                 {
                   icon: <Star size={24} color="#eab308" strokeWidth={2} />,
@@ -3308,6 +3464,7 @@ export default function UserDashboard() {
                   title: "Library",
                   subtitle: "All practices and favorites",
                   id: "library",
+                  isPremium: true,
                 },
                 {
                   icon: (
@@ -3327,11 +3484,20 @@ export default function UserDashboard() {
                   title: "Settings",
                   subtitle: "Preferences and account details",
                   id: "settings",
+                  isPremium: false,
                 },
-              ].map((item, idx) => (
+              ].map((item, idx) => {
+                const isLocked = item.isPremium && !subscriptionStatus?.isPremium;
+                return (
                 <div
                   key={idx}
-                  onClick={() => setMoreSubpage(item.id)}
+                  onClick={() => {
+                    setMoreSubpage(item.id);
+                    if (isLocked) {
+                      setUpgradeModalContext(item.title);
+                      setShowUpgradeModal(true);
+                    }
+                  }}
                   style={{
                     backgroundColor: "#fff",
                     padding: "16px",
@@ -3372,21 +3538,38 @@ export default function UserDashboard() {
                       {item.subtitle}
                     </p>
                   </div>
-                  <svg
-                    style={{ width: "20px", height: "20px", color: "#9ca3af" }}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
+                  {isLocked ? (
+                    <svg
+                      style={{ width: "20px", height: "20px", color: "#fbbf24" }}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      style={{ width: "20px", height: "20px", color: "#9ca3af" }}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  )}
                 </div>
-              ))}
+              );
+              })}
             </div>
 
             {/* Logout Button */}
@@ -3413,7 +3596,24 @@ export default function UserDashboard() {
 
         {/* Announcements Page */}
         {activeTab === "more" && moreSubpage === "announcements" && (
-          <div style={{ marginTop: "24px" }}>
+          <div style={{ marginTop: "24px", position: "relative" }}>
+            {/* Locked Overlay */}
+            {!subscriptionStatus?.isPremium && (
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: "rgba(255, 255, 255, 0.7)",
+                  backdropFilter: "blur(4px)",
+                  zIndex: 10,
+                  pointerEvents: "all",
+                  cursor: "not-allowed",
+                }}
+              />
+            )}
             {/* Back Button & Title */}
             <div
               style={{
@@ -3421,6 +3621,8 @@ export default function UserDashboard() {
                 alignItems: "center",
                 gap: "16px",
                 marginBottom: "24px",
+                position: "relative",
+                zIndex: 20,
               }}
             >
               <button
@@ -3645,7 +3847,24 @@ export default function UserDashboard() {
 
         {/* Resource Hub Page */}
         {activeTab === "more" && moreSubpage === "resources" && (
-          <div style={{ marginTop: "24px" }}>
+          <div style={{ marginTop: "24px", position: "relative" }}>
+            {/* Locked Overlay */}
+            {!subscriptionStatus?.isPremium && (
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: "rgba(255, 255, 255, 0.7)",
+                  backdropFilter: "blur(4px)",
+                  zIndex: 10,
+                  pointerEvents: "all",
+                  cursor: "not-allowed",
+                }}
+              />
+            )}
             {/* Back Button & Title */}
             <div
               style={{
@@ -3848,7 +4067,24 @@ export default function UserDashboard() {
 
         {/* Insights Page */}
         {activeTab === "more" && moreSubpage === "insights" && (
-          <div style={{ marginTop: "24px" }}>
+          <div style={{ marginTop: "24px", position: "relative" }}>
+            {/* Locked Overlay */}
+            {!subscriptionStatus?.isPremium && (
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: "rgba(255, 255, 255, 0.7)",
+                  backdropFilter: "blur(4px)",
+                  zIndex: 10,
+                  pointerEvents: "all",
+                  cursor: "not-allowed",
+                }}
+              />
+            )}
             {/* Back Button & Title */}
             <div
               style={{
@@ -4497,7 +4733,24 @@ export default function UserDashboard() {
 
         {/* Library Page */}
         {activeTab === "more" && moreSubpage === "library" && (
-          <div style={{ marginTop: "24px" }}>
+          <div style={{ marginTop: "24px", position: "relative" }}>
+            {/* Locked Overlay */}
+            {!subscriptionStatus?.isPremium && (
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: "rgba(255, 255, 255, 0.7)",
+                  backdropFilter: "blur(4px)",
+                  zIndex: 10,
+                  pointerEvents: "all",
+                  cursor: "not-allowed",
+                }}
+              />
+            )}
             {/* Back Button & Title */}
             <div
               style={{
@@ -4505,6 +4758,8 @@ export default function UserDashboard() {
                 alignItems: "center",
                 gap: "16px",
                 marginBottom: "24px",
+                position: "relative",
+                zIndex: 20,
               }}
             >
               <button
@@ -4946,112 +5201,29 @@ export default function UserDashboard() {
                 SUBSCRIPTION
               </h3>
 
-              {/* Subscription Options */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "12px",
-                  marginBottom: "20px",
-                }}
-              >
-                {/* Free Account */}
-                <div
-                  style={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "12px",
-                    padding: "20px",
-                  }}
-                >
-                  <h4
-                    style={{
-                      fontSize: "18px",
-                      fontWeight: 700,
-                      color: "#1a1a1a",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Free Account
-                  </h4>
-                  <p
-                    style={{
-                      fontSize: "14px",
-                      color: "#6b7280",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    Access to daily practices
-                  </p>
+              {isLoadingSubscription ? (
+                <div style={{ padding: "40px", textAlign: "center", color: "#6b7280" }}>
+                  Loading subscription status...
+                </div>
+              ) : (
+                <>
+                  {/* Current Plan Card */}
                   <div
                     style={{
-                      fontSize: "32px",
-                      fontWeight: 700,
-                      color: "#1a1a1a",
+                      backgroundColor: subscriptionStatus?.isPremium ? "#f3e8ff" : "#f9fafb",
+                      border: subscriptionStatus?.isPremium ? "3px solid #a855f7" : "1px solid #e5e7eb",
+                      borderRadius: "12px",
+                      padding: "20px",
+                      marginBottom: "20px",
+                      position: "relative",
                     }}
                   >
-                    $0
-                  </div>
-                </div>
-
-                {/* Companion */}
-                <div
-                  style={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "12px",
-                    padding: "20px",
-                  }}
-                >
-                  <h4
-                    style={{
-                      fontSize: "18px",
-                      fontWeight: 700,
-                      color: "#1a1a1a",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Companion
-                  </h4>
-                  <p
-                    style={{
-                      fontSize: "14px",
-                      color: "#6b7280",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    Full access to all app features
-                  </p>
-                  <div
-                    style={{
-                      fontSize: "32px",
-                      fontWeight: 700,
-                      color: "#1a1a1a",
-                    }}
-                  >
-                    $9<span style={{ fontSize: "18px" }}>/month</span>
-                  </div>
-                </div>
-
-                {/* Membership */}
-                <div
-                  style={{
-                    backgroundColor: !user?.coach ? "#f3e8ff" : "#fff",
-                    border: !user?.coach
-                      ? "3px solid #a855f7"
-                      : "1px solid #e5e7eb",
-                    borderRadius: "12px",
-                    padding: "20px",
-                    position: "relative",
-                  }}
-                >
-                  {!user?.coach && (
                     <span
                       style={{
                         position: "absolute",
                         top: "16px",
                         right: "16px",
-                        backgroundColor: "#a855f7",
+                        backgroundColor: subscriptionStatus?.isPremium ? "#a855f7" : "#6b7280",
                         color: "#fff",
                         fontSize: "12px",
                         fontWeight: 700,
@@ -5061,150 +5233,123 @@ export default function UserDashboard() {
                     >
                       CURRENT
                     </span>
-                  )}
-                  <h4
-                    style={{
-                      fontSize: "18px",
-                      fontWeight: 700,
-                      color: "#1a1a1a",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Membership
-                  </h4>
-                  <p
-                    style={{
-                      fontSize: "14px",
-                      color: "#6b7280",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    App + Learning Hub access + community calls
-                  </p>
-                  <div
-                    style={{
-                      fontSize: "32px",
-                      fontWeight: 700,
-                      color: "#1a1a1a",
-                    }}
-                  >
-                    $29<span style={{ fontSize: "18px" }}>/month</span>
-                  </div>
-                </div>
-
-                {/* Bundled Account */}
-                <div
-                  style={{
-                    backgroundColor: user?.coach ? "#f3e8ff" : "#fff",
-                    border: user?.coach
-                      ? "3px solid #a855f7"
-                      : "1px solid #e5e7eb",
-                    borderRadius: "12px",
-                    padding: "20px",
-                    position: "relative",
-                  }}
-                >
-                  {user?.coach && (
-                    <span
+                    <h4
                       style={{
-                        position: "absolute",
-                        top: "16px",
-                        right: "16px",
-                        backgroundColor: "#a855f7",
-                        color: "#fff",
-                        fontSize: "12px",
+                        fontSize: "18px",
                         fontWeight: 700,
-                        padding: "4px 12px",
-                        borderRadius: "12px",
+                        color: "#1a1a1a",
+                        marginBottom: "4px",
                       }}
                     >
-                      CURRENT
-                    </span>
+                      {subscriptionStatus?.isPremium ? "Premium" : "Free"}
+                    </h4>
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "#6b7280",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      {subscriptionStatus?.isPremium
+                        ? `Subscription to ${subscriptionStatus.subscription.coach.business_name}`
+                        : "Access to daily practices"}
+                    </p>
+                    <div
+                      style={{
+                        fontSize: "32px",
+                        fontWeight: 700,
+                        color: "#1a1a1a",
+                      }}
+                    >
+                      {subscriptionStatus?.isPremium
+                        ? `$${subscriptionStatus.subscription.pricePerMonth}`
+                        : "$0"}
+                      <span style={{ fontSize: "18px" }}>/month</span>
+                    </div>
+                    
+                    {subscriptionStatus?.isPremium && subscriptionStatus.subscription.willCancelAtPeriodEnd && (
+                      <div
+                        style={{
+                          marginTop: "12px",
+                          padding: "12px",
+                          backgroundColor: "#fef3c7",
+                          borderRadius: "8px",
+                          fontSize: "13px",
+                          color: "#92400e",
+                        }}
+                      >
+                        ⚠️ Subscription will end on {new Date(subscriptionStatus.subscription.currentPeriodEnd).toLocaleDateString()}
+                      </div>
+                    )}
+                    
+                    {subscriptionStatus?.isPremium && subscriptionStatus.subscription.currentPeriodEnd && (
+                      <p style={{ fontSize: "12px", color: "#9ca3af", marginTop: "8px" }}>
+                        Next billing: {new Date(subscriptionStatus.subscription.currentPeriodEnd).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  {!subscriptionStatus?.isPremium ? (
+                    <button
+                      onClick={handleUpgradeToPremium}
+                      disabled={upgradingToPremium || !user?.coach}
+                      style={{
+                        width: "100%",
+                        padding: "16px",
+                        backgroundColor: upgradingToPremium ? "#9ca3af" : "#a855f7",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        cursor: upgradingToPremium || !user?.coach ? "not-allowed" : "pointer",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      {upgradingToPremium ? "Loading..." : "Upgrade to Premium"}
+                    </button>
+                  ) : (
+                    !subscriptionStatus.subscription.willCancelAtPeriodEnd && (
+                      <button
+                        onClick={handleCancelSubscription}
+                        disabled={cancelingSubscription}
+                        style={{
+                          width: "100%",
+                          padding: "16px",
+                          backgroundColor: "#fff",
+                          color: "#dc2626",
+                          border: "1px solid #fecaca",
+                          borderRadius: "8px",
+                          fontSize: "16px",
+                          fontWeight: 600,
+                          cursor: cancelingSubscription ? "not-allowed" : "pointer",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        {cancelingSubscription ? "Canceling..." : "Cancel Subscription"}
+                      </button>
+                    )
                   )}
-                  <h4
+
+                  <button
+                    onClick={handleLogout}
                     style={{
-                      fontSize: "18px",
-                      fontWeight: 700,
-                      color: "#1a1a1a",
-                      marginBottom: "4px",
+                      width: "100%",
+                      padding: "16px",
+                      backgroundColor: "#fff",
+                      color: "#dc2626",
+                      border: "2px solid #dc2626",
+                      borderRadius: "8px",
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      cursor: "pointer",
                     }}
                   >
-                    {user?.coach
-                      ? `Bundled with ${user.coach.business_name}`
-                      : "Bundled Account"}
-                  </h4>
-                  <p
-                    style={{
-                      fontSize: "14px",
-                      color: "#6b7280",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Part of your coaching services • Full access included
-                  </p>
-                  <p
-                    style={{
-                      fontSize: "13px",
-                      color: "#9ca3af",
-                      fontStyle: "italic",
-                    }}
-                  >
-                    Managed through coaching bundle
-                  </p>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <button
-                style={{
-                  width: "100%",
-                  padding: "16px",
-                  backgroundColor: "#fff",
-                  color: "#1a1a1a",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "8px",
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  marginBottom: "12px",
-                }}
-              >
-                Update Payment Method
-              </button>
-
-              <button
-                style={{
-                  width: "100%",
-                  padding: "16px",
-                  backgroundColor: "#fff",
-                  color: "#dc2626",
-                  border: "1px solid #fecaca",
-                  borderRadius: "8px",
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  marginBottom: "12px",
-                }}
-              >
-                Cancel Subscription
-              </button>
-
-              <button
-                onClick={handleLogout}
-                style={{
-                  width: "100%",
-                  padding: "16px",
-                  backgroundColor: "#fff",
-                  color: "#dc2626",
-                  border: "2px solid #dc2626",
-                  borderRadius: "8px",
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                Sign Out
-              </button>
+                    Sign Out
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -5509,7 +5654,7 @@ export default function UserDashboard() {
           right: 0,
           display: "flex",
           justifyContent: "center",
-          zIndex: 50,
+          zIndex: 1000,
           pointerEvents: "none",
         }}
       >
@@ -5531,20 +5676,38 @@ export default function UserDashboard() {
           }}
         >
           {[
-            { id: "focus", icon: Compass, label: "Focus" },
-            { id: "awareness", icon: Sun, label: "Awareness" },
-            { id: "coach", icon: MessageCircle, label: "Coach" },
-            { id: "more", icon: Menu, label: "More" },
+            { id: "focus", icon: Compass, label: "Focus", isPremium: false },
+            { id: "awareness", icon: Sun, label: "Awareness", isPremium: true },
+            { id: "coach", icon: MessageCircle, label: "Coach", isPremium: true },
+            { id: "more", icon: Menu, label: "More", isPremium: false },
           ].map((tab) => {
             const IconComponent = tab.icon;
+            const isLocked = tab.isPremium && !subscriptionStatus?.isPremium;
+            
             return (
               <button
                 key={tab.id}
                 onClick={() => {
-                  setActiveTab(tab.id);
                   if (tab.id === "more") {
                     setMoreSubpage(null);
                   }
+                  
+                  // If we're clicking the same tab that's already locked and showing modal, don't do anything
+                  if (activeTab === tab.id && showUpgradeModal) {
+                    return;
+                  }
+
+                  // If clicking a locked tab
+                  if (isLocked) {
+                    setActiveTab(tab.id); // Go to tab
+                    setUpgradeModalContext(tab.label);
+                    setShowUpgradeModal(true); // Show modal
+                    return;
+                  }
+
+                  // Clicking an unlocked tab
+                  setActiveTab(tab.id);
+                  setShowUpgradeModal(false); // Close modal if open
                 }}
                 style={{
                   flex: 1,
@@ -5556,19 +5719,36 @@ export default function UserDashboard() {
                   backgroundColor: "transparent",
                   cursor: "pointer",
                   padding: "8px",
+                  position: "relative",
                 }}
               >
-                <IconComponent
-                  size={28}
-                  strokeWidth={2}
-                  style={{
-                    opacity: activeTab === tab.id ? 1 : 0.5,
-                    color:
-                      activeTab === tab.id
-                        ? coachConfig?.branding?.primary_color || "#ef4444"
-                        : "#9ca3af",
-                  }}
-                />
+                <div style={{ position: "relative", display: "inline-block" }}>
+                  {isLocked && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "-2px",
+                        right: "-6px",
+                        width: "10px",
+                        height: "10px",
+                        borderRadius: "50%",
+                        backgroundColor: "#fbbf24",
+                        boxShadow: "0 0 0 2px #fff",
+                      }}
+                    />
+                  )}
+                  <IconComponent
+                    size={28}
+                    strokeWidth={2}
+                    style={{
+                      opacity: activeTab === tab.id ? 1 : 0.5,
+                      color:
+                        activeTab === tab.id
+                          ? coachConfig?.branding?.primary_color || "#ef4444"
+                          : "#9ca3af",
+                    }}
+                  />
+                </div>
                 <span
                   style={{
                     fontSize: "12px",
@@ -5586,6 +5766,114 @@ export default function UserDashboard() {
           })}
         </nav>
       </div>
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999, // Lower than bottom nav
+            padding: "20px",
+            paddingBottom: "100px", // Add padding so modal content doesn't overlap nav
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: "20px",
+              padding: "40px 32px",
+              maxWidth: "420px",
+              width: "100%",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+              border: `3px solid ${coachConfig?.branding?.primary_color || "#a855f7"}`,
+            }}
+          >
+            {/* Icon */}
+            <div
+              style={{
+                width: "80px",
+                height: "80px",
+                borderRadius: "50%",
+                background: `linear-gradient(135deg, ${coachConfig?.branding?.primary_color || "#a855f7"} 0%, ${coachConfig?.branding?.primary_color || "#ec4899"} 100%)`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 24px",
+                boxShadow: `0 8px 24px ${coachConfig?.branding?.primary_color || "#a855f7"}40`,
+              }}
+            >
+              <MessageCircle size={36} style={{ color: "#fff" }} />
+            </div>
+
+            {/* Title */}
+            <h2
+              style={{
+                fontSize: "32px",
+                fontWeight: 700,
+                textAlign: "center",
+                marginBottom: "16px",
+                color: "#1a1a1a",
+                lineHeight: 1.2,
+              }}
+            >
+              {upgradeModalContext === "Awareness Log" ? "Awareness Log" : upgradeModalContext === "Coach" ? "AI Coach" : upgradeModalContext}
+            </h2>
+
+            {/* CTA Button */}
+            <button
+              onClick={() => {
+                setShowUpgradeModal(false);
+                handleUpgradeToPremium();
+              }}
+              disabled={upgradingToPremium}
+              style={{
+                width: "100%",
+                backgroundColor: coachConfig?.branding?.primary_color || "#a855f7",
+                color: "#fff",
+                fontSize: "18px",
+                fontWeight: 600,
+                padding: "16px",
+                borderRadius: "12px",
+                border: "none",
+                cursor: upgradingToPremium ? "not-allowed" : "pointer",
+                marginBottom: "12px",
+                opacity: upgradingToPremium ? 0.6 : 1,
+              }}
+            >
+              {upgradingToPremium ? "Processing..." : "Unlock Full Access"}
+            </button>
+
+            {/* Back Button */}
+            <button
+              onClick={() => {
+                setShowUpgradeModal(false);
+                setActiveTab("focus");
+              }}
+              style={{
+                width: "100%",
+                backgroundColor: "#f3f4f6",
+                color: "#4b5563",
+                fontSize: "16px",
+                fontWeight: 600,
+                padding: "14px",
+                borderRadius: "12px",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              Back to Focus
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       {showToast && (

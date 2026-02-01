@@ -153,9 +153,16 @@ export async function createConnectOnboardingLink(accountId, coachId) {
 // Create checkout session for user subscribing to a coach
 export async function createUserSubscriptionCheckout({ userId, coach, email }) {
   const settings = await getPlatformSettings();
-  const platformFee = settings.platformFeePercentage / 100;
+  
+  // Calculate platform fee: whichever is greater - $2 or 20% of subscription
+  const minFeeCents = 200; // $2
+  const percentageFee = Math.round(coach.user_monthly_price_cents * (settings.platformFeePercentage / 100));
+  const platformFeeCents = Math.max(minFeeCents, percentageFee);
+  
+  // Calculate what percentage this fee represents (for Stripe's application_fee_percent)
+  const effectiveFeePercentage = (platformFeeCents / coach.user_monthly_price_cents) * 100;
 
-  const session = await stripe.checkout.sessions.create({
+  const sessionConfig = {
     mode: 'subscription',
     payment_method_types: ['card'],
     customer_email: email,
@@ -175,26 +182,32 @@ export async function createUserSubscriptionCheckout({ userId, coach, email }) {
         quantity: 1,
       },
     ],
-    payment_intent_data: {
-      application_fee_amount: Math.round(coach.user_monthly_price_cents * platformFee),
-      transfer_data: {
-        destination: coach.stripe_account_id,
-      },
-    },
     subscription_data: {
-      application_fee_percent: settings.platformFeePercentage,
-      transfer_data: {
-        destination: coach.stripe_account_id,
+      application_fee_percent: effectiveFeePercentage,
+      metadata: {
+        platform_fee_cents: platformFeeCents.toString(),
+        coach_receives_cents: (coach.user_monthly_price_cents - platformFeeCents).toString(),
       },
     },
     metadata: {
       userId,
       coachId: coach.id,
       type: 'user_subscription',
+      platform_fee_cents: platformFeeCents.toString(),
     },
-    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/coach/${coach.slug}/dashboard?subscription=success`,
-    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/coach/${coach.slug}?subscription=canceled`,
-  });
+    allow_promotion_codes: true, // Allow coupon codes
+    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/user/dashboard?subscription=success`,
+    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/user/dashboard?subscription=canceled`,
+  };
+  
+  // Only add transfer_data if coach has connected Stripe account
+  if (coach.stripe_account_id && coach.stripe_account_status === 'active') {
+    sessionConfig.subscription_data.transfer_data = {
+      destination: coach.stripe_account_id,
+    };
+  }
+
+  const session = await stripe.checkout.sessions.create(sessionConfig);
 
   return session;
 }

@@ -32,19 +32,15 @@ export async function POST(request) {
       );
     }
 
-    if (!coach.stripe_account_id) {
-      return NextResponse.json(
-        { error: 'Coach has not set up payments yet' },
-        { status: 400 }
-      );
-    }
-
+    // Coach must have active platform subscription
     if (!coach.is_active || coach.platform_subscription_status !== 'active') {
       return NextResponse.json(
         { error: 'Coach is not accepting subscriptions' },
         { status: 400 }
       );
     }
+
+    // Note: Coach doesn't need Stripe Connect yet - we'll hold funds until they connect
 
     const session = await createUserSubscriptionCheckout({
       userId: user.id,

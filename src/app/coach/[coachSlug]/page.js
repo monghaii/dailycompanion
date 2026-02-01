@@ -44,7 +44,7 @@ export default function CoachLandingPage() {
     setIsSubmitting(true);
 
     try {
-      // Create account and initiate payment
+      // Create account
       const response = await fetch("/api/auth/signup-with-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -54,7 +54,6 @@ export default function CoachLandingPage() {
           firstName: signupForm.firstName,
           lastName: signupForm.lastName,
           coachSlug: params.coachSlug,
-          plan: "monthly",
         }),
       });
 
@@ -66,13 +65,9 @@ export default function CoachLandingPage() {
         return;
       }
 
-      // Redirect to checkout (Stripe or directly to dashboard in dev mode)
-      if (data.checkoutUrl) {
-        if (data.devMode) {
-          console.log('🚧 DEV MODE: Bypassing Stripe, going directly to dashboard');
-        }
-        window.location.href = data.checkoutUrl;
-      }
+      // Account created! Redirect to dashboard
+      // User is FREE by default, can upgrade later from Settings
+      window.location.href = '/user/dashboard?welcome=true';
     } catch (err) {
       console.error("Signup error:", err);
       alert("Failed to create account. Please try again.");
@@ -299,7 +294,7 @@ export default function CoachLandingPage() {
         <section
           style={{
             padding: "60px 20px",
-            maxWidth: "500px",
+            maxWidth: "900px",
             margin: "0 auto",
           }}
         >
@@ -317,46 +312,53 @@ export default function CoachLandingPage() {
 
           <div
             style={{
-              backgroundColor: "#fff",
-              borderRadius: "20px",
-              padding: "40px 30px",
-              boxShadow: `0 8px 32px ${primaryColor}30`,
-              border: `3px solid ${primaryColor}`,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: "30px",
             }}
           >
-            <h3
+            {/* Free Plan */}
+            <div
               style={{
-                fontSize: "24px",
-                fontWeight: 700,
-                marginBottom: "10px",
-                textAlign: "center",
+                backgroundColor: "#fff",
+                borderRadius: "20px",
+                padding: "40px 30px",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                border: "2px solid #e5e7eb",
               }}
             >
-              Monthly Subscription
-            </h3>
-            <div style={{ marginBottom: "30px", textAlign: "center" }}>
-              <span
+              <h3
                 style={{
-                  fontSize: "48px",
+                  fontSize: "24px",
                   fontWeight: 700,
-                  color: primaryColor,
+                  marginBottom: "10px",
+                  textAlign: "center",
                 }}
               >
-                {formatPrice(coach.monthly_price_cents || 2999)}
-              </span>
-              <span style={{ fontSize: "18px", color: "#6b7280" }}>/month</span>
-            </div>
+                Free
+              </h3>
+              <div style={{ marginBottom: "30px", textAlign: "center" }}>
+                <span
+                  style={{
+                    fontSize: "48px",
+                    fontWeight: 700,
+                    color: "#6b7280",
+                  }}
+                >
+                  $0
+                </span>
+                <span style={{ fontSize: "18px", color: "#6b7280" }}>/month</span>
+              </div>
 
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                marginBottom: "30px",
-              }}
-            >
-              {(pricing.features || []).map((feature, idx) => (
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  marginBottom: "30px",
+                  minHeight: "150px",
+                }}
+              >
                 <li
-                  key={idx}
                   style={{
                     marginBottom: "12px",
                     display: "flex",
@@ -366,33 +368,165 @@ export default function CoachLandingPage() {
                     color: "#4b5563",
                   }}
                 >
-                  <span style={{ color: primaryColor, fontSize: "20px" }}>
-                    ✓
-                  </span>
-                  {feature}
+                  <span style={{ color: "#6b7280", fontSize: "20px" }}>✓</span>
+                  Basic access to tools
                 </li>
-              ))}
-            </ul>
+                <li
+                  style={{
+                    marginBottom: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    fontSize: "15px",
+                    color: "#4b5563",
+                  }}
+                >
+                  <span style={{ color: "#6b7280", fontSize: "20px" }}>✓</span>
+                  Daily check-ins
+                </li>
+                <li
+                  style={{
+                    marginBottom: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    fontSize: "15px",
+                    color: "#4b5563",
+                  }}
+                >
+                  <span style={{ color: "#6b7280", fontSize: "20px" }}>✓</span>
+                  Progress tracking
+                </li>
+              </ul>
 
-            <button
-              onClick={() => setShowSignupModal(true)}
+              <button
+                onClick={() => setShowSignupModal(true)}
+                style={{
+                  width: "100%",
+                  backgroundColor: "#f3f4f6",
+                  color: "#6b7280",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  padding: "14px 20px",
+                  borderRadius: "12px",
+                  border: "2px solid #e5e7eb",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = "#e5e7eb";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = "#f3f4f6";
+                }}
+              >
+                Start Free
+              </button>
+            </div>
+
+            {/* Premium Plan */}
+            <div
               style={{
-                width: "100%",
-                backgroundColor: primaryColor,
-                color: "#fff",
-                fontSize: "16px",
-                fontWeight: 600,
-                padding: "14px 20px",
-                borderRadius: "12px",
-                border: "none",
-                cursor: "pointer",
-                transition: "filter 0.2s",
+                backgroundColor: "#fff",
+                borderRadius: "20px",
+                padding: "40px 30px",
+                boxShadow: `0 8px 32px ${primaryColor}30`,
+                border: `3px solid ${primaryColor}`,
+                position: "relative",
               }}
-              onMouseEnter={(e) => (e.target.style.filter = "brightness(0.9)")}
-              onMouseLeave={(e) => (e.target.style.filter = "brightness(1)")}
             >
-              Get Started
-            </button>
+              <div
+                style={{
+                  position: "absolute",
+                  top: "-12px",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  backgroundColor: primaryColor,
+                  color: "#fff",
+                  padding: "4px 16px",
+                  borderRadius: "20px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                }}
+              >
+                PREMIUM
+              </div>
+              <h3
+                style={{
+                  fontSize: "24px",
+                  fontWeight: 700,
+                  marginBottom: "10px",
+                  textAlign: "center",
+                }}
+              >
+                Premium
+              </h3>
+              <div style={{ marginBottom: "30px", textAlign: "center" }}>
+                <span
+                  style={{
+                    fontSize: "48px",
+                    fontWeight: 700,
+                    color: primaryColor,
+                  }}
+                >
+                  {formatPrice(coach.user_monthly_price_cents || 2999)}
+                </span>
+                <span style={{ fontSize: "18px", color: "#6b7280" }}>/month</span>
+              </div>
+
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  marginBottom: "30px",
+                  minHeight: "150px",
+                }}
+              >
+                {(pricing.features || [
+                  "Everything in Free",
+                  "Unlimited access to all tools",
+                  "Priority support",
+                  "Advanced analytics",
+                ]).map((feature, idx) => (
+                  <li
+                    key={idx}
+                    style={{
+                      marginBottom: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      fontSize: "15px",
+                      color: "#4b5563",
+                    }}
+                  >
+                    <span style={{ color: primaryColor, fontSize: "20px" }}>
+                      ✓
+                    </span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                onClick={() => setShowSignupModal(true)}
+                style={{
+                  width: "100%",
+                  backgroundColor: primaryColor,
+                  color: "#fff",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  padding: "14px 20px",
+                  borderRadius: "12px",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "filter 0.2s",
+                }}
+                onMouseEnter={(e) => (e.target.style.filter = "brightness(0.9)")}
+                onMouseLeave={(e) => (e.target.style.filter = "brightness(1)")}
+              >
+                Start Free, Upgrade Anytime
+              </button>
+            </div>
           </div>
         </section>
 
@@ -566,7 +700,7 @@ export default function CoachLandingPage() {
                 marginBottom: "30px",
               }}
             >
-              Monthly Plan • {formatPrice(coach.monthly_price_cents)}/month
+              Start with a free account • Upgrade to premium anytime
             </p>
 
             <form onSubmit={handleSignup}>
@@ -667,7 +801,7 @@ export default function CoachLandingPage() {
                   opacity: isSubmitting ? 0.7 : 1,
                 }}
               >
-                {isSubmitting ? "Creating Account..." : "Continue to Payment"}
+                {isSubmitting ? "Creating Account..." : "Create Free Account"}
               </button>
 
               <p
@@ -678,8 +812,7 @@ export default function CoachLandingPage() {
                   textAlign: "center",
                 }}
               >
-                By continuing, you'll be redirected to Stripe to complete your
-                payment securely.
+                No credit card required • Upgrade to premium anytime from your dashboard
               </p>
             </form>
           </div>
