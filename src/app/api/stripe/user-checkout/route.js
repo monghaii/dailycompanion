@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser, getCoachBySlug } from '@/lib/auth';
 import { createUserSubscriptionCheckout } from '@/lib/stripe';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request) {
   try {
@@ -16,18 +17,25 @@ export async function POST(request) {
     const body = await request.json();
     const { coachSlug } = body;
 
-    if (!coachSlug) {
-      return NextResponse.json(
-        { error: 'Coach slug is required' },
-        { status: 400 }
-      );
-    }
+    let coach;
 
-    const coach = await getCoachBySlug(coachSlug);
+    // If coachSlug is provided, use that. Otherwise use user's assigned coach
+    if (coachSlug) {
+      coach = await getCoachBySlug(coachSlug);
+    } else if (user.coach_id) {
+      // User already has a coach assigned - get coach details
+      const { data: coachData } = await supabase
+        .from('coaches')
+        .select('*')
+        .eq('id', user.coach_id)
+        .single();
+      
+      coach = coachData;
+    }
 
     if (!coach) {
       return NextResponse.json(
-        { error: 'Coach not found' },
+        { error: 'No coach found. Please sign up through a coach first.' },
         { status: 404 }
       );
     }

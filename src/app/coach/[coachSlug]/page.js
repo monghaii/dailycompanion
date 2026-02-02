@@ -16,6 +16,7 @@ export default function CoachLandingPage() {
     lastName: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [signupPlan, setSignupPlan] = useState("free"); // "free" or "premium"
 
   useEffect(() => {
     fetchLandingData();
@@ -65,9 +66,27 @@ export default function CoachLandingPage() {
         return;
       }
 
-      // Account created! Redirect to dashboard
-      // User is FREE by default, can upgrade later from Settings
-      window.location.href = '/user/dashboard?welcome=true';
+      // Account created!
+      if (signupPlan === "premium") {
+        // Redirect to Stripe checkout for premium
+        const checkoutResponse = await fetch("/api/stripe/user-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+
+        const checkoutData = await checkoutResponse.json();
+
+        if (checkoutData.url) {
+          window.location.href = checkoutData.url;
+        } else {
+          alert("Failed to start checkout. Redirecting to dashboard...");
+          window.location.href = '/user/dashboard?welcome=true';
+        }
+      } else {
+        // Free user - redirect to dashboard
+        window.location.href = '/user/dashboard?welcome=true';
+      }
     } catch (err) {
       console.error("Signup error:", err);
       alert("Failed to create account. Please try again.");
@@ -369,7 +388,7 @@ export default function CoachLandingPage() {
                   }}
                 >
                   <span style={{ color: "#6b7280", fontSize: "20px" }}>✓</span>
-                  Basic access to tools
+                  Daily Focus check-ins
                 </li>
                 <li
                   style={{
@@ -382,7 +401,7 @@ export default function CoachLandingPage() {
                   }}
                 >
                   <span style={{ color: "#6b7280", fontSize: "20px" }}>✓</span>
-                  Daily check-ins
+                  Basic task tracking
                 </li>
                 <li
                   style={{
@@ -395,12 +414,15 @@ export default function CoachLandingPage() {
                   }}
                 >
                   <span style={{ color: "#6b7280", fontSize: "20px" }}>✓</span>
-                  Progress tracking
+                  Community support
                 </li>
               </ul>
 
               <button
-                onClick={() => setShowSignupModal(true)}
+                onClick={() => {
+                  setSignupPlan("free");
+                  setShowSignupModal(true);
+                }}
                 style={{
                   width: "100%",
                   backgroundColor: "#f3f4f6",
@@ -469,7 +491,7 @@ export default function CoachLandingPage() {
                     color: primaryColor,
                   }}
                 >
-                  {formatPrice(coach.user_monthly_price_cents || 2999)}
+                  $19.99
                 </span>
                 <span style={{ fontSize: "18px", color: "#6b7280" }}>/month</span>
               </div>
@@ -484,8 +506,9 @@ export default function CoachLandingPage() {
               >
                 {(pricing.features || [
                   "Everything in Free",
-                  "Unlimited access to all tools",
-                  "Priority support",
+                  "AI Coach conversations",
+                  "Awareness tracking & insights",
+                  "Premium content library",
                   "Advanced analytics",
                 ]).map((feature, idx) => (
                   <li
@@ -508,7 +531,10 @@ export default function CoachLandingPage() {
               </ul>
 
               <button
-                onClick={() => setShowSignupModal(true)}
+                onClick={() => {
+                  setSignupPlan("premium");
+                  setShowSignupModal(true);
+                }}
                 style={{
                   width: "100%",
                   backgroundColor: primaryColor,
@@ -524,7 +550,7 @@ export default function CoachLandingPage() {
                 onMouseEnter={(e) => (e.target.style.filter = "brightness(0.9)")}
                 onMouseLeave={(e) => (e.target.style.filter = "brightness(1)")}
               >
-                Start Free, Upgrade Anytime
+                Start Premium
               </button>
             </div>
           </div>
@@ -700,7 +726,9 @@ export default function CoachLandingPage() {
                 marginBottom: "30px",
               }}
             >
-              Start with a free account • Upgrade to premium anytime
+              {signupPlan === "premium" 
+                ? "Sign up and start your $19.99/month premium plan" 
+                : "Start with a free account • Upgrade to premium anytime"}
             </p>
 
             <form onSubmit={handleSignup}>

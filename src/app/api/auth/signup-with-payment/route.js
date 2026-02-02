@@ -73,11 +73,19 @@ export async function POST(request) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
     
-    await supabase.from('sessions').insert({
+    const { error: sessionError } = await supabase.from('sessions').insert({
       user_id: user.id,
       token,
       expires_at: expiresAt.toISOString(),
     });
+    
+    if (sessionError) {
+      console.error('Session creation error:', sessionError);
+      return NextResponse.json(
+        { error: 'Failed to create database session: ' + sessionError.message },
+        { status: 500 }
+      );
+    }
 
     const cookieStore = await cookies();
     cookieStore.set('auth_token', token, {

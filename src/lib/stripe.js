@@ -158,15 +158,15 @@ export async function createConnectDashboardLink(accountId) {
 
 // Create checkout session for user subscribing to a coach
 export async function createUserSubscriptionCheckout({ userId, coach, email }) {
-  const settings = await getPlatformSettings();
+  // Fixed pricing: $19.99/month for users
+  // Platform takes $7, coach gets $12.99
+  const userPriceCents = 1999; // $19.99
+  const platformFeeCents = 700; // $7
+  const coachReceivesCents = userPriceCents - platformFeeCents; // $12.99
   
-  // Calculate platform fee: whichever is greater - $2 or 20% of subscription
-  const minFeeCents = 200; // $2
-  const percentageFee = Math.round(coach.user_monthly_price_cents * (settings.platformFeePercentage / 100));
-  const platformFeeCents = Math.max(minFeeCents, percentageFee);
-  
-  // Calculate what percentage this fee represents (for Stripe's application_fee_percent)
-  const effectiveFeePercentage = (platformFeeCents / coach.user_monthly_price_cents) * 100;
+  // Calculate what percentage $7 fee represents (for Stripe's application_fee_percent)
+  // Round to 2 decimal places as required by Stripe
+  const effectiveFeePercentage = Math.round((platformFeeCents / userPriceCents) * 100 * 100) / 100;
 
   const sessionConfig = {
     mode: 'subscription',
@@ -177,10 +177,10 @@ export async function createUserSubscriptionCheckout({ userId, coach, email }) {
         price_data: {
           currency: 'usd',
           product_data: {
-            name: `${coach.business_name} Subscription`,
-            description: `Monthly subscription to ${coach.business_name}`,
+            name: `${coach.business_name} - Premium Subscription`,
+            description: `Premium access to ${coach.business_name}`,
           },
-          unit_amount: coach.user_monthly_price_cents,
+          unit_amount: userPriceCents,
           recurring: {
             interval: 'month',
           },
@@ -192,7 +192,7 @@ export async function createUserSubscriptionCheckout({ userId, coach, email }) {
       application_fee_percent: effectiveFeePercentage,
       metadata: {
         platform_fee_cents: platformFeeCents.toString(),
-        coach_receives_cents: (coach.user_monthly_price_cents - platformFeeCents).toString(),
+        coach_receives_cents: coachReceivesCents.toString(),
       },
     },
     metadata: {
@@ -200,6 +200,7 @@ export async function createUserSubscriptionCheckout({ userId, coach, email }) {
       coachId: coach.id,
       type: 'user_subscription',
       platform_fee_cents: platformFeeCents.toString(),
+      price_per_month: '19.99',
     },
     allow_promotion_codes: true, // Allow coupon codes
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/user/dashboard?subscription=success`,
