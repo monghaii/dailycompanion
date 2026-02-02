@@ -8,15 +8,6 @@ export default function CoachLandingPage() {
   const [landingData, setLandingData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showSignupModal, setShowSignupModal] = useState(false);
-  const [signupForm, setSignupForm] = useState({
-    email: "",
-    password: "",
-    firstName: "",
-    lastName: "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [signupPlan, setSignupPlan] = useState("free"); // "free" or "premium"
 
   useEffect(() => {
     fetchLandingData();
@@ -37,60 +28,6 @@ export default function CoachLandingPage() {
       setError(err.message);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleSignup = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      // Create account
-      const response = await fetch("/api/auth/signup-with-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: signupForm.email,
-          password: signupForm.password,
-          firstName: signupForm.firstName,
-          lastName: signupForm.lastName,
-          coachSlug: params.coachSlug,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.error) {
-        alert(data.error);
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Account created!
-      if (signupPlan === "premium") {
-        // Redirect to Stripe checkout for premium
-        const checkoutResponse = await fetch("/api/stripe/user-checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
-        });
-
-        const checkoutData = await checkoutResponse.json();
-
-        if (checkoutData.url) {
-          window.location.href = checkoutData.url;
-        } else {
-          alert("Failed to start checkout. Redirecting to dashboard...");
-          window.location.href = '/user/dashboard?welcome=true';
-        }
-      } else {
-        // Free user - redirect to dashboard
-        window.location.href = '/user/dashboard?welcome=true';
-      }
-    } catch (err) {
-      console.error("Signup error:", err);
-      alert("Failed to create account. Please try again.");
-      setIsSubmitting(false);
     }
   };
 
@@ -237,7 +174,7 @@ export default function CoachLandingPage() {
             </p>
 
             <button
-              onClick={() => setShowSignupModal(true)}
+              onClick={() => window.location.href = `/signup?coach=${params.coachSlug}&plan=free`}
               style={{
                 backgroundColor: primaryColor,
                 color: "#fff",
@@ -420,8 +357,7 @@ export default function CoachLandingPage() {
 
               <button
                 onClick={() => {
-                  setSignupPlan("free");
-                  setShowSignupModal(true);
+                  window.location.href = `/signup?coach=${params.coachSlug}&plan=free`;
                 }}
                 style={{
                   width: "100%",
@@ -532,8 +468,7 @@ export default function CoachLandingPage() {
 
               <button
                 onClick={() => {
-                  setSignupPlan("premium");
-                  setShowSignupModal(true);
+                  window.location.href = `/signup?coach=${params.coachSlug}&plan=premium`;
                 }}
                 style={{
                   width: "100%",
@@ -647,7 +582,7 @@ export default function CoachLandingPage() {
             Your transformation starts today
           </p>
           <button
-            onClick={() => setShowSignupModal(true)}
+            onClick={() => window.location.href = `/signup?coach=${params.coachSlug}&plan=free`}
             style={{
               backgroundColor: primaryColor,
               color: "#fff",
@@ -665,187 +600,6 @@ export default function CoachLandingPage() {
         </section>
       </div>
 
-      {/* Signup Modal */}
-      {showSignupModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: "20px",
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "#fff",
-              borderRadius: "20px",
-              padding: "40px",
-              maxWidth: "450px",
-              width: "100%",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-              position: "relative",
-            }}
-          >
-            <button
-              onClick={() => setShowSignupModal(false)}
-              style={{
-                position: "absolute",
-                top: "20px",
-                right: "20px",
-                background: "none",
-                border: "none",
-                fontSize: "24px",
-                cursor: "pointer",
-                color: "#9ca3af",
-              }}
-            >
-              ×
-            </button>
-
-            <h2
-              style={{
-                fontSize: "28px",
-                fontWeight: 700,
-                marginBottom: "10px",
-                color: "#1a1a1a",
-              }}
-            >
-              Create Your Account
-            </h2>
-            <p
-              style={{
-                fontSize: "14px",
-                color: "#6b7280",
-                marginBottom: "30px",
-              }}
-            >
-              {signupPlan === "premium" 
-                ? "Sign up and start your $19.99/month premium plan" 
-                : "Start with a free account • Upgrade to premium anytime"}
-            </p>
-
-            <form onSubmit={handleSignup}>
-              <div style={{ marginBottom: "20px" }}>
-                <input
-                  type="text"
-                  placeholder="First Name"
-                  value={signupForm.firstName}
-                  onChange={(e) =>
-                    setSignupForm({ ...signupForm, firstName: e.target.value })
-                  }
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "14px 16px",
-                    fontSize: "15px",
-                    borderRadius: "12px",
-                    border: "1px solid #e5e7eb",
-                    outline: "none",
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: "20px" }}>
-                <input
-                  type="text"
-                  placeholder="Last Name"
-                  value={signupForm.lastName}
-                  onChange={(e) =>
-                    setSignupForm({ ...signupForm, lastName: e.target.value })
-                  }
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "14px 16px",
-                    fontSize: "15px",
-                    borderRadius: "12px",
-                    border: "1px solid #e5e7eb",
-                    outline: "none",
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: "20px" }}>
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={signupForm.email}
-                  onChange={(e) =>
-                    setSignupForm({ ...signupForm, email: e.target.value })
-                  }
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "14px 16px",
-                    fontSize: "15px",
-                    borderRadius: "12px",
-                    border: "1px solid #e5e7eb",
-                    outline: "none",
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: "30px" }}>
-                <input
-                  type="password"
-                  placeholder="Password (min 6 characters)"
-                  value={signupForm.password}
-                  onChange={(e) =>
-                    setSignupForm({ ...signupForm, password: e.target.value })
-                  }
-                  required
-                  minLength={6}
-                  style={{
-                    width: "100%",
-                    padding: "14px 16px",
-                    fontSize: "15px",
-                    borderRadius: "12px",
-                    border: "1px solid #e5e7eb",
-                    outline: "none",
-                  }}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                style={{
-                  width: "100%",
-                  backgroundColor: primaryColor,
-                  color: "#fff",
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  padding: "16px",
-                  borderRadius: "12px",
-                  border: "none",
-                  cursor: isSubmitting ? "not-allowed" : "pointer",
-                  opacity: isSubmitting ? 0.7 : 1,
-                }}
-              >
-                {isSubmitting ? "Creating Account..." : "Create Free Account"}
-              </button>
-
-              <p
-                style={{
-                  fontSize: "12px",
-                  color: "#9ca3af",
-                  marginTop: "20px",
-                  textAlign: "center",
-                }}
-              >
-                No credit card required • Upgrade to premium anytime from your dashboard
-              </p>
-            </form>
-          </div>
-        </div>
-      )}
     </>
   );
 }

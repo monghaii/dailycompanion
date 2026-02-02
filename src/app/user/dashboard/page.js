@@ -67,7 +67,7 @@ export default function UserDashboard() {
     return null;
   }); // null, 'announcements', 'resources', 'insights', 'library', 'settings'
   const [selectedAwarenessDate, setSelectedAwarenessDate] = useState(
-    new Date()
+    new Date(),
   );
   const [selectedInsightsDate, setSelectedInsightsDate] = useState(null);
   const [insightsMonth, setInsightsMonth] = useState(new Date());
@@ -87,10 +87,11 @@ export default function UserDashboard() {
   const [settingsLastName, setSettingsLastName] = useState("");
   const [settingsEmail, setSettingsEmail] = useState("");
   const [settingsTimezone, setSettingsTimezone] = useState(
-    Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York"
+    Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
   );
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [coachConfig, setCoachConfig] = useState(null);
+  const primaryColor = coachConfig?.branding?.primary_color || "#6366f1";
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -114,7 +115,7 @@ export default function UserDashboard() {
   const getTodayInUserTimezone = () => {
     const now = new Date();
     const userDate = new Date(
-      now.toLocaleString("en-US", { timeZone: settingsTimezone })
+      now.toLocaleString("en-US", { timeZone: settingsTimezone }),
     );
     return userDate.toISOString().split("T")[0];
   };
@@ -138,7 +139,7 @@ export default function UserDashboard() {
 
     // Filter out empty slots
     const filledAudios = audioLibrary.filter(
-      (audio) => audio && audio.audio_url
+      (audio) => audio && audio.audio_url,
     );
 
     if (filledAudios.length === 0) {
@@ -149,9 +150,9 @@ export default function UserDashboard() {
     const daysSinceStart = Math.floor(
       (new Date().getTime() -
         new Date(
-          coachConfig?.focus_tab?.library_start_date || new Date()
+          coachConfig?.focus_tab?.library_start_date || new Date(),
         ).getTime()) /
-        (1000 * 60 * 60 * 24)
+        (1000 * 60 * 60 * 24),
     );
 
     // Use current_day_index as the starting point, then cycle through
@@ -168,7 +169,7 @@ export default function UserDashboard() {
     if (user && !configFetched.current) {
       console.log(
         "📞 useEffect calling fetchCoachConfig ONCE, user:",
-        user?.email
+        user?.email,
       );
       configFetched.current = true;
       fetchCoachConfig();
@@ -329,7 +330,7 @@ export default function UserDashboard() {
         }
         if (parsedConfig.emotional_state_tab) {
           parsedConfig.emotional_state_tab = parseSection(
-            parsedConfig.emotional_state_tab
+            parsedConfig.emotional_state_tab,
           );
         }
 
@@ -391,7 +392,7 @@ export default function UserDashboard() {
       const year = month.getFullYear();
       const monthNum = month.getMonth() + 1;
       const res = await fetch(
-        `/api/daily-entries/month?year=${year}&month=${monthNum}`
+        `/api/daily-entries/month?year=${year}&month=${monthNum}`,
       );
       const data = await res.json();
 
@@ -452,7 +453,7 @@ export default function UserDashboard() {
       const res = await fetch(
         `/api/daily-entries/range?startDate=${
           startDate.toISOString().split("T")[0]
-        }&endDate=${endDate.toISOString().split("T")[0]}`
+        }&endDate=${endDate.toISOString().split("T")[0]}`,
       );
       const data = await res.json();
 
@@ -528,7 +529,7 @@ export default function UserDashboard() {
 
   const fetchSubscriptionStatus = async () => {
     if (!user) return;
-    
+
     setIsLoadingSubscription(true);
     try {
       const res = await fetch("/api/user/subscription-status");
@@ -574,7 +575,11 @@ export default function UserDashboard() {
   };
 
   const handleCancelSubscription = async () => {
-    if (!confirm("Are you sure you want to cancel your subscription? You'll keep access until the end of your billing period.")) {
+    if (
+      !confirm(
+        "Are you sure you want to cancel your subscription? You'll keep access until the end of your billing period.",
+      )
+    ) {
       return;
     }
 
@@ -808,7 +813,7 @@ export default function UserDashboard() {
   };
 
   const completedCount = Object.entries(completedTasks).filter(
-    ([key, completed]) => enabledTasks[key] && completed
+    ([key, completed]) => enabledTasks[key] && completed,
   ).length;
   const totalTasks = Object.values(enabledTasks).filter(Boolean).length;
   const progressPercent =
@@ -894,7 +899,7 @@ export default function UserDashboard() {
     const dateInTz = new Date(
       selectedAwarenessDate.toLocaleString("en-US", {
         timeZone: settingsTimezone,
-      })
+      }),
     );
     const dateStr = dateInTz.toISOString().split("T")[0];
 
@@ -972,7 +977,7 @@ export default function UserDashboard() {
     const dateInTz = new Date(
       selectedAwarenessDate.toLocaleString("en-US", {
         timeZone: settingsTimezone,
-      })
+      }),
     );
     const dateStr = dateInTz.toISOString().split("T")[0];
 
@@ -1041,7 +1046,7 @@ export default function UserDashboard() {
     const dateInTz = new Date(
       selectedAwarenessDate.toLocaleString("en-US", {
         timeZone: settingsTimezone,
-      })
+      }),
     );
     const dateStr = dateInTz.toISOString().split("T")[0];
 
@@ -1194,12 +1199,12 @@ export default function UserDashboard() {
   // Get current week days for awareness tab
   const today = new Date();
   const todayInUserTz = new Date(
-    today.toLocaleString("en-US", { timeZone: settingsTimezone })
+    today.toLocaleString("en-US", { timeZone: settingsTimezone }),
   );
   const currentDay = today.getDate();
   const startOfWeek = new Date(selectedAwarenessDate);
   startOfWeek.setDate(
-    selectedAwarenessDate.getDate() - selectedAwarenessDate.getDay()
+    selectedAwarenessDate.getDate() - selectedAwarenessDate.getDay(),
   );
 
   const weekDays = [];
@@ -1930,8 +1935,8 @@ export default function UserDashboard() {
                   backgroundColor: isSavingFocus
                     ? "#d1fae5"
                     : notesModified
-                    ? "#10b981"
-                    : "#f3f4f6",
+                      ? "#10b981"
+                      : "#f3f4f6",
                   color: notesModified || isSavingFocus ? "#fff" : "#9ca3af",
                   border: "none",
                   borderRadius: "8px",
@@ -1972,7 +1977,7 @@ export default function UserDashboard() {
                 }}
               />
             )}
-            
+
             {/* Date Header */}
             <div style={{ marginTop: "24px", marginBottom: "24px" }}>
               <h2
@@ -2000,7 +2005,10 @@ export default function UserDashboard() {
                   <button
                     key={idx}
                     onClick={() =>
-                      !day.isFuture && !subscriptionStatus?.isPremium ? null : !day.isFuture && setSelectedAwarenessDate(day.fullDate)
+                      !day.isFuture && !subscriptionStatus?.isPremium
+                        ? null
+                        : !day.isFuture &&
+                          setSelectedAwarenessDate(day.fullDate)
                     }
                     disabled={day.isFuture || !subscriptionStatus?.isPremium}
                     style={{
@@ -2008,9 +2016,15 @@ export default function UserDashboard() {
                       flex: 1,
                       background: "none",
                       border: "none",
-                      cursor: day.isFuture || !subscriptionStatus?.isPremium ? "not-allowed" : "pointer",
+                      cursor:
+                        day.isFuture || !subscriptionStatus?.isPremium
+                          ? "not-allowed"
+                          : "pointer",
                       padding: "0",
-                      opacity: day.isFuture || !subscriptionStatus?.isPremium ? 0.4 : 1,
+                      opacity:
+                        day.isFuture || !subscriptionStatus?.isPremium
+                          ? 0.4
+                          : 1,
                     }}
                   >
                     <div
@@ -2056,7 +2070,7 @@ export default function UserDashboard() {
                             width: "6px",
                             height: "6px",
                             borderRadius: "50%",
-                            backgroundColor: "#a855f7",
+                            backgroundColor: primaryColor,
                           }}
                         />
                       )}
@@ -2325,7 +2339,11 @@ export default function UserDashboard() {
                           </span>
                         </div>
                         <button
-                          onClick={() => !subscriptionStatus?.isPremium ? null : handleMindfulnessClick(item)}
+                          onClick={() =>
+                            !subscriptionStatus?.isPremium
+                              ? null
+                              : handleMindfulnessClick(item)
+                          }
                           disabled={!subscriptionStatus?.isPremium}
                           style={{
                             width: "32px",
@@ -2335,7 +2353,9 @@ export default function UserDashboard() {
                             backgroundColor: "transparent",
                             color: "#60a5fa",
                             fontSize: "24px",
-                            cursor: !subscriptionStatus?.isPremium ? "not-allowed" : "pointer",
+                            cursor: !subscriptionStatus?.isPremium
+                              ? "not-allowed"
+                              : "pointer",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -2384,7 +2404,11 @@ export default function UserDashboard() {
                           "emotional state"}
                       </span>
                       <button
-                        onClick={() => !subscriptionStatus?.isPremium ? null : setShowEmotionalModal(true)}
+                        onClick={() =>
+                          !subscriptionStatus?.isPremium
+                            ? null
+                            : setShowEmotionalModal(true)
+                        }
                         disabled={!subscriptionStatus?.isPremium}
                         style={{
                           width: "32px",
@@ -2394,7 +2418,9 @@ export default function UserDashboard() {
                           backgroundColor: "transparent",
                           color: "#60a5fa",
                           fontSize: "24px",
-                          cursor: !subscriptionStatus?.isPremium ? "not-allowed" : "pointer",
+                          cursor: !subscriptionStatus?.isPremium
+                            ? "not-allowed"
+                            : "pointer",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -2474,7 +2500,9 @@ export default function UserDashboard() {
                           </span>
                           <button
                             onClick={() =>
-                              !subscriptionStatus?.isPremium ? null : handleDeleteEntry(entry.id, "mindfulness")
+                              !subscriptionStatus?.isPremium
+                                ? null
+                                : handleDeleteEntry(entry.id, "mindfulness")
                             }
                             disabled={!subscriptionStatus?.isPremium}
                             style={{
@@ -2484,7 +2512,9 @@ export default function UserDashboard() {
                                 coachConfig?.branding?.primary_color ||
                                 "#ef4444",
                               fontSize: "18px",
-                              cursor: !subscriptionStatus?.isPremium ? "not-allowed" : "pointer",
+                              cursor: !subscriptionStatus?.isPremium
+                                ? "not-allowed"
+                                : "pointer",
                               padding: "0 4px",
                               opacity: !subscriptionStatus?.isPremium ? 0.5 : 1,
                             }}
@@ -2519,7 +2549,7 @@ export default function UserDashboard() {
                                 width: "8px",
                                 height: "8px",
                                 borderRadius: "50%",
-                                backgroundColor: "#a855f7",
+                                backgroundColor: primaryColor,
                               }}
                             />
                             <span
@@ -2558,7 +2588,9 @@ export default function UserDashboard() {
                           </span>
                           <button
                             onClick={() =>
-                              !subscriptionStatus?.isPremium ? null : handleDeleteEntry(entry.id, "emotional")
+                              !subscriptionStatus?.isPremium
+                                ? null
+                                : handleDeleteEntry(entry.id, "emotional")
                             }
                             disabled={!subscriptionStatus?.isPremium}
                             style={{
@@ -2568,7 +2600,9 @@ export default function UserDashboard() {
                                 coachConfig?.branding?.primary_color ||
                                 "#ef4444",
                               fontSize: "18px",
-                              cursor: !subscriptionStatus?.isPremium ? "not-allowed" : "pointer",
+                              cursor: !subscriptionStatus?.isPremium
+                                ? "not-allowed"
+                                : "pointer",
                               padding: "0 4px",
                               opacity: !subscriptionStatus?.isPremium ? 0.5 : 1,
                             }}
@@ -2676,7 +2710,7 @@ export default function UserDashboard() {
                             style={{
                               width: "100%",
                               padding: "16px",
-                              backgroundColor: "#3b82f6",
+                              backgroundColor: primaryColor,
                               color: "#fff",
                               border: "none",
                               borderRadius: "8px",
@@ -2692,11 +2726,9 @@ export default function UserDashboard() {
                               outline: "none",
                             }}
                             onMouseEnter={(e) =>
-                              (e.target.style.backgroundColor = "#2563eb")
+                              (e.target.style.opacity = "0.9")
                             }
-                            onMouseLeave={(e) =>
-                              (e.target.style.backgroundColor = "#3b82f6")
-                            }
+                            onMouseLeave={(e) => (e.target.style.opacity = "1")}
                           >
                             <span style={{ fontSize: "20px" }}>
                               {showPracticeControls
@@ -2789,7 +2821,7 @@ export default function UserDashboard() {
                 }}
               />
             )}
-            
+
             {/* Header */}
             <div>
               {/* Gradient Section */}
@@ -2891,7 +2923,11 @@ export default function UserDashboard() {
                   }}
                 >
                   <button
-                    onClick={() => !subscriptionStatus?.isPremium ? null : setShowCoachProfile(!showCoachProfile)}
+                    onClick={() =>
+                      !subscriptionStatus?.isPremium
+                        ? null
+                        : setShowCoachProfile(!showCoachProfile)
+                    }
                     disabled={!subscriptionStatus?.isPremium}
                     style={{
                       background: "none",
@@ -2899,7 +2935,9 @@ export default function UserDashboard() {
                       color: coachConfig?.branding?.primary_color || "#ef4444",
                       fontSize: "14px",
                       fontWeight: 600,
-                      cursor: !subscriptionStatus?.isPremium ? "not-allowed" : "pointer",
+                      cursor: !subscriptionStatus?.isPremium
+                        ? "not-allowed"
+                        : "pointer",
                       display: "flex",
                       alignItems: "center",
                       gap: "4px",
@@ -2949,7 +2987,11 @@ export default function UserDashboard() {
                   </div>
 
                   <button
-                    onClick={!subscriptionStatus?.isPremium ? () => {} : handleNewSession}
+                    onClick={
+                      !subscriptionStatus?.isPremium
+                        ? () => {}
+                        : handleNewSession
+                    }
                     disabled={!subscriptionStatus?.isPremium}
                     style={{
                       backgroundColor:
@@ -2960,7 +3002,9 @@ export default function UserDashboard() {
                       padding: "8px 20px",
                       fontSize: "14px",
                       fontWeight: 600,
-                      cursor: !subscriptionStatus?.isPremium ? "not-allowed" : "pointer",
+                      cursor: !subscriptionStatus?.isPremium
+                        ? "not-allowed"
+                        : "pointer",
                       opacity: !subscriptionStatus?.isPremium ? 0.5 : 1,
                     }}
                   >
@@ -3359,23 +3403,33 @@ export default function UserDashboard() {
                 />
                 <button
                   type="submit"
-                  disabled={isSendingChat || !chatMessage.trim() || !subscriptionStatus?.isPremium}
+                  disabled={
+                    isSendingChat ||
+                    !chatMessage.trim() ||
+                    !subscriptionStatus?.isPremium
+                  }
                   style={{
                     width: "48px",
                     height: "48px",
                     borderRadius: "50%",
-                    backgroundColor:
-                      coachConfig?.branding?.primary_color || "#ef4444",
+                    backgroundColor: primaryColor,
                     border: "none",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     cursor:
-                      isSendingChat || !chatMessage.trim() || !subscriptionStatus?.isPremium
+                      isSendingChat ||
+                      !chatMessage.trim() ||
+                      !subscriptionStatus?.isPremium
                         ? "not-allowed"
                         : "pointer",
                     flexShrink: 0,
-                    opacity: isSendingChat || !chatMessage.trim() || !subscriptionStatus?.isPremium ? 0.5 : 1,
+                    opacity:
+                      isSendingChat ||
+                      !chatMessage.trim() ||
+                      !subscriptionStatus?.isPremium
+                        ? 0.5
+                        : 1,
                   }}
                 >
                   <svg
@@ -3500,88 +3554,97 @@ export default function UserDashboard() {
                   isPremium: false,
                 },
               ].map((item, idx) => {
-                const isLocked = item.isPremium && !subscriptionStatus?.isPremium;
+                const isLocked =
+                  item.isPremium && !subscriptionStatus?.isPremium;
                 return (
-                <div
-                  key={idx}
-                  onClick={() => {
-                    setMoreSubpage(item.id);
-                    if (isLocked) {
-                      setUpgradeModalContext(item.title);
-                      setShowUpgradeModal(true);
-                    }
-                  }}
-                  style={{
-                    backgroundColor: "#fff",
-                    padding: "16px",
-                    borderRadius: "12px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "16px",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                    cursor: "pointer",
-                  }}
-                >
                   <div
+                    key={idx}
+                    onClick={() => {
+                      setMoreSubpage(item.id);
+                      if (isLocked) {
+                        setUpgradeModalContext(item.title);
+                        setShowUpgradeModal(true);
+                      }
+                    }}
                     style={{
-                      width: "56px",
-                      height: "56px",
-                      backgroundColor: item.bgColor,
+                      backgroundColor: "#fff",
+                      padding: "16px",
                       borderRadius: "12px",
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
+                      gap: "16px",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                      cursor: "pointer",
                     }}
                   >
-                    {item.icon}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h3
+                    <div
                       style={{
-                        fontSize: "18px",
-                        fontWeight: 600,
-                        color: "#1a1a1a",
-                        marginBottom: "4px",
+                        width: "56px",
+                        height: "56px",
+                        backgroundColor: item.bgColor,
+                        borderRadius: "12px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
                       }}
                     >
-                      {item.title}
-                    </h3>
-                    <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                      {item.subtitle}
-                    </p>
+                      {item.icon}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h3
+                        style={{
+                          fontSize: "18px",
+                          fontWeight: 600,
+                          color: "#1a1a1a",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        {item.title}
+                      </h3>
+                      <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                        {item.subtitle}
+                      </p>
+                    </div>
+                    {isLocked ? (
+                      <svg
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          color: "#fbbf24",
+                        }}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          color: "#9ca3af",
+                        }}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    )}
                   </div>
-                  {isLocked ? (
-                    <svg
-                      style={{ width: "20px", height: "20px", color: "#fbbf24" }}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      style={{ width: "20px", height: "20px", color: "#9ca3af" }}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  )}
-                </div>
-              );
+                );
               })}
             </div>
 
@@ -4374,7 +4437,7 @@ export default function UserDashboard() {
                                     progressPercent === 100
                                       ? 100
                                       : progressPercent,
-                                    20
+                                    20,
                                   )}%`,
                                   height: "3px",
                                   backgroundColor:
@@ -4426,7 +4489,7 @@ export default function UserDashboard() {
                           {
                             month: "long",
                             day: "numeric",
-                          }
+                          },
                         )}
                       </h3>
                       <button
@@ -4621,7 +4684,7 @@ export default function UserDashboard() {
                       if (coachConfig?.emotional_state_tab?.categories) {
                         const category =
                           coachConfig.emotional_state_tab.categories.find(
-                            (cat) => cat.id === categoryId
+                            (cat) => cat.id === categoryId,
                           );
                         if (category && category.color) {
                           return category.color;
@@ -4717,7 +4780,7 @@ export default function UserDashboard() {
                                   height: "16px",
                                   borderRadius: "50%",
                                   backgroundColor: getEmotionColor(
-                                    item.categoryId
+                                    item.categoryId,
                                   ),
                                   flexShrink: 0,
                                 }}
@@ -5215,7 +5278,13 @@ export default function UserDashboard() {
               </h3>
 
               {isLoadingSubscription ? (
-                <div style={{ padding: "40px", textAlign: "center", color: "#6b7280" }}>
+                <div
+                  style={{
+                    padding: "40px",
+                    textAlign: "center",
+                    color: "#6b7280",
+                  }}
+                >
                   Loading subscription status...
                 </div>
               ) : (
@@ -5223,8 +5292,12 @@ export default function UserDashboard() {
                   {/* Current Plan Card */}
                   <div
                     style={{
-                      backgroundColor: subscriptionStatus?.isPremium ? "#f3e8ff" : "#f9fafb",
-                      border: subscriptionStatus?.isPremium ? "3px solid #a855f7" : "1px solid #e5e7eb",
+                      backgroundColor: subscriptionStatus?.isPremium
+                        ? "#f3e8ff"
+                        : "#f9fafb",
+                      border: subscriptionStatus?.isPremium
+                        ? "3px solid #a855f7"
+                        : "1px solid #e5e7eb",
                       borderRadius: "12px",
                       padding: "20px",
                       marginBottom: "20px",
@@ -5236,7 +5309,9 @@ export default function UserDashboard() {
                         position: "absolute",
                         top: "16px",
                         right: "16px",
-                        backgroundColor: subscriptionStatus?.isPremium ? "#a855f7" : "#6b7280",
+                        backgroundColor: subscriptionStatus?.isPremium
+                          ? primaryColor
+                          : "#6b7280",
                         color: "#fff",
                         fontSize: "12px",
                         fontWeight: 700,
@@ -5279,27 +5354,41 @@ export default function UserDashboard() {
                         : "$0"}
                       <span style={{ fontSize: "18px" }}>/month</span>
                     </div>
-                    
-                    {subscriptionStatus?.isPremium && subscriptionStatus.subscription.willCancelAtPeriodEnd && (
-                      <div
-                        style={{
-                          marginTop: "12px",
-                          padding: "12px",
-                          backgroundColor: "#fef3c7",
-                          borderRadius: "8px",
-                          fontSize: "13px",
-                          color: "#92400e",
-                        }}
-                      >
-                        ⚠️ Subscription will end on {new Date(subscriptionStatus.subscription.currentPeriodEnd).toLocaleDateString()}
-                      </div>
-                    )}
-                    
-                    {subscriptionStatus?.isPremium && subscriptionStatus.subscription.currentPeriodEnd && (
-                      <p style={{ fontSize: "12px", color: "#9ca3af", marginTop: "8px" }}>
-                        Next billing: {new Date(subscriptionStatus.subscription.currentPeriodEnd).toLocaleDateString()}
-                      </p>
-                    )}
+
+                    {subscriptionStatus?.isPremium &&
+                      subscriptionStatus.subscription.willCancelAtPeriodEnd && (
+                        <div
+                          style={{
+                            marginTop: "12px",
+                            padding: "12px",
+                            backgroundColor: "#fef3c7",
+                            borderRadius: "8px",
+                            fontSize: "13px",
+                            color: "#92400e",
+                          }}
+                        >
+                          ⚠️ Subscription will end on{" "}
+                          {new Date(
+                            subscriptionStatus.subscription.currentPeriodEnd,
+                          ).toLocaleDateString()}
+                        </div>
+                      )}
+
+                    {subscriptionStatus?.isPremium &&
+                      subscriptionStatus.subscription.currentPeriodEnd && (
+                        <p
+                          style={{
+                            fontSize: "12px",
+                            color: "#9ca3af",
+                            marginTop: "8px",
+                          }}
+                        >
+                          Next billing:{" "}
+                          {new Date(
+                            subscriptionStatus.subscription.currentPeriodEnd,
+                          ).toLocaleDateString()}
+                        </p>
+                      )}
                   </div>
 
                   {/* Action Buttons */}
@@ -5310,13 +5399,18 @@ export default function UserDashboard() {
                       style={{
                         width: "100%",
                         padding: "16px",
-                        backgroundColor: upgradingToPremium ? "#9ca3af" : "#a855f7",
+                        backgroundColor: upgradingToPremium
+                          ? "#9ca3af"
+                          : primaryColor,
                         color: "#fff",
                         border: "none",
                         borderRadius: "8px",
                         fontSize: "16px",
                         fontWeight: 600,
-                        cursor: upgradingToPremium || !user?.coach ? "not-allowed" : "pointer",
+                        cursor:
+                          upgradingToPremium || !user?.coach
+                            ? "not-allowed"
+                            : "pointer",
                         marginBottom: "12px",
                       }}
                     >
@@ -5336,11 +5430,15 @@ export default function UserDashboard() {
                           borderRadius: "8px",
                           fontSize: "16px",
                           fontWeight: 600,
-                          cursor: cancelingSubscription ? "not-allowed" : "pointer",
+                          cursor: cancelingSubscription
+                            ? "not-allowed"
+                            : "pointer",
                           marginBottom: "12px",
                         }}
                       >
-                        {cancelingSubscription ? "Canceling..." : "Cancel Subscription"}
+                        {cancelingSubscription
+                          ? "Canceling..."
+                          : "Cancel Subscription"}
                       </button>
                     )
                   )}
@@ -5390,129 +5488,152 @@ export default function UserDashboard() {
             style={{
               backgroundColor: "#fff",
               borderRadius: "16px 16px 0 0",
-              padding: "24px",
               width: "100%",
               maxWidth: "600px",
-              maxHeight: "80vh",
-              overflowY: "auto",
+              maxHeight: "85vh",
+              display: "flex",
+              flexDirection: "column",
+              position: "relative",
             }}
           >
+            {/* Scrollable Content Area */}
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "24px",
+                flex: "1 1 auto",
+                overflowY: "auto",
+                padding: "24px",
+                paddingBottom: "16px",
+                minHeight: 0, // Crucial for nested flex scrolling
               }}
             >
-              <h3
+              <div
                 style={{
-                  fontSize: "24px",
-                  fontWeight: 700,
-                  color: "#1a1a1a",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "24px",
                 }}
               >
-                {selectedMindfulness?.label ||
-                  coachConfig?.awareness_tab?.modal_title ||
-                  "Nice catch!"}
-              </h3>
-              <button
-                onClick={() => setShowModal(false)}
+                <h3
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: 700,
+                    color: "#1a1a1a",
+                  }}
+                >
+                  {selectedMindfulness?.label ||
+                    coachConfig?.awareness_tab?.modal_title ||
+                    "Nice catch!"}
+                </h3>
+                <button
+                  onClick={() => setShowModal(false)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    fontSize: "24px",
+                    color: "#9ca3af",
+                    cursor: "pointer",
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={{ marginBottom: "20px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "14px",
+                    color: "#6b7280",
+                    marginBottom: "8px",
+                  }}
+                >
+                  When did this happen?
+                </label>
+                <input
+                  type="text"
+                  value={modalTime}
+                  onChange={(e) => setModalTime(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    fontSize: "16px",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "14px",
+                    color: "#6b7280",
+                    marginBottom: "8px",
+                  }}
+                >
+                  {selectedMindfulness?.prompt ||
+                    "What pattern did you catch? What did you do instead?"}
+                </label>
+                <textarea
+                  value={modalNotes}
+                  onChange={(e) => setModalNotes(e.target.value)}
+                  placeholder={
+                    selectedMindfulness?.placeholder ||
+                    "I caught myself... and instead I..."
+                  }
+                  style={{
+                    width: "100%",
+                    minHeight: "120px",
+                    padding: "12px",
+                    fontSize: "16px",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
+                    resize: "vertical",
+                    fontFamily: "inherit",
+                  }}
+                />
+              </div>
+
+              <p
                 style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "24px",
+                  fontSize: "12px",
                   color: "#9ca3af",
+                  marginBottom: "0",
+                }}
+              >
+                Your notes help create personalized insights
+              </p>
+            </div>
+
+            {/* Fixed Button Area */}
+            <div
+              style={{
+                padding: "16px 24px 24px",
+                paddingBottom: "110px", // Ensure button clears the tab bar
+                borderTop: "1px solid #e5e7eb",
+                backgroundColor: "#fff",
+                flex: "0 0 auto", // Prevent shrinking
+              }}
+            >
+              <button
+                onClick={handleSaveMoment}
+                style={{
+                  width: "100%",
+                  padding: "16px",
+                  backgroundColor: primaryColor || "#6366f1",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  fontWeight: 600,
                   cursor: "pointer",
                 }}
               >
-                ×
+                Save Moment
               </button>
             </div>
-
-            <div style={{ marginBottom: "20px" }}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  color: "#6b7280",
-                  marginBottom: "8px",
-                }}
-              >
-                When did this happen?
-              </label>
-              <input
-                type="text"
-                value={modalTime}
-                onChange={(e) => setModalTime(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  fontSize: "16px",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "8px",
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: "16px" }}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "14px",
-                  color: "#6b7280",
-                  marginBottom: "8px",
-                }}
-              >
-                {selectedMindfulness?.prompt ||
-                  "What pattern did you catch? What did you do instead?"}
-              </label>
-              <textarea
-                value={modalNotes}
-                onChange={(e) => setModalNotes(e.target.value)}
-                placeholder={
-                  selectedMindfulness?.placeholder ||
-                  "I caught myself... and instead I..."
-                }
-                style={{
-                  width: "100%",
-                  minHeight: "120px",
-                  padding: "12px",
-                  fontSize: "16px",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "8px",
-                  resize: "vertical",
-                  fontFamily: "inherit",
-                }}
-              />
-            </div>
-
-            <p
-              style={{
-                fontSize: "12px",
-                color: "#9ca3af",
-                marginBottom: "20px",
-              }}
-            >
-              Your notes help create personalized insights
-            </p>
-
-            <button
-              onClick={handleSaveMoment}
-              style={{
-                width: "100%",
-                padding: "16px",
-                backgroundColor: "#5b7fff",
-                color: "#fff",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "16px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              Save Moment
-            </button>
           </div>
         </div>
       )}
@@ -5691,12 +5812,17 @@ export default function UserDashboard() {
           {[
             { id: "focus", icon: Compass, label: "Focus", isPremium: false },
             { id: "awareness", icon: Sun, label: "Awareness", isPremium: true },
-            { id: "coach", icon: MessageCircle, label: "Coach", isPremium: true },
+            {
+              id: "coach",
+              icon: MessageCircle,
+              label: "Coach",
+              isPremium: true,
+            },
             { id: "more", icon: Menu, label: "More", isPremium: false },
           ].map((tab) => {
             const IconComponent = tab.icon;
             const isLocked = tab.isPremium && !subscriptionStatus?.isPremium;
-            
+
             return (
               <button
                 key={tab.id}
@@ -5704,7 +5830,7 @@ export default function UserDashboard() {
                   if (tab.id === "more") {
                     setMoreSubpage(null);
                   }
-                  
+
                   // If we're clicking the same tab that's already locked and showing modal, don't do anything
                   if (activeTab === tab.id && showUpgradeModal) {
                     return;
@@ -5755,20 +5881,14 @@ export default function UserDashboard() {
                     strokeWidth={2}
                     style={{
                       opacity: activeTab === tab.id ? 1 : 0.5,
-                      color:
-                        activeTab === tab.id
-                          ? coachConfig?.branding?.primary_color || "#ef4444"
-                          : "#9ca3af",
+                      color: activeTab === tab.id ? primaryColor : "#9ca3af",
                     }}
                   />
                 </div>
                 <span
                   style={{
                     fontSize: "12px",
-                    color:
-                      activeTab === tab.id
-                        ? coachConfig?.branding?.primary_color || "#ef4444"
-                        : "#9ca3af",
+                    color: activeTab === tab.id ? primaryColor : "#9ca3af",
                     fontWeight: activeTab === tab.id ? 600 : 400,
                   }}
                 >
@@ -5837,7 +5957,11 @@ export default function UserDashboard() {
                 lineHeight: 1.2,
               }}
             >
-              {upgradeModalContext === "Awareness Log" ? "Awareness Log" : upgradeModalContext === "Coach" ? "AI Coach" : upgradeModalContext}
+              {upgradeModalContext === "Awareness Log"
+                ? "Awareness Log"
+                : upgradeModalContext === "Coach"
+                  ? "AI Coach"
+                  : upgradeModalContext}
             </h2>
 
             {/* CTA Button */}
@@ -5849,7 +5973,7 @@ export default function UserDashboard() {
               disabled={upgradingToPremium}
               style={{
                 width: "100%",
-                backgroundColor: coachConfig?.branding?.primary_color || "#a855f7",
+                backgroundColor: primaryColor,
                 color: "#fff",
                 fontSize: "18px",
                 fontWeight: 600,

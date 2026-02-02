@@ -1,268 +1,408 @@
 "use client";
-
-import { useState, useEffect, Suspense } from "react";
-import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-function SignupContent() {
+export default function SignupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const coachSlug = searchParams.get("coach");
-
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [coachInfo, setCoachInfo] = useState(null);
-  const [formData, setFormData] = useState({
+  const [signupForm, setSignupForm] = useState({
     email: "",
     password: "",
-    fullName: "",
+    firstName: "",
+    lastName: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [coachData, setCoachData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const coachSlug = searchParams.get("coach");
+  const plan = searchParams.get("plan") || "free"; // "free" or "premium"
 
   useEffect(() => {
     if (coachSlug) {
-      fetch(`/api/coach/${coachSlug}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.coach) setCoachInfo(data.coach);
-        })
-        .catch(() => {});
+      fetchCoachData();
+    } else {
+      setIsLoading(false);
     }
   }, [coachSlug]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
-
+  const fetchCoachData = async () => {
     try {
-      const res = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          ...formData, 
-          role: "user",
-          coachSlug: coachSlug || null,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to create account");
-      }
-
-      if (coachSlug) {
-        router.push(`/coach/${coachSlug}`);
-      } else {
-        router.push("/user/dashboard");
+      const response = await fetch(`/api/landing/${coachSlug}`);
+      if (response.ok) {
+        const data = await response.json();
+        setCoachData(data);
       }
     } catch (err) {
-      setError(err.message);
+      console.error("Failed to fetch coach data:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const inputStyle = {
-    width: "100%",
-    padding: "12px 16px",
-    fontSize: "16px",
-    border: "1px solid #d1d5db",
-    borderRadius: "8px",
-    backgroundColor: "#fff",
-    color: "#111827",
-    outline: "none",
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // Create account
+      const response = await fetch("/api/auth/signup-with-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: signupForm.email,
+          password: signupForm.password,
+          firstName: signupForm.firstName,
+          lastName: signupForm.lastName,
+          coachSlug: coachSlug,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        alert(data.error);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Account created!
+      if (plan === "premium") {
+        // Redirect to Stripe checkout for premium
+        const checkoutResponse = await fetch("/api/stripe/user-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+
+        const checkoutData = await checkoutResponse.json();
+
+        if (checkoutData.url) {
+          window.location.href = checkoutData.url;
+        } else {
+          alert("Failed to start checkout. Redirecting to dashboard...");
+          window.location.href = "/user/dashboard?welcome=true";
+        }
+      } else {
+        // Free user - redirect to dashboard
+        window.location.href = "/user/dashboard?welcome=true";
+      }
+    } catch (err) {
+      console.error("Signup error:", err);
+      alert("Failed to create account. Please try again.");
+      setIsSubmitting(false);
+    }
   };
 
-  const labelStyle = {
-    display: "block",
-    marginBottom: "6px",
-    fontSize: "14px",
-    fontWeight: 500,
-    color: "#374151",
-  };
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#f9fafb",
+        }}
+      >
+        <p style={{ color: "#6b7280" }}>Loading...</p>
+      </div>
+    );
+  }
+
+  const businessName = coachData?.businessName || "Daily Companion";
+  const primaryColor = coachData?.branding?.primaryColor || "#6366f1";
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#f9fafb",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "24px",
+        backgroundColor: "#f9fafb",
+        padding: "20px",
       }}
     >
-      <div style={{ width: "100%", maxWidth: "420px" }}>
+      <div
+        style={{
+          backgroundColor: "#fff",
+          borderRadius: "16px",
+          padding: "48px",
+          maxWidth: "440px",
+          width: "100%",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+        }}
+      >
+        {/* Branding */}
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
-          <Link
-            href="/"
+          {coachData?.branding?.logoUrl ? (
+            <img
+              src={coachData.branding.logoUrl}
+              alt={businessName}
+              style={{
+                maxWidth: "180px",
+                height: "auto",
+                marginBottom: "16px",
+              }}
+            />
+          ) : (
+            <h1
+              style={{
+                fontSize: "28px",
+                fontWeight: 700,
+                color: "#1a1a1a",
+                marginBottom: "8px",
+              }}
+            >
+              {businessName}
+            </h1>
+          )}
+          {coachData?.tagline && (
+            <p
+              style={{
+                fontSize: "14px",
+                color: "#6b7280",
+                marginTop: "8px",
+              }}
+            >
+              {coachData.tagline}
+            </p>
+          )}
+        </div>
+
+        {/* Form Header */}
+        <div style={{ marginBottom: "28px", textAlign: "center" }}>
+          <h2
             style={{
-              fontSize: "20px",
-              fontWeight: 600,
-              textDecoration: "none",
-              color: "inherit",
-            }}
-          >
-            <span style={{ color: "#2563eb" }}>daily</span>companion
-          </Link>
-          <h1
-            style={{
-              fontSize: "28px",
+              fontSize: "24px",
               fontWeight: 700,
-              marginTop: "24px",
+              color: "#1a1a1a",
               marginBottom: "8px",
-              color: "#111827",
             }}
           >
-            Create your account
-          </h1>
-          <p style={{ color: "#6b7280", fontSize: "16px" }}>
-            {coachInfo
-              ? `Join ${coachInfo.business_name}`
-              : "Sign up to get started"}
+            Start Your Journey
+          </h2>
+          <p style={{ fontSize: "14px", color: "#6b7280" }}>
+            {plan === "premium"
+              ? "Create your account and upgrade to premium"
+              : "Create your free account and begin building mental resilience today"}
           </p>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            backgroundColor: "#fff",
-            padding: "32px",
-            borderRadius: "12px",
-            border: "1px solid #e5e7eb",
-          }}
-        >
-          {error && (
-            <div
-              style={{
-                padding: "12px 16px",
-                borderRadius: "8px",
-                backgroundColor: "#fef2f2",
-                border: "1px solid #fecaca",
-                color: "#dc2626",
-                fontSize: "14px",
-                marginBottom: "20px",
-              }}
-            >
-              {error}
+        {/* Signup Form */}
+        <form onSubmit={handleSignup}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  marginBottom: "6px",
+                }}
+              >
+                First Name
+              </label>
+              <input
+                type="text"
+                placeholder="First"
+                value={signupForm.firstName}
+                onChange={(e) =>
+                  setSignupForm({ ...signupForm, firstName: e.target.value })
+                }
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px 14px",
+                  fontSize: "15px",
+                  borderRadius: "8px",
+                  border: "1px solid #d1d5db",
+                  outline: "none",
+                  transition: "border-color 0.2s",
+                }}
+                onFocus={(e) => (e.target.style.borderColor = primaryColor)}
+                onBlur={(e) => (e.target.style.borderColor = "#d1d5db")}
+              />
             </div>
-          )}
-
-          <div style={{ marginBottom: "20px" }}>
-            <label style={labelStyle}>Full Name</label>
-            <input
-              type="text"
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleChange}
-              style={inputStyle}
-              placeholder="Your name"
-              required
-            />
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  marginBottom: "6px",
+                }}
+              >
+                Last Name
+              </label>
+              <input
+                type="text"
+                placeholder="Last"
+                value={signupForm.lastName}
+                onChange={(e) =>
+                  setSignupForm({ ...signupForm, lastName: e.target.value })
+                }
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px 14px",
+                  fontSize: "15px",
+                  borderRadius: "8px",
+                  border: "1px solid #d1d5db",
+                  outline: "none",
+                  transition: "border-color 0.2s",
+                }}
+                onFocus={(e) => (e.target.style.borderColor = primaryColor)}
+                onBlur={(e) => (e.target.style.borderColor = "#d1d5db")}
+              />
+            </div>
           </div>
 
-          <div style={{ marginBottom: "20px" }}>
-            <label style={labelStyle}>Email</label>
+          <div style={{ marginBottom: "16px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: 500,
+                color: "#374151",
+                marginBottom: "6px",
+              }}
+            >
+              Email Address
+            </label>
             <input
               type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              style={inputStyle}
-              placeholder="you@example.com"
+              placeholder="your@email.com"
+              value={signupForm.email}
+              onChange={(e) =>
+                setSignupForm({ ...signupForm, email: e.target.value })
+              }
               required
+              style={{
+                width: "100%",
+                padding: "12px 14px",
+                fontSize: "15px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                outline: "none",
+                transition: "border-color 0.2s",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = primaryColor)}
+              onBlur={(e) => (e.target.style.borderColor = "#d1d5db")}
             />
           </div>
 
           <div style={{ marginBottom: "24px" }}>
-            <label style={labelStyle}>Password</label>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: 500,
+                color: "#374151",
+                marginBottom: "6px",
+              }}
+            >
+              Password
+            </label>
             <input
               type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              style={inputStyle}
-              placeholder="••••••••"
-              minLength={8}
+              placeholder="Create a password"
+              value={signupForm.password}
+              onChange={(e) =>
+                setSignupForm({ ...signupForm, password: e.target.value })
+              }
               required
+              minLength={6}
+              style={{
+                width: "100%",
+                padding: "12px 14px",
+                fontSize: "15px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                outline: "none",
+                transition: "border-color 0.2s",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = primaryColor)}
+              onBlur={(e) => (e.target.style.borderColor = "#d1d5db")}
             />
           </div>
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isSubmitting}
             style={{
               width: "100%",
-              padding: "14px",
+              padding: "14px 20px",
               fontSize: "16px",
-              fontWeight: 500,
-              backgroundColor: "#2563eb",
+              fontWeight: 600,
               color: "#fff",
+              backgroundColor: primaryColor,
               border: "none",
               borderRadius: "8px",
-              cursor: isLoading ? "not-allowed" : "pointer",
-              opacity: isLoading ? 0.6 : 1,
+              cursor: isSubmitting ? "not-allowed" : "pointer",
+              opacity: isSubmitting ? 0.7 : 1,
+              transition: "opacity 0.2s",
             }}
+            onMouseEnter={(e) =>
+              !isSubmitting && (e.target.style.opacity = "0.9")
+            }
+            onMouseLeave={(e) =>
+              !isSubmitting && (e.target.style.opacity = "1")
+            }
           >
-            {isLoading ? "Creating Account..." : "Create Account"}
+            {isSubmitting
+              ? "Creating account..."
+              : plan === "premium"
+              ? "Continue to Payment"
+              : "Create Account"}
           </button>
-
-          <p
-            style={{
-              textAlign: "center",
-              marginTop: "20px",
-              fontSize: "14px",
-              color: "#6b7280",
-            }}
-          >
-            Already have an account?{" "}
-            <Link
-              href={coachSlug ? `/login?coach=${coachSlug}` : "/login"}
-              style={{ color: "#2563eb", textDecoration: "none" }}
-            >
-              Sign in
-            </Link>
-          </p>
-
-          <div
-            style={{
-              marginTop: "20px",
-              paddingTop: "20px",
-              borderTop: "1px solid #e5e7eb",
-            }}
-          >
-            <p
-              style={{
-                textAlign: "center",
-                fontSize: "14px",
-                color: "#6b7280",
-              }}
-            >
-              Are you a coach?{" "}
-              <Link
-                href="/coach/signup"
-                style={{ color: "#2563eb", textDecoration: "none" }}
-              >
-                Start coaching
-              </Link>
-            </p>
-          </div>
         </form>
+
+        {/* Footer Text */}
+        <div
+          style={{
+            marginTop: "24px",
+            textAlign: "center",
+            fontSize: "13px",
+            color: "#9ca3af",
+            lineHeight: 1.6,
+          }}
+        >
+          <p>We respect your privacy. No spam, ever.</p>
+          <p>Unsubscribe anytime.</p>
+          {plan === "free" && (
+            <p style={{ marginTop: "8px" }}>
+              No credit card required • Upgrade to premium anytime from your
+              dashboard
+            </p>
+          )}
+        </div>
+
+        {/* Already have account */}
+        <div
+          style={{
+            marginTop: "24px",
+            textAlign: "center",
+            fontSize: "14px",
+            color: "#6b7280",
+          }}
+        >
+          Already have an account?{" "}
+          <a
+            href="/login"
+            style={{
+              color: primaryColor,
+              textDecoration: "none",
+              fontWeight: 600,
+            }}
+          >
+            Sign in
+          </a>
+        </div>
       </div>
     </div>
-  );
-}
-
-export default function UserSignup() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <SignupContent />
-    </Suspense>
   );
 }

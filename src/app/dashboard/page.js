@@ -1612,16 +1612,16 @@ Remember: You're here to empower them to find their own answers, not to fix thei
             {/* Config Content */}
             <div className="flex-1 overflow-y-auto p-8">
               <div className="max-w-4xl mx-auto space-y-8">
-                {/* Profile Settings */}
+                {/* Profile Settings and Landing Page Configuration */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                   <details className="group">
                     <summary className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center cursor-pointer list-none">
                     <div>
                         <h2 className="text-lg font-semibold text-gray-900">
-                        Profile Settings
+                        Profile Settings and Landing Page Configuration
                       </h2>
                         <p className="text-sm text-gray-500 mt-1">
-                        Manage your public profile
+                        Manage your public profile and landing page
                       </p>
                     </div>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
@@ -1905,19 +1905,351 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         </div>
                       </div>
 
+                      {/* Direct Signup Links */}
+                      <div className="pt-4 border-t border-gray-100">
+                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-5">
+                          <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
+                            Direct Signup Links
+                          </h3>
+                          <p className="text-xs text-gray-600 mb-4">
+                            Share these links to allow users to sign up directly for free or premium
+                          </p>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Free Signup Link
+                              </label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  readOnly
+                                  value={`${window.location.origin}/signup?coach=${coach?.slug}&plan=free`}
+                                  className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-lg bg-white font-mono"
+                                  onClick={(e) => e.target.select()}
+                                />
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(`${window.location.origin}/signup?coach=${coach?.slug}&plan=free`);
+                                    const btn = event.target;
+                                    const originalText = btn.textContent;
+                                    btn.textContent = "✓";
+                                    btn.classList.add("bg-green-600");
+                                    setTimeout(() => {
+                                      btn.textContent = originalText;
+                                      btn.classList.remove("bg-green-600");
+                                    }, 2000);
+                                  }}
+                                  className="px-3 py-2 bg-purple-600 text-white text-xs font-medium rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap"
+                                >
+                                  Copy
+                                </button>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Premium Signup Link ($19.99/month)
+                              </label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  readOnly
+                                  value={`${window.location.origin}/signup?coach=${coach?.slug}&plan=premium`}
+                                  className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-lg bg-white font-mono"
+                                  onClick={(e) => e.target.select()}
+                                />
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(`${window.location.origin}/signup?coach=${coach?.slug}&plan=premium`);
+                                    const btn = event.target;
+                                    const originalText = btn.textContent;
+                                    btn.textContent = "✓";
+                                    btn.classList.add("bg-green-600");
+                                    setTimeout(() => {
+                                      btn.textContent = originalText;
+                                      btn.classList.remove("bg-green-600");
+                                    }, 2000);
+                                  }}
+                                  className="px-3 py-2 bg-purple-600 text-white text-xs font-medium rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap"
+                                >
+                                  Copy
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Advanced Landing Page Settings */}
+                      <div className="pt-4 border-t border-gray-100">
+                        <h3 className="text-md font-semibold text-gray-900 mb-4">
+                          Advanced Landing Page Settings
+                        </h3>
+                        
+                        {/* Hero Section */}
+                        <div className="mb-6">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                            Hero Section
+                          </h4>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Headline
+                              </label>
+                              <input
+                                type="text"
+                                value={landingConfig.hero.headline}
+                                onChange={(e) =>
+                                  setLandingConfig({
+                                    ...landingConfig,
+                                    hero: {
+                                      ...landingConfig.hero,
+                                      headline: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="Transform Your Life..."
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Subheadline
+                              </label>
+                              <input
+                                type="text"
+                                value={landingConfig.hero.subheadline}
+                                onChange={(e) =>
+                                  setLandingConfig({
+                                    ...landingConfig,
+                                    hero: {
+                                      ...landingConfig.hero,
+                                      subheadline: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="Join others on their journey..."
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                CTA Button Text
+                              </label>
+                              <input
+                                type="text"
+                                value={landingConfig.hero.cta_button_text}
+                                onChange={(e) =>
+                                  setLandingConfig({
+                                    ...landingConfig,
+                                    hero: {
+                                      ...landingConfig.hero,
+                                      cta_button_text: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="Start Your Journey"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Coach Info Section */}
+                        <div className="mb-6">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                            Coach Information Display
+                          </h4>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Display Name
+                              </label>
+                              <input
+                                type="text"
+                                value={landingConfig.coach_info.name}
+                                onChange={(e) =>
+                                  setLandingConfig({
+                                    ...landingConfig,
+                                    coach_info: {
+                                      ...landingConfig.coach_info,
+                                      name: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="Your Name"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Title
+                              </label>
+                              <input
+                                type="text"
+                                value={landingConfig.coach_info.title}
+                                onChange={(e) =>
+                                  setLandingConfig({
+                                    ...landingConfig,
+                                    coach_info: {
+                                      ...landingConfig.coach_info,
+                                      title: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="Life & Wellness Coach"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Bio
+                              </label>
+                              <textarea
+                                value={landingConfig.coach_info.bio}
+                                onChange={(e) =>
+                                  setLandingConfig({
+                                    ...landingConfig,
+                                    coach_info: {
+                                      ...landingConfig.coach_info,
+                                      bio: e.target.value,
+                                    },
+                                  })
+                                }
+                                rows={3}
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="Brief bio about your coaching approach..."
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Pricing Features */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                            Pricing Features
+                          </h4>
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={landingConfig.pricing.monthly_highlight}
+                                onChange={(e) =>
+                                  setLandingConfig({
+                                    ...landingConfig,
+                                    pricing: {
+                                      ...landingConfig.pricing,
+                                      monthly_highlight: e.target.checked,
+                                    },
+                                  })
+                                }
+                                className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                              />
+                              <label className="text-xs font-medium text-gray-700">
+                                Highlight Monthly Plan (shows "Most Popular" badge)
+                              </label>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={landingConfig.pricing.show_yearly}
+                                onChange={(e) =>
+                                  setLandingConfig({
+                                    ...landingConfig,
+                                    pricing: {
+                                      ...landingConfig.pricing,
+                                      show_yearly: e.target.checked,
+                                    },
+                                  })
+                                }
+                                className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                              />
+                              <label className="text-xs font-medium text-gray-700">
+                                Show Yearly Plan Option
+                              </label>
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Feature List (one per line)
+                              </label>
+                              <textarea
+                                value={landingConfig.pricing.features.join("\n")}
+                                onChange={(e) =>
+                                  setLandingConfig({
+                                    ...landingConfig,
+                                    pricing: {
+                                      ...landingConfig.pricing,
+                                      features: e.target.value
+                                        .split("\n")
+                                        .filter((f) => f.trim()),
+                                    },
+                                  })
+                                }
+                                rows={5}
+                                className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono"
+                                placeholder="Daily guided practices&#10;AI-powered coaching&#10;Progress tracking"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Save Button */}
-                      <div className="flex justify-end pt-4 border-t border-gray-100 mt-6">
-                        <button
-                          onClick={handleSaveProfile}
-                          disabled={
-                            isSavingConfig && savingSection === "profile"
-                          }
-                          className="px-6 py-2.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-6">
+                        <a
+                          href={`/coach/${coach?.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center gap-2"
                         >
-                          {isSavingConfig && savingSection === "profile"
-                            ? "Saving..."
-                            : "Save Profile"}
-                        </button>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                            />
+                          </svg>
+                          Preview Landing Page
+                        </a>
+                        
+                        <div className="flex gap-3">
+                          <button
+                            onClick={handleSaveProfile}
+                            disabled={
+                              isSavingConfig && savingSection === "profile"
+                            }
+                            className="px-6 py-2.5 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isSavingConfig && savingSection === "profile"
+                              ? "Saving..."
+                              : "Save Profile"}
+                          </button>
+                          <button
+                            onClick={handleSaveLandingConfig}
+                            disabled={
+                              isSavingConfig && savingSection === "landing"
+                            }
+                            className="px-6 py-2.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isSavingConfig && savingSection === "landing"
+                              ? "Saving..."
+                              : "Save Landing Page"}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </details>
@@ -4257,277 +4589,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                   </div>
                   </details>
                 </div>
-
-                {/* Landing Page Configuration */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                  <details className="group">
-                    <summary className="p-6 border-b border-gray-100 bg-gray-50/50 cursor-pointer list-none flex justify-between items-center">
-                      <div>
-                        <h2 className="text-lg font-semibold text-gray-900">
-                          Landing Page Configuration
-                        </h2>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Customize your public landing page at /{coach?.slug}
-                        </p>
-                      </div>
-                      <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
-                        ▼
-                      </span>
-                    </summary>
-                    <div className="p-6 space-y-6">
-                      {/* Hero Section */}
-                      <div>
-                        <h3 className="text-md font-semibold text-gray-900 mb-3">
-                          Hero Section
-                        </h3>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Headline
-                            </label>
-                            <input
-                              type="text"
-                              value={landingConfig.hero.headline}
-                              onChange={(e) =>
-                                setLandingConfig({
-                                  ...landingConfig,
-                                  hero: {
-                                    ...landingConfig.hero,
-                                    headline: e.target.value,
-                                  },
-                                })
-                              }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              placeholder="Transform Your Life..."
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Subheadline
-                            </label>
-                            <input
-                              type="text"
-                              value={landingConfig.hero.subheadline}
-                              onChange={(e) =>
-                                setLandingConfig({
-                                  ...landingConfig,
-                                  hero: {
-                                    ...landingConfig.hero,
-                                    subheadline: e.target.value,
-                                  },
-                                })
-                              }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              placeholder="Join others on their journey..."
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              CTA Button Text
-                            </label>
-                            <input
-                              type="text"
-                              value={landingConfig.hero.cta_button_text}
-                              onChange={(e) =>
-                                setLandingConfig({
-                                  ...landingConfig,
-                                  hero: {
-                                    ...landingConfig.hero,
-                                    cta_button_text: e.target.value,
-                                  },
-                                })
-                              }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              placeholder="Start Your Journey"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Coach Info Section */}
-                      <div>
-                        <h3 className="text-md font-semibold text-gray-900 mb-3">
-                          Coach Information
-                        </h3>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Display Name
-                            </label>
-                            <input
-                              type="text"
-                              value={landingConfig.coach_info.name}
-                              onChange={(e) =>
-                                setLandingConfig({
-                                  ...landingConfig,
-                                  coach_info: {
-                                    ...landingConfig.coach_info,
-                                    name: e.target.value,
-                                  },
-                                })
-                              }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              placeholder="Your Name"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Title
-                            </label>
-                            <input
-                              type="text"
-                              value={landingConfig.coach_info.title}
-                              onChange={(e) =>
-                                setLandingConfig({
-                                  ...landingConfig,
-                                  coach_info: {
-                                    ...landingConfig.coach_info,
-                                    title: e.target.value,
-                                  },
-                                })
-                              }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              placeholder="Life & Wellness Coach"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Bio
-                            </label>
-                            <textarea
-                              value={landingConfig.coach_info.bio}
-                              onChange={(e) =>
-                                setLandingConfig({
-                                  ...landingConfig,
-                                  coach_info: {
-                                    ...landingConfig.coach_info,
-                                    bio: e.target.value,
-                                  },
-                                })
-                              }
-                              rows={4}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              placeholder="Brief bio about your coaching approach..."
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Pricing Features */}
-                      <div>
-                        <h3 className="text-md font-semibold text-gray-900 mb-3">
-                          Pricing Features
-                        </h3>
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={landingConfig.pricing.monthly_highlight}
-                              onChange={(e) =>
-                                setLandingConfig({
-                                  ...landingConfig,
-                                  pricing: {
-                                    ...landingConfig.pricing,
-                                    monthly_highlight: e.target.checked,
-                                  },
-                                })
-                              }
-                              className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                            />
-                            <label className="text-sm font-medium text-gray-700">
-                              Highlight Monthly Plan (shows "Most Popular"
-                              badge)
-                            </label>
-                          </div>
-
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={landingConfig.pricing.show_yearly}
-                              onChange={(e) =>
-                                setLandingConfig({
-                                  ...landingConfig,
-                                  pricing: {
-                                    ...landingConfig.pricing,
-                                    show_yearly: e.target.checked,
-                                  },
-                                })
-                              }
-                              className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                            />
-                            <label className="text-sm font-medium text-gray-700">
-                              Show Yearly Plan Option
-                            </label>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Feature List (one per line)
-                            </label>
-                            <textarea
-                              value={landingConfig.pricing.features.join("\n")}
-                              onChange={(e) =>
-                                setLandingConfig({
-                                  ...landingConfig,
-                                  pricing: {
-                                    ...landingConfig.pricing,
-                                    features: e.target.value
-                                      .split("\n")
-                                      .filter((f) => f.trim()),
-                                  },
-                                })
-                              }
-                              rows={6}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
-                              placeholder="Daily guided practices&#10;AI-powered coaching&#10;Progress tracking"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Preview & Save */}
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                        <a
-                          href={`/coach/${coach?.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center gap-2"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                            />
-                          </svg>
-                          Preview Landing Page
-                        </a>
-
-                        <button
-                          onClick={handleSaveLandingConfig}
-                          disabled={
-                            isSavingConfig && savingSection === "landing"
-                          }
-                          className="px-6 py-2.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isSavingConfig && savingSection === "landing"
-                            ? "Saving..."
-                            : "Save Landing Page"}
-                        </button>
-                      </div>
-                    </div>
-                  </details>
-                </div>
               </div>
             </div>
           </>
@@ -4595,311 +4656,16 @@ Remember: You're here to empower them to find their own answers, not to fix thei
             </div>
 
             {/* Collections Grid */}
-            <div className="flex-1 overflow-y-auto p-8">
-              <div className="space-y-4">
-                {collections.map((collection) => (
-                  <div
-                    key={collection.id}
-                    className="bg-white rounded-lg border border-gray-200 p-6 hover:border-gray-300 transition-colors group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className="text-4xl">{collection.icon}</div>
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {collection.title}
-                          </h3>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {collection.description}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-6">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            collection.type === "Self-Paced"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-blue-100 text-blue-700"
-                          }`}
-                        >
-                          {collection.type}
-                        </span>
-                        <div className="text-right">
-                          <div className="text-sm font-medium text-gray-900">
-                            {collection.items} items
-                          </div>
-                          <div className="text-xs text-gray-500 mt-0.5">
-                            {collection.users} users
-                          </div>
-                        </div>
-                        <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100">
-                          <svg
-                            className="w-5 h-5 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            <div className="p-8">
+              <div className="max-w-7xl mx-auto">
+                <p className="text-center text-gray-500 py-12">
+                  No collections yet. Click "Add Collection" to create your first themed resource collection.
+                </p>
               </div>
             </div>
           </>
-        )}
-
-        {/* Analytics */}
-        {activeSection === "analytics" && (
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div className="text-center">
-              <div className="text-5xl mb-4">📊</div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Analytics
-              </h2>
-              <p className="text-gray-600">Coming soon</p>
-            </div>
-          </div>
-        )}
-
-        {/* Clients */}
-        {activeSection === "clients" && <ClientsSection />}
-
-        {/* Finance */}
-        {activeSection === "finance" && (
-          <>
-            {/* Header */}
-            <div className="bg-white border-b border-gray-200 px-8 py-6">
-              <h1 className="text-3xl font-bold text-gray-900">Finance</h1>
-              <p className="text-gray-600 mt-1">
-                Manage your subscription and payment settings
-              </p>
-            </div>
-
-            {/* Finance Content */}
-            <div className="flex-1 overflow-y-auto p-8">
-              <div className="max-w-4xl mx-auto space-y-8">
-                {/* Platform Subscription Card */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="p-6 border-b border-gray-100 bg-gray-50/50">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h2 className="text-lg font-semibold text-gray-900">
-                          Platform Subscription
-                        </h2>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {coach?.platform_subscription_status === "active"
-                            ? "Your subscription is active"
-                            : "Choose a plan to activate your coaching platform"}
-                        </p>
-                      </div>
-                      {coach?.platform_subscription_status === "active" && (
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                          Active
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {coach?.platform_subscription_status !== "active" && (
-                    <div className="p-6">
-                      <div className="max-w-md mx-auto">
-                        <button
-                          onClick={() => handleSubscribe()}
-                          disabled={checkoutLoading}
-                          className="group relative w-full p-8 rounded-xl border-2 border-purple-500 bg-purple-50/50 hover:bg-purple-100/50 text-left transition-all duration-200"
-                        >
-                          <div className="text-center">
-                            <div className="text-3xl font-bold text-gray-900">
-                              $500 + $50/mo
-                            </div>
-                            <div className="text-sm text-gray-600 mt-2">
-                              One-time setup fee + monthly subscription
-                            </div>
-                            <div className="text-xs text-gray-500 mt-4">
-                              {coach?.setup_fee_paid 
-                                ? "Setup fee already paid - only $50/mo" 
-                                : "Includes $500 setup + $50/month recurring"}
-                            </div>
-                            <div className="mt-6 inline-flex items-center justify-center px-6 py-3 bg-purple-600 text-white rounded-lg font-medium group-hover:bg-purple-700 transition-colors">
-                              {checkoutLoading ? "Loading..." : "Subscribe Now"}
-                            </div>
-                          </div>
-                        </button>
-                        <p className="text-xs text-gray-500 text-center mt-4">
-                          You can apply coupon codes at checkout
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {coach?.platform_subscription_status === "active" && (
-                    <div className="p-6">
-                      <div className="text-sm text-gray-600">
-                        Subscription details and management coming soon
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Stripe Connect Card */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="p-6 border-b border-gray-100 bg-gray-50/50">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h2 className="text-lg font-semibold text-gray-900">
-                          Payout Account
-                        </h2>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {coach?.stripe_account_status === "active"
-                            ? "Your payout account is connected"
-                            : "Connect your bank account to receive payments"}
-                        </p>
-                      </div>
-                      {coach?.stripe_account_status === "active" && (
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                          Connected
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="p-6">
-                    {coach?.stripe_account_status !== "active" ? (
-                      <div>
-                        <button
-                          onClick={handleSetupPayouts}
-                          disabled={
-                            coach?.platform_subscription_status !== "active" ||
-                            payoutLoading
-                          }
-                          className={`btn ${
-                            coach?.platform_subscription_status !== "active" ||
-                            payoutLoading
-                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                              : "bg-purple-600 text-white hover:bg-purple-700"
-                          } px-6 py-3`}
-                        >
-                          {payoutLoading
-                            ? "Connecting..."
-                            : "Connect with Stripe"}
-                        </button>
-                        {coach?.platform_subscription_status !== "active" && (
-                          <p className="text-sm text-gray-500 mt-3">
-                            Subscribe to the platform first to enable payouts
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <div>
-                        <p className="text-sm text-gray-600 mb-4">
-                          Your Stripe account is connected and ready to receive
-                          payouts from user subscriptions.
-                        </p>
-                        <button
-                          onClick={async () => {
-                            try {
-                              const res = await fetch("/api/stripe/dashboard-link", {
-                                method: "POST",
-                              });
-                              const data = await res.json();
-                              if (data.url) {
-                                window.open(data.url, "_blank");
-                              }
-                            } catch (error) {
-                              console.error("Dashboard link error:", error);
-                            }
-                          }}
-                          className="btn bg-gray-100 text-gray-700 hover:bg-gray-200 px-6 py-3"
-                        >
-                          View Stripe Dashboard →
-                        </button>
-                      </div>
-                    )}
-
-                    {coach?.platform_subscription_status !== "active" && (
-                      <p className="text-xs text-gray-500 mt-4">
-                        Note: You must have an active subscription before
-                        connecting your payout account
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Revenue Stats Card */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="p-6 border-b border-gray-100 bg-gray-50/50">
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      Revenue Overview
-                    </h2>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Track your earnings
-                    </p>
-                  </div>
-
-                  <div className="p-6">
-                    <div className="grid grid-cols-3 gap-6">
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                          Total Revenue
-                        </div>
-                        <div className="text-3xl font-bold text-gray-900">
-                          $0
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                          This Month
-                        </div>
-                        <div className="text-3xl font-bold text-gray-900">
-                          $0
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                          Subscribers
-                        </div>
-                        <div className="text-3xl font-bold text-gray-900">
-                          0
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Settings */}
-        {activeSection === "settings" && (
-          <div className="flex-1 bg-gray-50">
-            <CustomDomainWizard />
-          </div>
         )}
       </div>
-
-      {/* Toast Notification */}
-      {showToast && (
-        <div className="fixed bottom-8 right-8 z-50 animate-slideUp">
-          <div className="bg-gray-900 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 min-w-[300px]">
-            <span>{toastMessage}</span>
-            <button
-              onClick={() => setShowToast(false)}
-              className="ml-2 text-gray-400 hover:text-white"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
