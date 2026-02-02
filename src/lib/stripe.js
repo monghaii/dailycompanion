@@ -142,12 +142,18 @@ export async function createConnectAccount({ coachId, email }) {
 export async function createConnectOnboardingLink(accountId, coachId) {
   const accountLink = await stripe.accountLinks.create({
     account: accountId,
-    refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings?connect=refresh`,
-    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings?connect=complete`,
+    refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?connect=refresh`,
+    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?connect=complete`,
     type: 'account_onboarding',
   });
 
   return accountLink;
+}
+
+// Create Stripe Connect dashboard link (for already onboarded accounts)
+export async function createConnectDashboardLink(accountId) {
+  const loginLink = await stripe.accounts.createLoginLink(accountId);
+  return loginLink;
 }
 
 // Create checkout session for user subscribing to a coach

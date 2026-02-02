@@ -2000,17 +2000,17 @@ export default function UserDashboard() {
                   <button
                     key={idx}
                     onClick={() =>
-                      !day.isFuture && setSelectedAwarenessDate(day.fullDate)
+                      !day.isFuture && !subscriptionStatus?.isPremium ? null : !day.isFuture && setSelectedAwarenessDate(day.fullDate)
                     }
-                    disabled={day.isFuture}
+                    disabled={day.isFuture || !subscriptionStatus?.isPremium}
                     style={{
                       textAlign: "center",
                       flex: 1,
                       background: "none",
                       border: "none",
-                      cursor: day.isFuture ? "not-allowed" : "pointer",
+                      cursor: day.isFuture || !subscriptionStatus?.isPremium ? "not-allowed" : "pointer",
                       padding: "0",
-                      opacity: day.isFuture ? 0.4 : 1,
+                      opacity: day.isFuture || !subscriptionStatus?.isPremium ? 0.4 : 1,
                     }}
                   >
                     <div
@@ -2325,7 +2325,8 @@ export default function UserDashboard() {
                           </span>
                         </div>
                         <button
-                          onClick={() => handleMindfulnessClick(item)}
+                          onClick={() => !subscriptionStatus?.isPremium ? null : handleMindfulnessClick(item)}
+                          disabled={!subscriptionStatus?.isPremium}
                           style={{
                             width: "32px",
                             height: "32px",
@@ -2334,10 +2335,11 @@ export default function UserDashboard() {
                             backgroundColor: "transparent",
                             color: "#60a5fa",
                             fontSize: "24px",
-                            cursor: "pointer",
+                            cursor: !subscriptionStatus?.isPremium ? "not-allowed" : "pointer",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
+                            opacity: !subscriptionStatus?.isPremium ? 0.5 : 1,
                           }}
                         >
                           +
@@ -2382,7 +2384,8 @@ export default function UserDashboard() {
                           "emotional state"}
                       </span>
                       <button
-                        onClick={() => setShowEmotionalModal(true)}
+                        onClick={() => !subscriptionStatus?.isPremium ? null : setShowEmotionalModal(true)}
+                        disabled={!subscriptionStatus?.isPremium}
                         style={{
                           width: "32px",
                           height: "32px",
@@ -2391,10 +2394,11 @@ export default function UserDashboard() {
                           backgroundColor: "transparent",
                           color: "#60a5fa",
                           fontSize: "24px",
-                          cursor: "pointer",
+                          cursor: !subscriptionStatus?.isPremium ? "not-allowed" : "pointer",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
+                          opacity: !subscriptionStatus?.isPremium ? 0.5 : 1,
                         }}
                       >
                         +
@@ -2470,8 +2474,9 @@ export default function UserDashboard() {
                           </span>
                           <button
                             onClick={() =>
-                              handleDeleteEntry(entry.id, "mindfulness")
+                              !subscriptionStatus?.isPremium ? null : handleDeleteEntry(entry.id, "mindfulness")
                             }
+                            disabled={!subscriptionStatus?.isPremium}
                             style={{
                               background: "none",
                               border: "none",
@@ -2479,8 +2484,9 @@ export default function UserDashboard() {
                                 coachConfig?.branding?.primary_color ||
                                 "#ef4444",
                               fontSize: "18px",
-                              cursor: "pointer",
+                              cursor: !subscriptionStatus?.isPremium ? "not-allowed" : "pointer",
                               padding: "0 4px",
+                              opacity: !subscriptionStatus?.isPremium ? 0.5 : 1,
                             }}
                           >
                             ×
@@ -2552,8 +2558,9 @@ export default function UserDashboard() {
                           </span>
                           <button
                             onClick={() =>
-                              handleDeleteEntry(entry.id, "emotional")
+                              !subscriptionStatus?.isPremium ? null : handleDeleteEntry(entry.id, "emotional")
                             }
+                            disabled={!subscriptionStatus?.isPremium}
                             style={{
                               background: "none",
                               border: "none",
@@ -2561,8 +2568,9 @@ export default function UserDashboard() {
                                 coachConfig?.branding?.primary_color ||
                                 "#ef4444",
                               fontSize: "18px",
-                              cursor: "pointer",
+                              cursor: !subscriptionStatus?.isPremium ? "not-allowed" : "pointer",
                               padding: "0 4px",
+                              opacity: !subscriptionStatus?.isPremium ? 0.5 : 1,
                             }}
                           >
                             ×
@@ -2883,18 +2891,20 @@ export default function UserDashboard() {
                   }}
                 >
                   <button
-                    onClick={() => setShowCoachProfile(!showCoachProfile)}
+                    onClick={() => !subscriptionStatus?.isPremium ? null : setShowCoachProfile(!showCoachProfile)}
+                    disabled={!subscriptionStatus?.isPremium}
                     style={{
                       background: "none",
                       border: "none",
                       color: coachConfig?.branding?.primary_color || "#ef4444",
                       fontSize: "14px",
                       fontWeight: 600,
-                      cursor: "pointer",
+                      cursor: !subscriptionStatus?.isPremium ? "not-allowed" : "pointer",
                       display: "flex",
                       alignItems: "center",
                       gap: "4px",
                       padding: 0,
+                      opacity: !subscriptionStatus?.isPremium ? 0.5 : 1,
                     }}
                   >
                     Coach Profile
@@ -2939,7 +2949,8 @@ export default function UserDashboard() {
                   </div>
 
                   <button
-                    onClick={handleNewSession}
+                    onClick={!subscriptionStatus?.isPremium ? () => {} : handleNewSession}
+                    disabled={!subscriptionStatus?.isPremium}
                     style={{
                       backgroundColor:
                         coachConfig?.branding?.primary_color || "#ef4444",
@@ -2949,7 +2960,8 @@ export default function UserDashboard() {
                       padding: "8px 20px",
                       fontSize: "14px",
                       fontWeight: 600,
-                      cursor: "pointer",
+                      cursor: !subscriptionStatus?.isPremium ? "not-allowed" : "pointer",
+                      opacity: !subscriptionStatus?.isPremium ? 0.5 : 1,
                     }}
                   >
                     New Session
@@ -3333,7 +3345,7 @@ export default function UserDashboard() {
                   value={chatMessage}
                   onChange={(e) => setChatMessage(e.target.value)}
                   placeholder="Type your response here..."
-                  disabled={isSendingChat}
+                  disabled={isSendingChat || !subscriptionStatus?.isPremium}
                   style={{
                     flex: 1,
                     padding: "12px 0",
@@ -3342,11 +3354,12 @@ export default function UserDashboard() {
                     outline: "none",
                     color: "#1a1a1a",
                     backgroundColor: "transparent",
+                    opacity: !subscriptionStatus?.isPremium ? 0.5 : 1,
                   }}
                 />
                 <button
                   type="submit"
-                  disabled={isSendingChat || !chatMessage.trim()}
+                  disabled={isSendingChat || !chatMessage.trim() || !subscriptionStatus?.isPremium}
                   style={{
                     width: "48px",
                     height: "48px",
@@ -3358,11 +3371,11 @@ export default function UserDashboard() {
                     alignItems: "center",
                     justifyContent: "center",
                     cursor:
-                      isSendingChat || !chatMessage.trim()
+                      isSendingChat || !chatMessage.trim() || !subscriptionStatus?.isPremium
                         ? "not-allowed"
                         : "pointer",
                     flexShrink: 0,
-                    opacity: isSendingChat || !chatMessage.trim() ? 0.5 : 1,
+                    opacity: isSendingChat || !chatMessage.trim() || !subscriptionStatus?.isPremium ? 0.5 : 1,
                   }}
                 >
                   <svg

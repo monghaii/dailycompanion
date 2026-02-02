@@ -10,6 +10,29 @@ export async function PATCH(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Check if user is premium (awareness tab is premium only)
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role === "user") {
+      const { data: subscription } = await supabase
+        .from("user_subscriptions")
+        .select("status")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (!subscription) {
+        return NextResponse.json(
+          { error: "Premium subscription required to use awareness features" },
+          { status: 403 }
+        );
+      }
+    }
+
     const body = await request.json();
     const { log_1_entry, log_2_entry, log_1_entries, log_2_entries, date } =
       body;

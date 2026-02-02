@@ -226,6 +226,7 @@ function DashboardContent() {
   }, [user, activeSection]);
   
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [payoutLoading, setPayoutLoading] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [savingSection, setSavingSection] = useState(null);
   const [showToast, setShowToast] = useState(false);
@@ -592,6 +593,52 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     fetchUser();
   }, []);
 
+  // Handle Stripe Connect return flow
+  useEffect(() => {
+    const checkConnectStatus = async () => {
+      if (typeof window === "undefined") return;
+      
+      const searchParams = new URLSearchParams(window.location.search);
+      const connectParam = searchParams.get("connect");
+      
+      if (connectParam === "complete") {
+        // Coach returned from Stripe onboarding
+        setToastMessage("Stripe account connected successfully! Checking status...");
+        setShowToast(true);
+        
+        // Check account status
+        try {
+          const res = await fetch("/api/stripe/account-status");
+          const data = await res.json();
+          
+          if (data.status === "active") {
+            setToastMessage("✓ Stripe account is active and ready to receive payouts!");
+          } else {
+            setToastMessage("Stripe account connected. Status: pending verification.");
+          }
+          
+          // Refresh user data
+          await fetchUser();
+        } catch (error) {
+          console.error("Failed to check account status:", error);
+        }
+        
+        // Clean up URL
+        window.history.replaceState({}, document.title, "/dashboard");
+        
+      } else if (connectParam === "refresh") {
+        // Onboarding link expired, redirect to connect again
+        setToastMessage("Session expired. Please try connecting again.");
+        setShowToast(true);
+        
+        // Clean up URL
+        window.history.replaceState({}, document.title, "/dashboard");
+      }
+    };
+    
+    checkConnectStatus();
+  }, []);
+
   useEffect(() => {
     if (user?.role === "coach") {
       if (user.coach) {
@@ -796,11 +843,26 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
   const handleSetupPayouts = async () => {
     try {
+      setPayoutLoading(true);
       const res = await fetch("/api/stripe/connect", { method: "POST" });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      
+      if (!res.ok) {
+        setToastMessage("Failed to set up payouts. Please try again.");
+        setShowToast(true);
+        return;
+      }
+      
+      if (data.url) {
+        // Redirect to Stripe Connect onboarding
+        window.location.href = data.url;
+      }
     } catch (error) {
       console.error("Connect error:", error);
+      setToastMessage("Failed to set up payouts. Please try again.");
+      setShowToast(true);
+    } finally {
+      setPayoutLoading(false);
     }
   };
 
@@ -4711,22 +4773,54 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
                   <div className="p-6">
                     {coach?.stripe_account_status !== "active" ? (
-                      <button
-                        onClick={handleSetupPayouts}
-                        disabled={
-                          coach?.platform_subscription_status !== "active"
-                        }
-                        className={`btn ${
-                          coach?.platform_subscription_status !== "active"
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : "bg-purple-600 text-white hover:bg-purple-700"
-                        } px-6 py-3`}
-                      >
-                        Connect with Stripe
-                      </button>
+                      <div>
+                        <button
+                          onClick={handleSetupPayouts}
+                          disabled={
+                            coach?.platform_subscription_status !== "active" ||
+                            payoutLoading
+                          }
+                          className={`btn ${
+                            coach?.platform_subscription_status !== "active" ||
+                            payoutLoading
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : "bg-purple-600 text-white hover:bg-purple-700"
+                          } px-6 py-3`}
+                        >
+                          {payoutLoading
+                            ? "Connecting..."
+                            : "Connect with Stripe"}
+                        </button>
+                        {coach?.platform_subscription_status !== "active" && (
+                          <p className="text-sm text-gray-500 mt-3">
+                            Subscribe to the platform first to enable payouts
+                          </p>
+                        )}
+                      </div>
                     ) : (
-                      <div className="text-sm text-gray-600">
-                        Payout management coming soon
+                      <div>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Your Stripe account is connected and ready to receive
+                          payouts from user subscriptions.
+                        </p>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await fetch("/api/stripe/dashboard-link", {
+                                method: "POST",
+                              });
+                              const data = await res.json();
+                              if (data.url) {
+                                window.open(data.url, "_blank");
+                              }
+                            } catch (error) {
+                              console.error("Dashboard link error:", error);
+                            }
+                          }}
+                          className="btn bg-gray-100 text-gray-700 hover:bg-gray-200 px-6 py-3"
+                        >
+                          View Stripe Dashboard →
+                        </button>
                       </div>
                     )}
 

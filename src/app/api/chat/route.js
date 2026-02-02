@@ -69,7 +69,7 @@ export async function POST(request) {
     // Get user's token usage and coach subscription
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("token_usage, token_usage_reset_date, token_limit, coach_id")
+      .select("token_usage, token_usage_reset_date, token_limit, coach_id, role")
       .eq("id", user.id)
       .single();
 
@@ -79,6 +79,23 @@ export async function POST(request) {
         { error: "Failed to fetch user profile" },
         { status: 500 }
       );
+    }
+
+    // Check if user is premium (for regular users only, coaches bypass)
+    if (profile.role === "user") {
+      const { data: subscription } = await supabase
+        .from("user_subscriptions")
+        .select("status")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (!subscription) {
+        return NextResponse.json(
+          { error: "Premium subscription required to use AI coach" },
+          { status: 403 }
+        );
+      }
     }
 
     // Get coach's custom system prompt if user has a coach
