@@ -165,8 +165,8 @@ export async function createUserSubscriptionCheckout({ userId, coach, email }) {
   const coachReceivesCents = userPriceCents - platformFeeCents; // $12.99
   
   // Calculate what percentage $7 fee represents (for Stripe's application_fee_percent)
-  // Round to 2 decimal places as required by Stripe
-  const effectiveFeePercentage = Math.round((platformFeeCents / userPriceCents) * 100 * 100) / 100;
+  // Use toFixed(2) and parseFloat to ensure exactly 2 decimal places
+  const effectiveFeePercentage = parseFloat(((platformFeeCents / userPriceCents) * 100).toFixed(2));
 
   const sessionConfig = {
     mode: 'subscription',
