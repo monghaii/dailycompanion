@@ -236,13 +236,31 @@ export async function POST(request) {
         if (vercelResponse.ok) {
           vercelVerified = vercelData.verified || false;
           
-          // Check SSL status
-          if (vercelData.certs && vercelData.certs.length > 0) {
-            const cert = vercelData.certs[0];
-            sslStatus = cert.status === 'issued' ? 'active' : 'pending';
+          // Check SSL via config endpoint
+          try {
+            const configResponse = await fetch(
+              `${VERCEL_API_URL}/v6/domains/${domain.full_domain}/config${VERCEL_TEAM_ID ? `?teamId=${VERCEL_TEAM_ID}` : ''}`,
+              {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${VERCEL_TOKEN}`,
+                },
+              }
+            );
+            
+            if (configResponse.ok) {
+              const configData = await configResponse.json();
+              console.log('[Verify Domain] Config data:', configData);
+              
+              if (configData.misconfigured === false) {
+                sslStatus = 'active';
+              }
+            }
+          } catch (configError) {
+            console.log('[Verify Domain] Config check failed:', configError);
           }
           
-          console.log(`[Verify Domain] Vercel verification: ${vercelVerified}, SSL: ${sslStatus}`, vercelData);
+          console.log(`[Verify Domain] Vercel verification: ${vercelVerified}, SSL: ${sslStatus}`);
         } else {
           console.error('[Verify Domain] Vercel verify API error:', vercelData);
         }

@@ -19,13 +19,36 @@ export default function CustomDomainWizard() {
 
   // Auto-refresh SSL status for domains with pending SSL
   useEffect(() => {
-    const hasPendingSSL = domains.some(d => d.status === 'verified' && d.ssl_status === 'pending');
+    const pendingSSLDomains = domains.filter(d => d.status === 'verified' && d.ssl_status === 'pending');
     
-    if (!hasPendingSSL) return;
+    if (pendingSSLDomains.length === 0) return;
 
     // Check every 60 seconds for SSL updates
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       console.log('[CustomDomain] Auto-checking SSL status...');
+      
+      // Check SSL for all pending domains
+      for (const domain of pendingSSLDomains) {
+        try {
+          const res = await fetch('/api/domains/check-ssl', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domainId: domain.id }),
+          });
+          
+          if (res.ok) {
+            const data = await res.json();
+            if (data.updated && data.ssl_status === 'active') {
+              console.log('[CustomDomain] SSL is now active for', domain.full_domain);
+              setSuccess('✓ SSL certificate is now active! Your domain is fully ready.');
+            }
+          }
+        } catch (error) {
+          console.error('[CustomDomain] SSL check error:', error);
+        }
+      }
+      
+      // Refresh the full list
       fetchDomains();
     }, 60000); // 60 seconds
 
@@ -129,7 +152,7 @@ export default function CustomDomainWizard() {
     setSuccess('');
 
     try {
-      const res = await fetch('/api/domains/verify', {
+      const res = await fetch('/api/domains/check-ssl', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ domainId }),
@@ -137,7 +160,7 @@ export default function CustomDomainWizard() {
 
       const data = await res.json();
 
-      if (data.verified) {
+      if (data.success) {
         if (data.ssl_status === 'active') {
           setSuccess('✓ SSL certificate is now active! Your domain is fully ready.');
         } else {
@@ -145,7 +168,7 @@ export default function CustomDomainWizard() {
         }
         fetchDomains();
       } else {
-        setError(data.message);
+        setError(data.error || 'Failed to check SSL status');
       }
     } catch (err) {
       setError('Failed to refresh status');
