@@ -1588,7 +1588,9 @@ Remember: You're here to empower them to find their own answers, not to fix thei
   const handleOpenStripeDashboard = async () => {
     setIsStripeLoading(true);
     try {
-      const res = await fetch("/api/stripe/dashboard");
+      const res = await fetch("/api/stripe/dashboard-link", {
+        method: "POST",
+      });
       const data = await res.json();
 
       if (data.url) {
