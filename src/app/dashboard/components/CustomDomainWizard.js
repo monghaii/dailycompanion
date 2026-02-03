@@ -255,10 +255,9 @@ export default function CustomDomainWizard() {
   }
 
   return (
-    <div style={{ padding: '40px' }}>
-      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ marginBottom: '32px' }}>
+    <div>
+      {/* Header */}
+      <div style={{ marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
             <h2 style={{ fontSize: '28px', fontWeight: 'bold', margin: 0 }}>
               Custom Domain
@@ -334,36 +333,36 @@ export default function CustomDomainWizard() {
               onClick={() => setShowAddModal(true)}
               style={{
                 padding: '12px 24px',
-                backgroundColor: '#3B82F6',
-                color: 'white',
+                backgroundColor: '#fbbf24',
+                color: 'black',
                 border: 'none',
                 borderRadius: '8px',
                 fontSize: '16px',
                 fontWeight: '600',
                 cursor: 'pointer',
               }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f59e0b'}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#fbbf24'}
             >
               + Add Custom Domain
             </button>
           </div>
         ) : (
           <div>
-            <button
-              onClick={() => setShowAddModal(true)}
+            {/* Info message */}
+            <div
               style={{
-                padding: '12px 24px',
-                backgroundColor: '#3B82F6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: 'pointer',
+                padding: '12px 16px',
                 marginBottom: '24px',
+                backgroundColor: '#FEF3C7',
+                color: '#92400E',
+                borderRadius: '8px',
+                border: '1px solid #FDE68A',
+                fontSize: '14px',
               }}
             >
-              + Add Another Domain
-            </button>
+              ℹ️ Only one custom domain is allowed per coach account.
+            </div>
 
             {/* Domains List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -409,8 +408,8 @@ export default function CustomDomainWizard() {
                           disabled={verifying === domain.id}
                           style={{
                             padding: '8px 16px',
-                            backgroundColor: verifying === domain.id ? '#9CA3AF' : '#3B82F6',
-                            color: 'white',
+                            backgroundColor: verifying === domain.id ? '#9CA3AF' : '#fbbf24',
+                            color: verifying === domain.id ? 'white' : 'black',
                             border: 'none',
                             borderRadius: '6px',
                             fontSize: '14px',
@@ -664,8 +663,8 @@ export default function CustomDomainWizard() {
                   disabled={adding}
                   style={{
                     padding: '12px 24px',
-                    backgroundColor: adding ? '#9CA3AF' : '#3B82F6',
-                    color: 'white',
+                    backgroundColor: adding ? '#9CA3AF' : '#fbbf24',
+                    color: adding ? 'white' : 'black',
                     border: 'none',
                     borderRadius: '8px',
                     fontSize: '16px',
@@ -679,7 +678,6 @@ export default function CustomDomainWizard() {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 }

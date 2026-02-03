@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import confetti from "canvas-confetti";
 import {
   Compass,
@@ -12,8 +12,10 @@ import {
   Calendar,
 } from "lucide-react";
 
-export default function UserDashboard() {
+function UserDashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isPreviewMode = searchParams?.get("preview") === "true";
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isConfigLoading, setIsConfigLoading] = useState(true);
@@ -48,6 +50,7 @@ export default function UserDashboard() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [chatMessage, setChatMessage] = useState("");
   const [showCoachProfile, setShowCoachProfile] = useState(false);
+  const [showBookingModal, setShowBookingModal] = useState(false);
   const [chatMessages, setChatMessages] = useState([
     {
       role: "assistant",
@@ -161,9 +164,30 @@ export default function UserDashboard() {
   };
 
   useEffect(() => {
-    fetchUser();
-    fetchSubscriptionStatus();
-  }, []);
+    if (isPreviewMode) {
+      // Set mock user data for preview
+      setUser({
+        id: "preview-user",
+        email: "demo@example.com",
+        first_name: "Demo",
+        last_name: "User",
+        full_name: "Demo User",
+        timezone: "America/New_York",
+        coach_id: "preview-coach",
+      });
+      // Set mock premium subscription for preview
+      setSubscriptionStatus({
+        isPremium: true,
+        status: "active",
+        current_period_end: null,
+        cancel_at_period_end: false,
+      });
+      setIsLoading(false);
+    } else {
+      fetchUser();
+      fetchSubscriptionStatus();
+    }
+  }, [isPreviewMode]);
 
   useEffect(() => {
     if (user && !configFetched.current) {
@@ -172,13 +196,78 @@ export default function UserDashboard() {
         user?.email,
       );
       configFetched.current = true;
-      fetchCoachConfig();
+      if (isPreviewMode) {
+        // Set mock coach config for preview
+        setCoachConfig({
+          branding: {
+            primary_color: "#7c3aed",
+            background_type: "gradient",
+            background_color: "#f9fafb",
+            gradient_color_1: "#ff6b9d",
+            gradient_color_2: "#ffa057",
+            gradient_angle: 135,
+            app_logo_url: null,
+          },
+          focus_tab: {
+            progress_bar: {
+              title: "Today's Focus",
+              subtitle: "Direct your energy intentionally",
+            },
+            task_1: {
+              enabled: true,
+              title: "Morning Meditation",
+              subtitle: "Start your day centered",
+            },
+            task_2: {
+              enabled: true,
+              title: "Set Daily Intention",
+              subtitle: "What matters most today?",
+            },
+            task_3: {
+              enabled: true,
+              title: "Evening Reflection",
+              subtitle: "Review your day",
+            },
+          },
+          awareness_tab: {
+            modal_title: "Nice catch!",
+            logs: [
+              {
+                id: "present",
+                label: "Present moment",
+                prompt: "What pattern did you catch?",
+                color: "#60a5fa",
+              },
+            ],
+          },
+        });
+        setIsConfigLoading(false);
+      } else {
+        fetchCoachConfig();
+      }
     }
-  }, [user]);
+  }, [user, isPreviewMode]);
 
   useEffect(() => {
     console.log("🔄 coachConfig state changed to:", coachConfig);
   }, [coachConfig]);
+
+  // Listen for config updates from parent window (preview mode)
+  useEffect(() => {
+    if (!isPreviewMode) return;
+
+    const handleMessage = (event) => {
+      // Add origin check in production
+      if (event.data.type === "PREVIEW_CONFIG_UPDATE") {
+        console.log("📥 Received config update in preview:", event.data.config);
+        setCoachConfig(event.data.config);
+        setIsConfigLoading(false);
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [isPreviewMode]);
 
   useEffect(() => {
     if (user && activeTab === "focus") {
@@ -417,7 +506,7 @@ export default function UserDashboard() {
   };
 
   const handleSaveDayNotes = async () => {
-    if (!selectedInsightsDate) return;
+    if (!selectedInsightsDate || isPreviewMode) return;
 
     setIsSavingDayNotes(true);
     try {
@@ -606,6 +695,8 @@ export default function UserDashboard() {
   };
 
   const handleSaveSettings = async () => {
+    if (isPreviewMode) return;
+
     setIsSavingSettings(true);
     try {
       // Save basic profile info
@@ -677,6 +768,9 @@ export default function UserDashboard() {
       ...prev,
       [task]: newValue,
     }));
+
+    // Skip API call in preview mode
+    if (isPreviewMode) return;
 
     // Save to backend
     try {
@@ -878,7 +972,7 @@ export default function UserDashboard() {
   };
 
   const handleSaveMoment = async () => {
-    if (!selectedMindfulness) return;
+    if (!selectedMindfulness || isPreviewMode) return;
 
     const now = new Date();
     const timeStr = now.toLocaleTimeString("en-US", {
@@ -1109,6 +1203,12 @@ export default function UserDashboard() {
     e.preventDefault();
     if (!chatMessage.trim() || isSendingChat) return;
 
+    // Disable chat in preview mode
+    if (isPreviewMode) {
+      setChatMessage("");
+      return;
+    }
+
     const userMessage = chatMessage.trim();
     setChatMessage("");
 
@@ -1337,21 +1437,23 @@ export default function UserDashboard() {
             src={coachConfig.branding.app_logo_url}
             alt="App Logo"
             style={{
-              height: (() => {
+              width: (() => {
                 const size = coachConfig.branding.app_logo_size || "medium";
                 switch (size) {
                   case "small":
-                    return "40px";
-                  case "large":
                     return "80px";
+                  case "large":
+                    return "420px";
                   case "medium":
                   default:
-                    return "60px";
+                    return "200px";
                 }
               })(),
-              maxWidth: "300px",
+              maxWidth: "90%",
+              height: "auto",
               objectFit: "contain",
               margin: "0 auto 8px",
+              display: "block",
             }}
           />
         ) : (
@@ -2855,22 +2957,24 @@ export default function UserDashboard() {
                       src={coachConfig.branding.app_logo_url}
                       alt="App Logo"
                       style={{
-                        height: (() => {
+                        width: (() => {
                           const size =
                             coachConfig.branding.app_logo_size || "medium";
                           switch (size) {
                             case "small":
-                              return "40px";
-                            case "large":
                               return "80px";
+                            case "large":
+                              return "320px";
                             case "medium":
                             default:
-                              return "60px";
+                              return "200px";
                           }
                         })(),
-                        maxWidth: "300px",
+                        maxWidth: "90%",
+                        height: "auto",
                         objectFit: "contain",
                         margin: "0 auto 8px",
+                        display: "block",
                       }}
                     />
                   ) : (
@@ -3097,9 +3201,9 @@ export default function UserDashboard() {
                         marginBottom: "16px",
                       }}
                     >
-                      {user.coach.logo_url ? (
+                      {(coachConfig?.coach_tab?.bot_profile_picture_url || user.coach.logo_url) ? (
                         <img
-                          src={user.coach.logo_url}
+                          src={coachConfig?.coach_tab?.bot_profile_picture_url || user.coach.logo_url}
                           alt={user.coach.business_name}
                           style={{
                             width: "100px",
@@ -3161,6 +3265,55 @@ export default function UserDashboard() {
                       </div>
                     </div>
 
+                    {/* Book a Call Button */}
+                    {coachConfig?.coach_tab?.booking?.enabled && (
+                      <button
+                        onClick={() => setShowBookingModal(true)}
+                        style={{
+                          width: "100%",
+                          padding: "16px",
+                          backgroundColor:
+                            coachConfig?.branding?.primary_color || "#ef4444",
+                          color: "#ffffff",
+                          border: "none",
+                          borderRadius: "12px",
+                          fontSize: "18px",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          marginBottom: "16px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <rect
+                            x="3"
+                            y="4"
+                            width="18"
+                            height="18"
+                            rx="2"
+                            ry="2"
+                          ></rect>
+                          <line x1="16" y1="2" x2="16" y2="6"></line>
+                          <line x1="8" y1="2" x2="8" y2="6"></line>
+                          <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        {coachConfig?.coach_tab?.booking?.button_text ||
+                          "Book a Call"}
+                      </button>
+                    )}
+
                     <div
                       style={{
                         backgroundColor: "#fefce8",
@@ -3177,12 +3330,182 @@ export default function UserDashboard() {
                           margin: 0,
                         }}
                       >
-                        <strong>Note:</strong> Responses are AI-generated and
-                        not directly from {user.coach.business_name}.
+                        <strong>Note:</strong>{" "}
+                        {coachConfig?.coach_tab?.booking?.ai_disclaimer
+                          ? coachConfig.coach_tab.booking.ai_disclaimer.replace(
+                              "{coach_name}",
+                              user.coach.business_name,
+                            )
+                          : `Responses are AI-generated and not directly from ${user.coach.business_name}.`}
                       </p>
                     </div>
                   </div>
                 )}
+
+                {/* Booking Modal */}
+                {showBookingModal &&
+                  coachConfig?.coach_tab?.booking?.enabled && (
+                    <div
+                      onClick={() => setShowBookingModal(false)}
+                      style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: "rgba(0, 0, 0, 0.5)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 1000,
+                        padding: "24px",
+                      }}
+                    >
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          backgroundColor: "#fff",
+                          borderRadius: "20px",
+                          padding: "32px 24px",
+                          maxWidth: "500px",
+                          width: "100%",
+                          maxHeight: "80vh",
+                          overflow: "auto",
+                        }}
+                      >
+                        {/* Modal Header */}
+                        <div
+                          style={{ marginBottom: "24px", textAlign: "center" }}
+                        >
+                          <h2
+                            style={{
+                              fontSize: "24px",
+                              fontWeight: 700,
+                              color: "#1a1a1a",
+                              marginBottom: "8px",
+                            }}
+                          >
+                            {coachConfig?.coach_tab?.booking?.button_text ||
+                              "Book a Call"}
+                          </h2>
+                          <p
+                            style={{
+                              fontSize: "16px",
+                              color: "#6b7280",
+                              margin: 0,
+                            }}
+                          >
+                            Choose a session type below
+                          </p>
+                        </div>
+
+                        {/* Booking Options */}
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "12px",
+                          }}
+                        >
+                          {(coachConfig?.coach_tab?.booking?.options || [])
+                            .filter((option) => option.url)
+                            .map((option) => (
+                              <a
+                                key={option.id}
+                                href={option.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: "block",
+                                  padding: "20px",
+                                  backgroundColor: "#f9fafb",
+                                  border: "2px solid #e5e7eb",
+                                  borderRadius: "12px",
+                                  textDecoration: "none",
+                                  transition: "all 0.2s",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.borderColor =
+                                    coachConfig?.branding?.primary_color ||
+                                    "#ef4444";
+                                  e.currentTarget.style.backgroundColor =
+                                    "#fef2f2";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.borderColor = "#e5e7eb";
+                                  e.currentTarget.style.backgroundColor =
+                                    "#f9fafb";
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "start",
+                                    marginBottom: "8px",
+                                  }}
+                                >
+                                  <h3
+                                    style={{
+                                      fontSize: "18px",
+                                      fontWeight: 600,
+                                      color: "#1a1a1a",
+                                      margin: 0,
+                                    }}
+                                  >
+                                    {option.title}
+                                  </h3>
+                                  {option.duration && (
+                                    <span
+                                      style={{
+                                        fontSize: "14px",
+                                        fontWeight: 500,
+                                        color:
+                                          coachConfig?.branding
+                                            ?.primary_color || "#ef4444",
+                                        backgroundColor: "#fef2f2",
+                                        padding: "4px 12px",
+                                        borderRadius: "12px",
+                                      }}
+                                    >
+                                      {option.duration}
+                                    </span>
+                                  )}
+                                </div>
+                                <p
+                                  style={{
+                                    fontSize: "14px",
+                                    color: "#6b7280",
+                                    margin: 0,
+                                  }}
+                                >
+                                  {option.description}
+                                </p>
+                              </a>
+                            ))}
+                        </div>
+
+                        {/* Cancel Button */}
+                        <button
+                          onClick={() => setShowBookingModal(false)}
+                          style={{
+                            width: "100%",
+                            padding: "14px",
+                            marginTop: "20px",
+                            backgroundColor: "transparent",
+                            border: "2px solid #e5e7eb",
+                            borderRadius: "12px",
+                            fontSize: "16px",
+                            fontWeight: 600,
+                            color: "#6b7280",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                 {/* Chat Messages */}
                 {chatMessages.map((msg, idx) => (
@@ -3388,8 +3711,16 @@ export default function UserDashboard() {
                   type="text"
                   value={chatMessage}
                   onChange={(e) => setChatMessage(e.target.value)}
-                  placeholder="Type your response here..."
-                  disabled={isSendingChat || !subscriptionStatus?.isPremium}
+                  placeholder={
+                    isPreviewMode
+                      ? "Chat disabled in preview"
+                      : "Type your response here..."
+                  }
+                  disabled={
+                    isPreviewMode ||
+                    isSendingChat ||
+                    !subscriptionStatus?.isPremium
+                  }
                   style={{
                     flex: 1,
                     padding: "12px 0",
@@ -3398,12 +3729,14 @@ export default function UserDashboard() {
                     outline: "none",
                     color: "#1a1a1a",
                     backgroundColor: "transparent",
-                    opacity: !subscriptionStatus?.isPremium ? 0.5 : 1,
+                    opacity:
+                      isPreviewMode || !subscriptionStatus?.isPremium ? 0.5 : 1,
                   }}
                 />
                 <button
                   type="submit"
                   disabled={
+                    isPreviewMode ||
                     isSendingChat ||
                     !chatMessage.trim() ||
                     !subscriptionStatus?.isPremium
@@ -6037,5 +6370,30 @@ export default function UserDashboard() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function UserDashboard() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#f9fafb"
+      }}>
+        <div style={{
+          width: "40px",
+          height: "40px",
+          border: "3px solid #e5e7eb",
+          borderTop: "3px solid #ef4444",
+          borderRadius: "50%",
+          animation: "spin 1s linear infinite"
+        }} />
+      </div>
+    }>
+      <UserDashboardContent />
+    </Suspense>
   );
 }

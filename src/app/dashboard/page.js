@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import CustomDomainWizard from "./components/CustomDomainWizard";
 
 function ClientsSection() {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchClients();
@@ -16,18 +17,18 @@ function ClientsSection() {
 
   async function fetchClients() {
     try {
-      const res = await fetch('/api/coach/clients');
+      const res = await fetch("/api/coach/clients");
       const data = await res.json();
-      
+
       if (!res.ok) {
-        setError(data.error || 'Failed to fetch clients');
+        setError(data.error || "Failed to fetch clients");
         return;
       }
-      
+
       setClients(data.clients);
     } catch (err) {
-      console.error('Failed to fetch clients:', err);
-      setError('Failed to load clients');
+      console.error("Failed to fetch clients:", err);
+      setError("Failed to load clients");
     } finally {
       setLoading(false);
     }
@@ -35,23 +36,27 @@ function ClientsSection() {
 
   function getStatusBadge(status) {
     const badges = {
-      active: { bg: '#D1FAE5', color: '#065F46', text: 'Active' },
-      past_due: { bg: '#FEF3C7', color: '#92400E', text: 'Past Due' },
-      canceled: { bg: '#FEE2E2', color: '#991B1B', text: 'Canceled' },
-      trialing: { bg: '#DBEAFE', color: '#1E40AF', text: 'Trial' },
-      no_subscription: { bg: '#F3F4F6', color: '#6B7280', text: 'No Subscription' },
+      active: { bg: "#D1FAE5", color: "#065F46", text: "Active" },
+      past_due: { bg: "#FEF3C7", color: "#92400E", text: "Past Due" },
+      canceled: { bg: "#FEE2E2", color: "#991B1B", text: "Canceled" },
+      trialing: { bg: "#DBEAFE", color: "#1E40AF", text: "Trial" },
+      no_subscription: {
+        bg: "#F3F4F6",
+        color: "#6B7280",
+        text: "No Subscription",
+      },
     };
 
     const badge = badges[status] || badges.no_subscription;
-    
+
     return (
       <span
         style={{
-          display: 'inline-block',
-          padding: '4px 12px',
-          borderRadius: '12px',
-          fontSize: '12px',
-          fontWeight: '600',
+          display: "inline-block",
+          padding: "4px 12px",
+          borderRadius: "12px",
+          fontSize: "12px",
+          fontWeight: "600",
           backgroundColor: badge.bg,
           color: badge.color,
         }}
@@ -62,9 +67,51 @@ function ClientsSection() {
   }
 
   function formatDate(dateString) {
-    if (!dateString) return 'N/A';
+    if (!dateString) return "N/A";
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  }
+
+  function exportToCSV() {
+    // Create CSV content in Kit-compatible format
+    const headers = [
+      "First Name",
+      "Last Name",
+      "Email",
+      "Status",
+      "Joined Date",
+    ];
+    const rows = clients.map((client) => [
+      client.firstName || "",
+      client.lastName || "",
+      client.email || "",
+      client.subscriptionStatus || "no_subscription",
+      formatDate(client.userCreatedAt),
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `clients-export-${new Date().toISOString().split("T")[0]}.csv`,
+    );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   if (loading) {
@@ -82,8 +129,35 @@ function ClientsSection() {
     <div className="flex-1 bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-8 py-6">
-        <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-        <p className="text-gray-600 mt-1">Manage your client subscriptions</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
+            <p className="text-gray-600 mt-1">
+              Manage your client subscriptions
+            </p>
+          </div>
+          {clients.length > 0 && (
+            <button
+              onClick={exportToCSV}
+              className="flex items-center gap-2 px-4 py-2 bg-[#fbbf24] text-black rounded-lg hover:bg-[#f59e0b] transition-colors font-medium"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              Export CSV
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Content */}
@@ -98,25 +172,46 @@ function ClientsSection() {
           {/* Stats Summary */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-lg shadow p-6">
-              <div className="text-gray-500 text-sm font-medium mb-1">Total Clients</div>
-              <div className="text-3xl font-bold text-gray-900">{clients.length}</div>
+              <div className="text-gray-500 text-sm font-medium mb-1">
+                Total Clients
+              </div>
+              <div className="text-3xl font-bold text-gray-900">
+                {clients.length}
+              </div>
             </div>
             <div className="bg-white rounded-lg shadow p-6">
-              <div className="text-gray-500 text-sm font-medium mb-1">Active</div>
+              <div className="text-gray-500 text-sm font-medium mb-1">
+                Active
+              </div>
               <div className="text-3xl font-bold text-green-600">
-                {clients.filter(c => c.subscriptionStatus === 'active').length}
+                {
+                  clients.filter((c) => c.subscriptionStatus === "active")
+                    .length
+                }
               </div>
             </div>
             <div className="bg-white rounded-lg shadow p-6">
-              <div className="text-gray-500 text-sm font-medium mb-1">No Subscription</div>
+              <div className="text-gray-500 text-sm font-medium mb-1">
+                No Subscription
+              </div>
               <div className="text-3xl font-bold text-gray-600">
-                {clients.filter(c => c.subscriptionStatus === 'no_subscription').length}
+                {
+                  clients.filter(
+                    (c) => c.subscriptionStatus === "no_subscription",
+                  ).length
+                }
               </div>
             </div>
             <div className="bg-white rounded-lg shadow p-6">
-              <div className="text-gray-500 text-sm font-medium mb-1">Inactive</div>
+              <div className="text-gray-500 text-sm font-medium mb-1">
+                Inactive
+              </div>
               <div className="text-3xl font-bold text-red-600">
-                {clients.filter(c => ['canceled', 'past_due'].includes(c.subscriptionStatus)).length}
+                {
+                  clients.filter((c) =>
+                    ["canceled", "past_due"].includes(c.subscriptionStatus),
+                  ).length
+                }
               </div>
             </div>
           </div>
@@ -125,9 +220,12 @@ function ClientsSection() {
           {clients.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-12 text-center">
               <div className="text-5xl mb-4">👥</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No clients yet</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                No clients yet
+              </h3>
               <p className="text-gray-600">
-                Your clients will appear here once they subscribe to your coaching services.
+                Your clients will appear here once they subscribe to your
+                coaching services.
               </p>
             </div>
           ) : (
@@ -137,7 +235,13 @@ function ClientsSection() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Client
+                        First Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Last Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
@@ -152,19 +256,18 @@ function ClientsSection() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {clients.map((client) => (
-                      <tr key={client.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                              <span className="text-purple-700 font-semibold">
-                                {client.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                              </span>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{client.name}</div>
-                              <div className="text-sm text-gray-500">{client.email}</div>
-                            </div>
-                          </div>
+                      <tr
+                        key={client.id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {client.firstName || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {client.lastName || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {client.email}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {getStatusBadge(client.subscriptionStatus)}
@@ -173,7 +276,9 @@ function ClientsSection() {
                           {formatDate(client.userCreatedAt)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {client.currentPeriodEnd ? formatDate(client.currentPeriodEnd) : '-'}
+                          {client.currentPeriodEnd
+                            ? formatDate(client.currentPeriodEnd)
+                            : "-"}
                           {client.canceledAt && (
                             <div className="text-xs text-red-600 mt-1">
                               Canceled: {formatDate(client.canceledAt)}
@@ -210,24 +315,29 @@ function DashboardContent() {
     }
     return "finance";
   });
-  
+
   // Save activeSection to localStorage whenever it changes
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("coachDashboardActiveSection", activeSection);
     }
   }, [activeSection]);
-  
+
   // Force finance tab if not subscribed
   useEffect(() => {
-    if (user?.coach && user.coach.platform_subscription_status !== "active" && activeSection !== "finance") {
+    if (
+      user?.coach &&
+      user.coach.platform_subscription_status !== "active" &&
+      activeSection !== "finance"
+    ) {
       setActiveSection("finance");
     }
   }, [user, activeSection]);
-  
+
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [payoutLoading, setPayoutLoading] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [isStripeLoading, setIsStripeLoading] = useState(false);
   const [savingSection, setSavingSection] = useState(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -268,9 +378,19 @@ function DashboardContent() {
       audio_url: "",
       audio_path: "",
       name: "",
-    }))
+    })),
   );
   const [currentDayIndex, setCurrentDayIndex] = useState(0);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewPosition, setPreviewPosition] = useState(() => {
+    if (typeof window !== "undefined") {
+      return { x: window.innerWidth - 420, y: 100 };
+    }
+    return { x: 800, y: 100 };
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const previewIframeRef = useRef(null);
   const [focusConfig, setFocusConfig] = useState({
     progress_bar: {
       title: "Today's Focus",
@@ -496,6 +616,22 @@ function DashboardContent() {
   const [uploadingTaskIcon, setUploadingTaskIcon] = useState(null); // null or "task_1", "task_2", "task_3", "day_notes"
   const systemPromptRef = useRef(null);
 
+  // Kit (ConvertKit) Integration State
+  const [kitSettings, setKitSettings] = useState({
+    enabled: false,
+    apiKey: "",
+    formId: "",
+    tags: [],
+    hasApiKey: false,
+    lastSync: null,
+    syncStatus: null,
+    errorMessage: null,
+  });
+  const [kitTesting, setKitTesting] = useState(false);
+  const [kitTestResult, setKitTestResult] = useState(null);
+  const [kitSaving, setKitSaving] = useState(false);
+  const [newTag, setNewTag] = useState("");
+
   const [coachTabConfig, setCoachTabConfig] = useState({
     bot_profile_picture_url: null,
     system_prompt: `You are a compassionate and insightful life coach. Your role is to:
@@ -530,6 +666,28 @@ Keep responses conversational, concise (2-4 paragraphs), and always end with eit
 - An invitation to share more about what they're experiencing
 
 Remember: You're here to empower them to find their own answers, not to fix their problems for them.`,
+    booking: {
+      enabled: false,
+      button_text: "Book a Call",
+      ai_disclaimer:
+        "Responses in chat are AI-generated and not directly from {coach_name}. This AI is trained on {coach_name}'s coaching style and experiences.",
+      options: [
+        {
+          id: 1,
+          title: "Discovery Call",
+          duration: "30 min",
+          description: "Free introductory session to discuss your goals",
+          url: "",
+        },
+        {
+          id: 2,
+          title: "1:1 Coaching Session",
+          duration: "60 min",
+          description: "Deep-dive coaching session for focused growth",
+          url: "",
+        },
+      ],
+    },
   });
 
   const [landingConfig, setLandingConfig] = useState({
@@ -597,45 +755,50 @@ Remember: You're here to empower them to find their own answers, not to fix thei
   useEffect(() => {
     const checkConnectStatus = async () => {
       if (typeof window === "undefined") return;
-      
+
       const searchParams = new URLSearchParams(window.location.search);
       const connectParam = searchParams.get("connect");
-      
+
       if (connectParam === "complete") {
         // Coach returned from Stripe onboarding
-        setToastMessage("Stripe account connected successfully! Checking status...");
+        setToastMessage(
+          "Stripe account connected successfully! Checking status...",
+        );
         setShowToast(true);
-        
+
         // Check account status
         try {
           const res = await fetch("/api/stripe/account-status");
           const data = await res.json();
-          
+
           if (data.status === "active") {
-            setToastMessage("✓ Stripe account is active and ready to receive payouts!");
+            setToastMessage(
+              "✓ Stripe account is active and ready to receive payouts!",
+            );
           } else {
-            setToastMessage("Stripe account connected. Status: pending verification.");
+            setToastMessage(
+              "Stripe account connected. Status: pending verification.",
+            );
           }
-          
+
           // Refresh user data
           await fetchUser();
         } catch (error) {
           console.error("Failed to check account status:", error);
         }
-        
+
         // Clean up URL
         window.history.replaceState({}, document.title, "/dashboard");
-        
       } else if (connectParam === "refresh") {
         // Onboarding link expired, redirect to connect again
         setToastMessage("Session expired. Please try connecting again.");
         setShowToast(true);
-        
+
         // Clean up URL
         window.history.replaceState({}, document.title, "/dashboard");
       }
     };
-    
+
     checkConnectStatus();
   }, []);
 
@@ -738,7 +901,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     duration: "",
                   };
                 }),
-              })
+              }),
             );
           }
 
@@ -846,13 +1009,13 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       setPayoutLoading(true);
       const res = await fetch("/api/stripe/connect", { method: "POST" });
       const data = await res.json();
-      
+
       if (!res.ok) {
         setToastMessage("Failed to set up payouts. Please try again.");
         setShowToast(true);
         return;
       }
-      
+
       if (data.url) {
         // Redirect to Stripe Connect onboarding
         window.location.href = data.url;
@@ -866,6 +1029,83 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     }
   };
 
+  // Preview modal drag handlers
+  const handlePreviewMouseDown = (e) => {
+    setIsDragging(true);
+    setDragOffset({
+      x: e.clientX - previewPosition.x,
+      y: e.clientY - previewPosition.y,
+    });
+  };
+
+  useEffect(() => {
+    const handlePreviewMouseMove = (e) => {
+      if (isDragging) {
+        setPreviewPosition({
+          x: e.clientX - dragOffset.x,
+          y: e.clientY - dragOffset.y,
+        });
+      }
+    };
+
+    const handlePreviewMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener("mousemove", handlePreviewMouseMove);
+      document.addEventListener("mouseup", handlePreviewMouseUp);
+      return () => {
+        document.removeEventListener("mousemove", handlePreviewMouseMove);
+        document.removeEventListener("mouseup", handlePreviewMouseUp);
+      };
+    }
+  }, [isDragging, dragOffset, previewPosition]);
+
+  // Send config updates to preview iframe
+  useEffect(() => {
+    if (!showPreview || !previewIframeRef.current) return;
+
+    const sendConfigToPreview = () => {
+      const config = {
+        header: headerConfig,
+        branding: brandingConfig,
+        focus_tab: focusConfig,
+        awareness_tab: awarenessConfig,
+        emotional_state_tab: emotionalStateConfig,
+        coach_tab: coachTabConfig,
+        audio_library: audioLibrary,
+        current_day_index: currentDayIndex,
+      };
+
+      console.log("📤 Sending config to preview iframe:", config);
+      previewIframeRef.current.contentWindow?.postMessage(
+        {
+          type: "PREVIEW_CONFIG_UPDATE",
+          config: config,
+        },
+        window.location.origin,
+      );
+    };
+
+    // Wait for iframe to load, then send config
+    const timer = setTimeout(() => {
+      sendConfigToPreview();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [
+    showPreview,
+    headerConfig,
+    brandingConfig,
+    focusConfig,
+    awarenessConfig,
+    emotionalStateConfig,
+    coachTabConfig,
+    audioLibrary,
+    currentDayIndex,
+  ]);
+
   const handleLogoUpload = async (e) => {
     console.log("handleLogoUpload triggered", e);
     const file = e.target.files?.[0];
@@ -876,7 +1116,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!validTypes.includes(file.type)) {
       setToastMessage(
-        "❌ Please upload a valid image (JPEG, PNG, GIF, or WebP)"
+        "❌ Please upload a valid image (JPEG, PNG, GIF, or WebP)",
       );
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
@@ -975,7 +1215,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           },
         }));
         setToastMessage(
-          "✅ Audio uploaded! Remember to save your configuration."
+          "✅ Audio uploaded! Remember to save your configuration.",
         );
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
@@ -1155,7 +1395,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           categories: newCategories,
         });
         setToastMessage(
-          "✅ Audio uploaded! Remember to save your configuration."
+          "✅ Audio uploaded! Remember to save your configuration.",
         );
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
@@ -1236,15 +1476,15 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     }
   };
 
-  const getLogoHeight = (size) => {
+  const getLogoWidth = (size) => {
     switch (size) {
       case "small":
-        return "40px";
-      case "large":
         return "80px";
+      case "large":
+        return "320px";
       case "medium":
       default:
-        return "60px";
+        return "200px";
     }
   };
 
@@ -1269,7 +1509,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         setTimeout(() => setShowToast(false), 3000);
       } else {
         setToastMessage(
-          "❌ Failed to save config: " + (resData.error || "Unknown error")
+          "❌ Failed to save config: " + (resData.error || "Unknown error"),
         );
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
@@ -1304,7 +1544,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       } else {
         setToastMessage(
           "❌ Failed to save landing page: " +
-            (resData.error || "Unknown error")
+            (resData.error || "Unknown error"),
         );
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
@@ -1317,6 +1557,54 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     } finally {
       setIsSavingConfig(false);
       setSavingSection(null);
+    }
+  };
+
+  const handleConnectStripe = async () => {
+    setIsStripeLoading(true);
+    try {
+      const res = await fetch("/api/stripe/connect", {
+        method: "POST",
+      });
+      const data = await res.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setToastMessage("❌ Failed to create Stripe connection");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+      }
+    } catch (error) {
+      console.error("Stripe connect error:", error);
+      setToastMessage("❌ Failed to connect Stripe");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setIsStripeLoading(false);
+    }
+  };
+
+  const handleOpenStripeDashboard = async () => {
+    setIsStripeLoading(true);
+    try {
+      const res = await fetch("/api/stripe/dashboard");
+      const data = await res.json();
+
+      if (data.url) {
+        window.open(data.url, "_blank");
+      } else {
+        setToastMessage("❌ Failed to open Stripe dashboard");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+      }
+    } catch (error) {
+      console.error("Stripe dashboard error:", error);
+      setToastMessage("❌ Failed to open Stripe dashboard");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setIsStripeLoading(false);
     }
   };
 
@@ -1340,10 +1628,27 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       >
         {/* Logo & Toggle */}
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-          {isSidebarOpen && (
-            <h2 className="text-xl font-bold text-gray-900 whitespace-nowrap overflow-hidden">
-              Coach Hub
-            </h2>
+          {isSidebarOpen ? (
+            <div className="flex items-center gap-3">
+              <Image
+                src="/logo.png"
+                alt="Daily Companion"
+                width={40}
+                height={40}
+                style={{ width: "40px", height: "40px" }}
+              />
+              <h2 className="text-xl font-bold text-gray-900 whitespace-nowrap overflow-hidden">
+                Coach Hub
+              </h2>
+            </div>
+          ) : (
+            <Image
+              src="/logo.png"
+              alt="Daily Companion"
+              width={40}
+              height={40}
+              style={{ width: "40px", height: "40px" }}
+            />
           )}
           <button
             onClick={() => {
@@ -1398,10 +1703,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 : "cursor-pointer"
             } ${
               activeSection === "config"
-                ? "bg-purple-100 text-purple-700 font-medium"
+                ? "bg-amber-100 text-amber-900 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
-            title={coach?.platform_subscription_status !== "active" ? "Subscribe to unlock" : "Config"}
+            title={
+              coach?.platform_subscription_status !== "active"
+                ? "Subscribe to unlock"
+                : "Config"
+            }
           >
             <svg
               className="w-6 h-6 shrink-0"
@@ -1428,10 +1737,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 : "cursor-pointer"
             } ${
               activeSection === "resource-hub"
-                ? "bg-purple-100 text-purple-700 font-medium"
+                ? "bg-amber-100 text-amber-900 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
-            title={coach?.platform_subscription_status !== "active" ? "Subscribe to unlock" : "Resource Hub"}
+            title={
+              coach?.platform_subscription_status !== "active"
+                ? "Subscribe to unlock"
+                : "Resource Hub"
+            }
           >
             <svg
               className="w-6 h-6 shrink-0"
@@ -1458,10 +1771,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 : "cursor-pointer"
             } ${
               activeSection === "analytics"
-                ? "bg-purple-100 text-purple-700 font-medium"
+                ? "bg-amber-100 text-amber-900 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
-            title={coach?.platform_subscription_status !== "active" ? "Subscribe to unlock" : "Analytics"}
+            title={
+              coach?.platform_subscription_status !== "active"
+                ? "Subscribe to unlock"
+                : "Analytics"
+            }
           >
             <svg
               className="w-6 h-6 shrink-0"
@@ -1488,10 +1805,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 : "cursor-pointer"
             } ${
               activeSection === "clients"
-                ? "bg-purple-100 text-purple-700 font-medium"
+                ? "bg-amber-100 text-amber-900 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
-            title={coach?.platform_subscription_status !== "active" ? "Subscribe to unlock" : "Clients"}
+            title={
+              coach?.platform_subscription_status !== "active"
+                ? "Subscribe to unlock"
+                : "Clients"
+            }
           >
             <svg
               className="w-6 h-6 shrink-0"
@@ -1513,7 +1834,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
             onClick={() => setActiveSection("finance")}
             className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors cursor-pointer ${
               activeSection === "finance"
-                ? "bg-purple-100 text-purple-700 font-medium"
+                ? "bg-amber-100 text-amber-900 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
             title="Finance"
@@ -1543,10 +1864,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 : "cursor-pointer"
             } ${
               activeSection === "settings"
-                ? "bg-purple-100 text-purple-700 font-medium"
+                ? "bg-amber-100 text-amber-900 font-medium"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
-            title={coach?.platform_subscription_status !== "active" ? "Subscribe to unlock" : "Settings"}
+            title={
+              coach?.platform_subscription_status !== "active"
+                ? "Subscribe to unlock"
+                : "Settings"
+            }
           >
             <svg
               className="w-6 h-6 shrink-0"
@@ -1596,17 +1921,735 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Clients Section */}
+        {activeSection === "clients" && <ClientsSection />}
+
+        {/* Analytics Section */}
+        {activeSection === "analytics" && (
+          <div className="flex-1 bg-gray-50">
+            <div className="bg-white border-b border-gray-200 px-8 py-6">
+              <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
+              <p className="text-gray-600 mt-1">
+                View your coaching metrics and insights
+              </p>
+            </div>
+            <div className="p-8">
+              <div className="max-w-7xl mx-auto">
+                <div className="bg-white rounded-lg shadow p-12 text-center">
+                  <div className="text-5xl mb-4">📊</div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    Analytics Coming Soon
+                  </h3>
+                  <p className="text-gray-600">
+                    Track client engagement, revenue metrics, and growth trends.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Finance Section */}
+        {activeSection === "finance" && (
+          <div className="flex-1 bg-gray-50">
+            <div className="bg-white border-b border-gray-200 px-8 py-6">
+              <h1 className="text-3xl font-bold text-gray-900">Finance</h1>
+              <p className="text-gray-600 mt-1">
+                Manage your Stripe account and payouts
+              </p>
+            </div>
+            <div className="p-8">
+              <div className="max-w-7xl mx-auto space-y-6">
+                {/* Stripe Connect Status */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                    Stripe Connect
+                  </h2>
+                  {coach?.stripe_account_status === "active" ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span className="text-sm text-gray-700">
+                          Connected and active
+                        </span>
+                      </div>
+                      <button
+                        onClick={handleOpenStripeDashboard}
+                        disabled={isStripeLoading}
+                        className="px-4 py-2 bg-[#fbbf24] text-black rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 font-semibold"
+                      >
+                        {isStripeLoading
+                          ? "Loading..."
+                          : "Open Stripe Dashboard"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-600">
+                        Connect your Stripe account to receive payments from
+                        your clients.
+                      </p>
+                      <button
+                        onClick={handleConnectStripe}
+                        disabled={isStripeLoading}
+                        className="px-4 py-2 bg-[#fbbf24] text-black rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 font-semibold"
+                      >
+                        {isStripeLoading
+                          ? "Loading..."
+                          : "Connect Stripe Account"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Payment Info */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                    Revenue Share
+                  </h2>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <p>
+                      • User subscription: <strong>$19.99/month</strong>
+                    </p>
+                    <p>
+                      • Platform fee: <strong>$7.00</strong>
+                    </p>
+                    <p>
+                      • You receive:{" "}
+                      <strong>$12.99 per subscriber/month</strong>
+                    </p>
+                    <p className="text-xs text-gray-500 mt-3">
+                      Payouts are processed automatically to your connected bank
+                      account.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Settings Section */}
+        {activeSection === "settings" && (
+          <div className="flex-1 bg-gray-50">
+            <div className="bg-white border-b border-gray-200 px-8 py-6">
+              <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+              <p className="text-gray-600 mt-1">
+                Manage your custom domain and account settings
+              </p>
+            </div>
+            <div style={{ padding: "32px" }}>
+              <div
+                style={{
+                  maxWidth: "900px",
+                  margin: "0 auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "40px",
+                }}
+              >
+                <CustomDomainWizard />
+
+                {/* Kit (ConvertKit) Integration */}
+                <div>
+                  <div style={{ marginBottom: "32px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <div>
+                        <h2
+                          style={{
+                            fontSize: "28px",
+                            fontWeight: "bold",
+                            margin: 0,
+                          }}
+                        >
+                          Kit (ConvertKit) Integration
+                        </h2>
+                        <p
+                          style={{
+                            color: "#6B7280",
+                            fontSize: "16px",
+                            marginTop: "8px",
+                          }}
+                        >
+                          Automatically sync your subscribers to your Kit email
+                          list
+                        </p>
+                      </div>
+                      <label
+                        style={{
+                          position: "relative",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={kitSettings.enabled}
+                          onChange={(e) =>
+                            setKitSettings({
+                              ...kitSettings,
+                              enabled: e.target.checked,
+                            })
+                          }
+                          style={{
+                            position: "absolute",
+                            opacity: 0,
+                            pointerEvents: "none",
+                          }}
+                        />
+                        <div
+                          style={{
+                            width: "44px",
+                            height: "24px",
+                            backgroundColor: kitSettings.enabled
+                              ? "#fbbf24"
+                              : "#d1d5db",
+                            borderRadius: "12px",
+                            position: "relative",
+                            transition: "background-color 0.2s",
+                          }}
+                        >
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: "2px",
+                              left: kitSettings.enabled ? "22px" : "2px",
+                              width: "20px",
+                              height: "20px",
+                              backgroundColor: "#fff",
+                              borderRadius: "50%",
+                              transition: "left 0.2s",
+                            }}
+                          />
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "24px",
+                    }}
+                  >
+                    {/* API Key */}
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "14px",
+                          fontWeight: "600",
+                          color: "#374151",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        Kit API Key
+                      </label>
+                      <p
+                        style={{
+                          fontSize: "13px",
+                          color: "#6b7280",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        Find your API key in Kit under{" "}
+                        <a
+                          href="https://app.convertkit.com/account_settings/advanced_settings"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: "#f59e0b",
+                            textDecoration: "underline",
+                          }}
+                        >
+                          Settings → Advanced → API
+                        </a>
+                      </p>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <input
+                          type="password"
+                          value={kitSettings.apiKey}
+                          onChange={(e) =>
+                            setKitSettings({
+                              ...kitSettings,
+                              apiKey: e.target.value,
+                            })
+                          }
+                          style={{
+                            flex: 1,
+                            padding: "10px 14px",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            outline: "none",
+                          }}
+                          placeholder="Enter your Kit API key"
+                        />
+                        <button
+                          onClick={async () => {
+                            if (!kitSettings.apiKey) {
+                              setKitTestResult({
+                                success: false,
+                                error: "Please enter an API key",
+                              });
+                              return;
+                            }
+                            setKitTesting(true);
+                            setKitTestResult(null);
+                            try {
+                              const sessionToken = document.cookie
+                                .split("; ")
+                                .find((row) => row.startsWith("session_token="))
+                                ?.split("=")[1];
+
+                              const res = await fetch("/api/coach/kit/test", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  sessionToken,
+                                  apiKey: kitSettings.apiKey,
+                                }),
+                              });
+                              const data = await res.json();
+                              setKitTestResult(data);
+                            } catch (error) {
+                              setKitTestResult({
+                                success: false,
+                                error: error.message,
+                              });
+                            } finally {
+                              setKitTesting(false);
+                            }
+                          }}
+                          disabled={kitTesting}
+                          style={{
+                            padding: "10px 16px",
+                            backgroundColor: kitTesting ? "#e5e7eb" : "#f3f4f6",
+                            color: "#374151",
+                            border: "none",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            cursor: kitTesting ? "not-allowed" : "pointer",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {kitTesting ? "Testing..." : "Test Connection"}
+                        </button>
+                      </div>
+
+                      {/* Test Result */}
+                      {kitTestResult && (
+                        <div
+                          style={{
+                            marginTop: "12px",
+                            padding: "12px",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            backgroundColor: kitTestResult.success
+                              ? "#f0fdf4"
+                              : "#fef2f2",
+                            color: kitTestResult.success
+                              ? "#166534"
+                              : "#991b1b",
+                            border: `1px solid ${kitTestResult.success ? "#bbf7d0" : "#fecaca"}`,
+                          }}
+                        >
+                          {kitTestResult.success ? (
+                            <div>
+                              <p style={{ fontWeight: "600" }}>
+                                ✓ Connection successful!
+                              </p>
+                              {kitTestResult.account && (
+                                <p
+                                  style={{ fontSize: "12px", marginTop: "4px" }}
+                                >
+                                  Connected to: {kitTestResult.account.name} (
+                                  {kitTestResult.account.primary_email})
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <p>
+                              ✗ {kitTestResult.error || "Connection failed"}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Form ID (Optional) */}
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "14px",
+                          fontWeight: "600",
+                          color: "#374151",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        Form ID (Optional)
+                      </label>
+                      <p
+                        style={{
+                          fontSize: "13px",
+                          color: "#6b7280",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        Subscribe users to a specific form. Leave empty to add
+                        as general subscribers.
+                      </p>
+                      <input
+                        type="text"
+                        value={kitSettings.formId}
+                        onChange={(e) =>
+                          setKitSettings({
+                            ...kitSettings,
+                            formId: e.target.value,
+                          })
+                        }
+                        style={{
+                          width: "100%",
+                          padding: "10px 14px",
+                          border: "1px solid #d1d5db",
+                          borderRadius: "8px",
+                          fontSize: "14px",
+                          outline: "none",
+                        }}
+                        placeholder="e.g., 1234567"
+                      />
+                    </div>
+
+                    {/* Tags */}
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "14px",
+                          fontWeight: "600",
+                          color: "#374151",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        Tags
+                      </label>
+                      <p
+                        style={{
+                          fontSize: "13px",
+                          color: "#6b7280",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        Tags to apply to new subscribers. We'll automatically
+                        add status and coach tags.
+                      </p>
+
+                      {/* Existing Tags */}
+                      {kitSettings.tags.length > 0 && (
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "8px",
+                            marginBottom: "12px",
+                          }}
+                        >
+                          {kitSettings.tags.map((tag, index) => (
+                            <span
+                              key={index}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                padding: "6px 12px",
+                                backgroundColor: "#fef3c7",
+                                color: "#92400e",
+                                borderRadius: "16px",
+                                fontSize: "14px",
+                              }}
+                            >
+                              {tag}
+                              <button
+                                onClick={() => {
+                                  const newTags = kitSettings.tags.filter(
+                                    (_, i) => i !== index,
+                                  );
+                                  setKitSettings({
+                                    ...kitSettings,
+                                    tags: newTags,
+                                  });
+                                }}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  color: "#92400e",
+                                  cursor: "pointer",
+                                  padding: "0 4px",
+                                  fontSize: "18px",
+                                  lineHeight: "1",
+                                }}
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Add Tag Input */}
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <input
+                          type="text"
+                          value={newTag}
+                          onChange={(e) => setNewTag(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === "Enter" && newTag.trim()) {
+                              e.preventDefault();
+                              setKitSettings({
+                                ...kitSettings,
+                                tags: [...kitSettings.tags, newTag.trim()],
+                              });
+                              setNewTag("");
+                            }
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: "10px 14px",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            outline: "none",
+                          }}
+                          placeholder="Enter tag name"
+                        />
+                        <button
+                          onClick={() => {
+                            if (newTag.trim()) {
+                              setKitSettings({
+                                ...kitSettings,
+                                tags: [...kitSettings.tags, newTag.trim()],
+                              });
+                              setNewTag("");
+                            }
+                          }}
+                          style={{
+                            padding: "10px 16px",
+                            backgroundColor: "#fef3c7",
+                            color: "#92400e",
+                            border: "none",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            cursor: "pointer",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Add Tag
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Sync Status */}
+                    {kitSettings.syncStatus && (
+                      <div
+                        style={{
+                          padding: "16px",
+                          backgroundColor: "#f9fafb",
+                          borderRadius: "8px",
+                        }}
+                      >
+                        <h3
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: "600",
+                            color: "#374151",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          Sync Status
+                        </h3>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "4px",
+                            fontSize: "14px",
+                          }}
+                        >
+                          <p>
+                            <span style={{ color: "#6b7280" }}>Status:</span>{" "}
+                            <span
+                              style={{
+                                fontWeight: "500",
+                                color:
+                                  kitSettings.syncStatus === "success"
+                                    ? "#059669"
+                                    : kitSettings.syncStatus === "error"
+                                      ? "#dc2626"
+                                      : "#6b7280",
+                              }}
+                            >
+                              {kitSettings.syncStatus}
+                            </span>
+                          </p>
+                          {kitSettings.lastSync && (
+                            <p>
+                              <span style={{ color: "#6b7280" }}>
+                                Last Sync:
+                              </span>{" "}
+                              {new Date(kitSettings.lastSync).toLocaleString()}
+                            </p>
+                          )}
+                          {kitSettings.errorMessage && (
+                            <p
+                              style={{
+                                color: "#dc2626",
+                                fontSize: "12px",
+                                marginTop: "8px",
+                              }}
+                            >
+                              {kitSettings.errorMessage}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Save Button */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        paddingTop: "16px",
+                        borderTop: "1px solid #e5e7eb",
+                      }}
+                    >
+                      <button
+                        onClick={async () => {
+                          setKitSaving(true);
+                          try {
+                            const sessionToken = document.cookie
+                              .split("; ")
+                              .find((row) => row.startsWith("session_token="))
+                              ?.split("=")[1];
+
+                            const res = await fetch("/api/coach/kit/settings", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                sessionToken,
+                                kitApiKey: kitSettings.apiKey,
+                                kitEnabled: kitSettings.enabled,
+                                kitFormId: kitSettings.formId,
+                                kitTags: kitSettings.tags,
+                              }),
+                            });
+
+                            const data = await res.json();
+
+                            if (data.success) {
+                              setToastMessage(
+                                "✓ Kit settings saved successfully!",
+                              );
+                              setShowToast(true);
+                              setTimeout(() => setShowToast(false), 3000);
+                            } else {
+                              setToastMessage("✗ Failed to save Kit settings");
+                              setShowToast(true);
+                              setTimeout(() => setShowToast(false), 3000);
+                            }
+                          } catch (error) {
+                            setToastMessage("✗ Error saving Kit settings");
+                            setShowToast(true);
+                            setTimeout(() => setShowToast(false), 3000);
+                          } finally {
+                            setKitSaving(false);
+                          }
+                        }}
+                        disabled={kitSaving}
+                        style={{
+                          padding: "10px 24px",
+                          backgroundColor: kitSaving ? "#e5e7eb" : "#fbbf24",
+                          color: "#000",
+                          border: "none",
+                          borderRadius: "8px",
+                          fontSize: "14px",
+                          fontWeight: "600",
+                          cursor: kitSaving ? "not-allowed" : "pointer",
+                          opacity: kitSaving ? 0.5 : 1,
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!kitSaving)
+                            e.currentTarget.style.backgroundColor = "#f59e0b";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!kitSaving)
+                            e.currentTarget.style.backgroundColor = "#fbbf24";
+                        }}
+                      >
+                        {kitSaving ? "Saving..." : "Save Kit Settings"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Config Content */}
         {activeSection === "config" && (
           <>
             {/* Header */}
             <div className="bg-white border-b border-gray-200 px-8 py-6">
-              <h1 className="text-3xl font-bold text-gray-900">
-                Configuration
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Customize your Daily Companion instance
-              </p>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    Configuration
+                  </h1>
+                  <p className="text-gray-600 mt-1">
+                    Customize your Daily Companion instance
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="px-4 py-2 bg-[#fbbf24] hover:bg-[#f59e0b] text-black rounded-lg text-sm font-semibold transition-colors flex items-center gap-2"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect
+                      x="2"
+                      y="3"
+                      width="20"
+                      height="14"
+                      rx="2"
+                      ry="2"
+                    ></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                  </svg>
+                  Preview
+                </button>
+              </div>
             </div>
 
             {/* Config Content */}
@@ -1616,69 +2659,69 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                   <details className="group">
                     <summary className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center cursor-pointer list-none">
-                    <div>
+                      <div>
                         <h2 className="text-lg font-semibold text-gray-900">
-                        Profile Settings and Landing Page Configuration
-                      </h2>
+                          Profile Settings and Landing Page Configuration
+                        </h2>
                         <p className="text-sm text-gray-500 mt-1">
-                        Manage your public profile and landing page
-                      </p>
-                    </div>
+                          Manage your public profile and landing page
+                        </p>
+                      </div>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
                         ▼
                       </span>
                     </summary>
                     <div className="p-6 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                          Business Name
-                        </label>
-                        <input
-                          type="text"
-                          value={profileConfig.business_name}
-                          onChange={(e) =>
-                            setProfileConfig({
-                              ...profileConfig,
-                              business_name: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          placeholder="Your Coaching Business"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                          Landing Page URL Slug
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500 shrink-0">
-                            /coach/
-                          </span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                            Business Name
+                          </label>
                           <input
                             type="text"
-                            value={profileConfig.slug}
+                            value={profileConfig.business_name}
+                            onChange={(e) =>
+                              setProfileConfig({
+                                ...profileConfig,
+                                business_name: e.target.value,
+                              })
+                            }
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                            placeholder="Your Coaching Business"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                            Landing Page URL Slug
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500 shrink-0">
+                              /coach/
+                            </span>
+                            <input
+                              type="text"
+                              value={profileConfig.slug}
                               onChange={(e) => {
                                 // Auto-format slug: lowercase, replace spaces with hyphens, remove special chars
                                 const formattedSlug = e.target.value
                                   .toLowerCase()
                                   .replace(/\s+/g, "-")
                                   .replace(/[^a-z0-9-]/g, "");
-                              setProfileConfig({
-                                ...profileConfig,
+                                setProfileConfig({
+                                  ...profileConfig,
                                   slug: formattedSlug,
                                 });
                               }}
-                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            placeholder="your-name"
-                          />
+                              className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              placeholder="your-name"
+                            />
                             <a
                               href={`/coach/${
                                 profileConfig.slug || "your-slug"
                               }`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-4 py-2 text-sm bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 shrink-0"
+                              className="px-4 py-2 text-sm bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors flex items-center gap-2 shrink-0"
                             >
                               <svg
                                 className="w-4 h-4"
@@ -1695,135 +2738,107 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               </svg>
                               View Page
                             </a>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Logo Upload */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                        Business Logo
-                      </label>
-                      <div className="flex items-start gap-4">
-                        {profileConfig.logo_url && !logoLoadError ? (
-                          <div className="relative">
-                            <img
-                              src={profileConfig.logo_url}
-                              alt="Business Logo"
-                              onError={(e) => {
-                                console.error(
-                                  "Image failed to load:",
-                                  profileConfig.logo_url
-                                );
-                                setLogoLoadError(true);
-                              }}
-                              onLoad={() => setLogoLoadError(false)}
-                              className="w-24 h-24 object-cover rounded-lg border border-gray-300"
-                            />
-                            <button
-                              type="button"
-                              onClick={handleRemoveLogo}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ) : logoLoadError && profileConfig.logo_url ? (
-                          <div className="relative">
-                            <div className="w-24 h-24 border-2 border-red-300 rounded-lg flex flex-col items-center justify-center text-red-500 text-xs p-2 text-center bg-red-50">
-                              <span className="text-lg mb-1">⚠️</span>
-                              <span>Failed to load</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={handleRemoveLogo}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400">
-                            <span className="text-2xl">🖼️</span>
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <input
-                            type="file"
-                            id="logo-upload"
-                            accept="image/jpeg,image/png,image/gif,image/webp"
-                            onChange={handleLogoUpload}
-                            className="hidden"
-                            disabled={uploadingLogo}
-                          />
-                          <label
-                            htmlFor="logo-upload"
-                            onClick={() => console.log("Label clicked")}
-                            className={`inline-block px-4 py-2 text-sm border border-gray-300 rounded-lg cursor-pointer transition-colors ${
-                              uploadingLogo
-                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                : "bg-white text-gray-700 hover:bg-gray-50"
-                            }`}
-                          >
-                            {uploadingLogo ? "Uploading..." : "Choose Image"}
-                          </label>
-                          <p className="text-xs text-gray-500 mt-2">
-                            JPEG, PNG, GIF, or WebP. Max 5MB.
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            Recommended: Square image, at least 200x200px
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="md:col-span-2">
-                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                          Bio
-                        </label>
-                        <textarea
-                          rows={3}
-                          value={profileConfig.bio}
-                          onChange={(e) =>
-                            setProfileConfig({
-                              ...profileConfig,
-                              bio: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                          placeholder="Tell your clients about yourself..."
-                        />
-                      </div>
+                      {/* Logo Upload */}
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                          Monthly Price
+                          Business Logo
                         </label>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-500">$</span>
-                          <input
-                            type="number"
-                              step="0.01"
-                              value={(
-                                profileConfig.user_monthly_price_cents / 100
-                              ).toFixed(2)}
+                        <div className="flex items-start gap-4">
+                          {profileConfig.logo_url && !logoLoadError ? (
+                            <div className="relative">
+                              <img
+                                src={profileConfig.logo_url}
+                                alt="Business Logo"
+                                onError={(e) => {
+                                  console.error(
+                                    "Image failed to load:",
+                                    profileConfig.logo_url,
+                                  );
+                                  setLogoLoadError(true);
+                                }}
+                                onLoad={() => setLogoLoadError(false)}
+                                className="w-24 h-24 object-cover rounded-lg border border-gray-300"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleRemoveLogo}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : logoLoadError && profileConfig.logo_url ? (
+                            <div className="relative">
+                              <div className="w-24 h-24 border-2 border-red-300 rounded-lg flex flex-col items-center justify-center text-red-500 text-xs p-2 text-center bg-red-50">
+                                <span className="text-lg mb-1">⚠️</span>
+                                <span>Failed to load</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleRemoveLogo}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400">
+                              <span className="text-2xl">🖼️</span>
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <input
+                              type="file"
+                              id="logo-upload"
+                              accept="image/jpeg,image/png,image/gif,image/webp"
+                              onChange={handleLogoUpload}
+                              className="hidden"
+                              disabled={uploadingLogo}
+                            />
+                            <label
+                              htmlFor="logo-upload"
+                              onClick={() => console.log("Label clicked")}
+                              className={`inline-block px-4 py-2 text-sm border border-gray-300 rounded-lg cursor-pointer transition-colors ${
+                                uploadingLogo
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                  : "bg-white text-gray-700 hover:bg-gray-50"
+                              }`}
+                            >
+                              {uploadingLogo ? "Uploading..." : "Choose Image"}
+                            </label>
+                            <p className="text-xs text-gray-500 mt-2">
+                              JPEG, PNG, GIF, or WebP. Max 5MB.
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              Recommended: Square image, at least 200x200px
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                            Bio
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={profileConfig.bio}
                             onChange={(e) =>
                               setProfileConfig({
                                 ...profileConfig,
-                                user_monthly_price_cents: Math.round(
-                                  parseFloat(e.target.value) * 100
-                                ),
+                                bio: e.target.value,
                               })
                             }
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              placeholder="29.99"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
+                            placeholder="Tell your clients about yourself..."
                           />
                         </div>
-                        <p className="text-xs text-gray-400 mt-1">
-                          Subscription per month
-                        </p>
                       </div>
-                    </div>
 
                       {/* Landing Page Content */}
                       <div className="pt-4 border-t border-gray-100">
@@ -1844,10 +2859,10 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   tagline: e.target.value,
                                 })
                               }
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                               placeholder="Life & Wellness Coach"
                             />
-                  </div>
+                          </div>
 
                           <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1.5">
@@ -1862,7 +2877,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   landing_headline: e.target.value,
                                 })
                               }
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                               placeholder="Transform Your Life with Personalized Coaching"
                             />
                           </div>
@@ -1880,7 +2895,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   landing_subheadline: e.target.value,
                                 })
                               }
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                               placeholder="Join others on their journey to growth and fulfillment"
                             />
                           </div>
@@ -1898,7 +2913,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   landing_cta: e.target.value,
                                 })
                               }
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                               placeholder="Start Your Journey"
                             />
                           </div>
@@ -1907,15 +2922,26 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
                       {/* Direct Signup Links */}
                       <div className="pt-4 border-t border-gray-100">
-                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-5">
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
                           <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                            <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            <svg
+                              className="w-5 h-5 text-purple-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                              />
                             </svg>
                             Direct Signup Links
                           </h3>
                           <p className="text-xs text-gray-600 mb-4">
-                            Share these links to allow users to sign up directly for free or premium
+                            Share these links to allow users to sign up directly
+                            for free or premium
                           </p>
                           <div className="space-y-3">
                             <div>
@@ -1932,7 +2958,9 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 />
                                 <button
                                   onClick={() => {
-                                    navigator.clipboard.writeText(`${window.location.origin}/signup?coach=${coach?.slug}&plan=free`);
+                                    navigator.clipboard.writeText(
+                                      `${window.location.origin}/signup?coach=${coach?.slug}&plan=free`,
+                                    );
                                     const btn = event.target;
                                     const originalText = btn.textContent;
                                     btn.textContent = "✓";
@@ -1942,7 +2970,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                       btn.classList.remove("bg-green-600");
                                     }, 2000);
                                   }}
-                                  className="px-3 py-2 bg-purple-600 text-white text-xs font-medium rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap"
+                                  className="px-3 py-2 bg-[#fbbf24] text-black text-xs font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors whitespace-nowrap"
                                 >
                                   Copy
                                 </button>
@@ -1962,7 +2990,9 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 />
                                 <button
                                   onClick={() => {
-                                    navigator.clipboard.writeText(`${window.location.origin}/signup?coach=${coach?.slug}&plan=premium`);
+                                    navigator.clipboard.writeText(
+                                      `${window.location.origin}/signup?coach=${coach?.slug}&plan=premium`,
+                                    );
                                     const btn = event.target;
                                     const originalText = btn.textContent;
                                     btn.textContent = "✓";
@@ -1972,7 +3002,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                       btn.classList.remove("bg-green-600");
                                     }, 2000);
                                   }}
-                                  className="px-3 py-2 bg-purple-600 text-white text-xs font-medium rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap"
+                                  className="px-3 py-2 bg-[#fbbf24] text-black text-xs font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors whitespace-nowrap"
                                 >
                                   Copy
                                 </button>
@@ -1987,7 +3017,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         <h3 className="text-md font-semibold text-gray-900 mb-4">
                           Advanced Landing Page Settings
                         </h3>
-                        
+
                         {/* Hero Section */}
                         <div className="mb-6">
                           <h4 className="text-sm font-semibold text-gray-700 mb-3">
@@ -2010,7 +3040,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     },
                                   })
                                 }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                 placeholder="Transform Your Life..."
                               />
                             </div>
@@ -2031,7 +3061,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     },
                                   })
                                 }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                 placeholder="Join others on their journey..."
                               />
                             </div>
@@ -2052,7 +3082,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     },
                                   })
                                 }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                 placeholder="Start Your Journey"
                               />
                             </div>
@@ -2081,7 +3111,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     },
                                   })
                                 }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                 placeholder="Your Name"
                               />
                             </div>
@@ -2102,7 +3132,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     },
                                   })
                                 }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                 placeholder="Life & Wellness Coach"
                               />
                             </div>
@@ -2123,7 +3153,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   })
                                 }
                                 rows={3}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                 placeholder="Brief bio about your coaching approach..."
                               />
                             </div>
@@ -2139,7 +3169,9 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             <div className="flex items-center gap-3">
                               <input
                                 type="checkbox"
-                                checked={landingConfig.pricing.monthly_highlight}
+                                checked={
+                                  landingConfig.pricing.monthly_highlight
+                                }
                                 onChange={(e) =>
                                   setLandingConfig({
                                     ...landingConfig,
@@ -2152,7 +3184,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                               />
                               <label className="text-xs font-medium text-gray-700">
-                                Highlight Monthly Plan (shows "Most Popular" badge)
+                                Highlight Monthly Plan (shows "Most Popular"
+                                badge)
                               </label>
                             </div>
 
@@ -2181,7 +3214,9 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 Feature List (one per line)
                               </label>
                               <textarea
-                                value={landingConfig.pricing.features.join("\n")}
+                                value={landingConfig.pricing.features.join(
+                                  "\n",
+                                )}
                                 onChange={(e) =>
                                   setLandingConfig({
                                     ...landingConfig,
@@ -2194,7 +3229,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   })
                                 }
                                 rows={5}
-                                className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono"
+                                className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent font-mono"
                                 placeholder="Daily guided practices&#10;AI-powered coaching&#10;Progress tracking"
                               />
                             </div>
@@ -2225,7 +3260,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           </svg>
                           Preview Landing Page
                         </a>
-                        
+
                         <div className="flex gap-3">
                           <button
                             onClick={handleSaveProfile}
@@ -2243,7 +3278,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             disabled={
                               isSavingConfig && savingSection === "landing"
                             }
-                            className="px-6 py-2.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {isSavingConfig && savingSection === "landing"
                               ? "Saving..."
@@ -2260,51 +3295,51 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                   <details className="group">
                     <summary className="p-6 border-b border-gray-100 bg-gray-50/50 cursor-pointer list-none flex justify-between items-center">
                       <div>
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      Branding
-                    </h2>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Customize the look and feel
-                    </p>
-                  </div>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          Branding
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Customize the look and feel
+                        </p>
+                      </div>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
                         ▼
                       </span>
                     </summary>
-                  <div className="p-6 space-y-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Primary Color
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={brandingConfig.primary_color}
-                          onChange={(e) =>
-                            setBrandingConfig({
-                              ...brandingConfig,
-                              primary_color: e.target.value,
-                            })
-                          }
-                          className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
-                        />
-                        <input
-                          type="text"
-                          value={brandingConfig.primary_color}
-                          onChange={(e) =>
-                            setBrandingConfig({
-                              ...brandingConfig,
-                              primary_color: e.target.value,
-                            })
-                          }
-                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        />
+                    <div className="p-6 space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Primary Color
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={brandingConfig.primary_color}
+                            onChange={(e) =>
+                              setBrandingConfig({
+                                ...brandingConfig,
+                                primary_color: e.target.value,
+                              })
+                            }
+                            className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={brandingConfig.primary_color}
+                            onChange={(e) =>
+                              setBrandingConfig({
+                                ...brandingConfig,
+                                primary_color: e.target.value,
+                              })
+                            }
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                          />
+                        </div>
                       </div>
-                    </div>
 
                       {/* Background Style */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
                           Background Style
                         </label>
                         <div className="flex gap-2 mb-4">
@@ -2343,33 +3378,33 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         {brandingConfig.background_type === "solid" ? (
                           <div>
                             <label className="block text-xs font-medium text-gray-700 mb-2">
-                        Background Color
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={brandingConfig.background_color}
-                          onChange={(e) =>
-                            setBrandingConfig({
-                              ...brandingConfig,
-                              background_color: e.target.value,
-                            })
-                          }
-                          className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
-                        />
-                        <input
-                          type="text"
-                          value={brandingConfig.background_color}
-                          onChange={(e) =>
-                            setBrandingConfig({
-                              ...brandingConfig,
-                              background_color: e.target.value,
-                            })
-                          }
-                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
+                              Background Color
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="color"
+                                value={brandingConfig.background_color}
+                                onChange={(e) =>
+                                  setBrandingConfig({
+                                    ...brandingConfig,
+                                    background_color: e.target.value,
+                                  })
+                                }
+                                className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
+                              />
+                              <input
+                                type="text"
+                                value={brandingConfig.background_color}
+                                onChange={(e) =>
+                                  setBrandingConfig({
+                                    ...brandingConfig,
+                                    background_color: e.target.value,
+                                  })
+                                }
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              />
+                            </div>
+                          </div>
                         ) : (
                           <div className="space-y-4">
                             {/* Gradient Color 1 */}
@@ -2398,7 +3433,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                       gradient_color_1: e.target.value,
                                     })
                                   }
-                                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                 />
                               </div>
                             </div>
@@ -2429,7 +3464,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                       gradient_color_2: e.target.value,
                                     })
                                   }
-                                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                 />
                               </div>
                             </div>
@@ -2442,12 +3477,12 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               <div className="flex items-center gap-3">
                                 <div className="relative w-16 h-16 rounded-full border-2 border-gray-300 bg-gray-50 flex-shrink-0">
                                   <div
-                                    className="absolute top-1/2 left-1/2 w-1 h-6 bg-purple-600 rounded-full origin-bottom"
+                                    className="absolute top-1/2 left-1/2 w-1 h-6 bg-[#fbbf24] rounded-full origin-bottom"
                                     style={{
                                       transform: `translate(-50%, -100%) rotate(${brandingConfig.gradient_angle}deg)`,
                                     }}
                                   />
-                                  <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-purple-600 rounded-full -translate-x-1/2 -translate-y-1/2" />
+                                  <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-[#fbbf24] rounded-full -translate-x-1/2 -translate-y-1/2" />
                                 </div>
                                 <input
                                   type="range"
@@ -2542,12 +3577,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 src={brandingConfig.app_logo_url}
                                 alt="App Logo Preview"
                                 style={{
-                                  height: getLogoHeight(
-                                    brandingConfig.app_logo_size
+                                  width: getLogoWidth(
+                                    brandingConfig.app_logo_size,
                                   ),
-                                  maxWidth: "300px",
+                                  maxWidth: "90%",
+                                  height: "auto",
                                   objectFit: "contain",
                                   margin: "0 auto",
+                                  display: "block",
                                 }}
                               />
                               <p
@@ -2644,7 +3681,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               setUploadingAppLogo(false);
                             }
                           }}
-                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
+                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#fef3c7] file:text-black hover:file:bg-[#fbbf24] disabled:opacity-50"
                           disabled={uploadingAppLogo}
                         />
                         {uploadingAppLogo && (
@@ -2656,24 +3693,24 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
                       {/* Save Button */}
                       <div className="flex justify-end pt-4 border-t border-gray-100 mt-6">
-                    <button
-                      onClick={() =>
-                        handleSaveConfig(
-                          "branding",
-                          brandingConfig,
-                          "✅ Branding saved successfully!"
-                        )
-                      }
+                        <button
+                          onClick={() =>
+                            handleSaveConfig(
+                              "branding",
+                              brandingConfig,
+                              "✅ Branding saved successfully!",
+                            )
+                          }
                           disabled={
                             isSavingConfig && savingSection === "branding"
                           }
-                          className="px-6 py-2.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSavingConfig && savingSection === "branding"
-                        ? "Saving..."
+                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isSavingConfig && savingSection === "branding"
+                            ? "Saving..."
                             : "Save Branding"}
-                    </button>
-                  </div>
+                        </button>
+                      </div>
                     </div>
                   </details>
                 </div>
@@ -2683,73 +3720,73 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                   <details className="group">
                     <summary className="p-6 border-b border-gray-100 bg-gray-50/50 cursor-pointer list-none flex justify-between items-center">
                       <div>
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      Header Customization
-                    </h2>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Customize the app header title and subtitle
-                    </p>
-                  </div>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          Header Customization
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Customize the app header title and subtitle
+                        </p>
+                      </div>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
                         ▼
                       </span>
                     </summary>
-                  <div className="p-6 space-y-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        App Title
-                      </label>
-                      <input
-                        type="text"
-                        value={headerConfig.title}
-                        onChange={(e) =>
-                          setHeaderConfig({
-                            ...headerConfig,
-                            title: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="BrainPeace"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        App Subtitle
-                      </label>
-                      <input
-                        type="text"
-                        value={headerConfig.subtitle}
-                        onChange={(e) =>
-                          setHeaderConfig({
-                            ...headerConfig,
-                            subtitle: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Mental Fitness for Active Minds"
-                      />
-                    </div>
+                    <div className="p-6 space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          App Title
+                        </label>
+                        <input
+                          type="text"
+                          value={headerConfig.title}
+                          onChange={(e) =>
+                            setHeaderConfig({
+                              ...headerConfig,
+                              title: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                          placeholder="BrainPeace"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          App Subtitle
+                        </label>
+                        <input
+                          type="text"
+                          value={headerConfig.subtitle}
+                          onChange={(e) =>
+                            setHeaderConfig({
+                              ...headerConfig,
+                              subtitle: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                          placeholder="Mental Fitness for Active Minds"
+                        />
+                      </div>
 
                       {/* Save Button */}
                       <div className="flex justify-end pt-4 border-t border-gray-100 mt-6">
-                    <button
-                      onClick={() =>
-                        handleSaveConfig(
-                          "header",
-                          headerConfig,
-                          "✅ Header config saved!"
-                        )
-                      }
+                        <button
+                          onClick={() =>
+                            handleSaveConfig(
+                              "header",
+                              headerConfig,
+                              "✅ Header config saved!",
+                            )
+                          }
                           disabled={
                             isSavingConfig && savingSection === "header"
                           }
-                          className="px-6 py-2.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSavingConfig && savingSection === "header"
-                        ? "Saving..."
+                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isSavingConfig && savingSection === "header"
+                            ? "Saving..."
                             : "Save Header"}
-                    </button>
-                  </div>
+                        </button>
+                      </div>
                     </div>
                   </details>
                 </div>
@@ -2758,125 +3795,49 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                   <details className="group">
                     <summary className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center cursor-pointer list-none">
-                    <div>
+                      <div>
                         <h2 className="text-lg font-semibold text-gray-900">
-                        Focus Tab Customization
-                      </h2>
+                          Focus Tab Customization
+                        </h2>
                         <p className="text-sm text-gray-500 mt-1">
-                        Customize daily focus experience
-                      </p>
-                    </div>
+                          Customize daily focus experience
+                        </p>
+                      </div>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
                         ▼
                       </span>
                     </summary>
                     <div className="p-6 space-y-6">
-                    {/* Progress Bar */}
-                    <div className="pb-4 border-b border-gray-100">
-                      <details className="group" open>
-                        <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
-                          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
-                            Progress Bar
-                          </h3>
-                          <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
-                            ▼
-                          </span>
-                        </summary>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                              Main Title
-                            </label>
-                            <input
-                              type="text"
-                              value={focusConfig.progress_bar.title}
-                              onChange={(e) =>
-                                setFocusConfig({
-                                  ...focusConfig,
-                                  progress_bar: {
-                                    ...focusConfig.progress_bar,
-                                    title: e.target.value,
-                                  },
-                                })
-                              }
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              placeholder="Today's Focus"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                              Subtitle
-                            </label>
-                            <input
-                              type="text"
-                              value={focusConfig.progress_bar.subtitle}
-                              onChange={(e) =>
-                                setFocusConfig({
-                                  ...focusConfig,
-                                  progress_bar: {
-                                    ...focusConfig.progress_bar,
-                                    subtitle: e.target.value,
-                                  },
-                                })
-                              }
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              placeholder="Direct your energy intentionally"
-                            />
-                          </div>
-                        </div>
-                      </details>
-                    </div>
-
-                    {/* Task 1 */}
-                    <div className="pb-4 border-b border-gray-100">
-                      <details className="group">
-                        <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
-                          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
-                            Task 1 (Morning)
-                          </h3>
-                          <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
-                            ▼
-                          </span>
-                        </summary>
-                        <div className="mt-3 space-y-3">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={focusConfig.task_1.enabled}
-                              onChange={(e) =>
-                                setFocusConfig({
-                                  ...focusConfig,
-                                  task_1: {
-                                    ...focusConfig.task_1,
-                                    enabled: e.target.checked,
-                                  },
-                                })
-                              }
-                              className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                            />
-                            <span className="text-xs text-gray-600">
-                              Enabled
+                      {/* Progress Bar */}
+                      <div className="pb-4 border-b border-gray-100">
+                        <details className="group" open>
+                          <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
+                            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                              Progress Bar
+                            </h3>
+                            <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                              ▼
                             </span>
-                          </label>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          </summary>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Title
+                                Main Title
                               </label>
                               <input
                                 type="text"
-                                value={focusConfig.task_1.title}
+                                value={focusConfig.progress_bar.title}
                                 onChange={(e) =>
                                   setFocusConfig({
                                     ...focusConfig,
-                                    task_1: {
-                                      ...focusConfig.task_1,
+                                    progress_bar: {
+                                      ...focusConfig.progress_bar,
                                       title: e.target.value,
                                     },
                                   })
                                 }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder="Task title"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                placeholder="Today's Focus"
                               />
                             </div>
                             <div>
@@ -2885,27 +3846,103 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               </label>
                               <input
                                 type="text"
-                                value={focusConfig.task_1.subtitle}
+                                value={focusConfig.progress_bar.subtitle}
+                                onChange={(e) =>
+                                  setFocusConfig({
+                                    ...focusConfig,
+                                    progress_bar: {
+                                      ...focusConfig.progress_bar,
+                                      subtitle: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                placeholder="Direct your energy intentionally"
+                              />
+                            </div>
+                          </div>
+                        </details>
+                      </div>
+
+                      {/* Task 1 */}
+                      <div className="pb-4 border-b border-gray-100">
+                        <details className="group">
+                          <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
+                            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                              Task 1 (Morning)
+                            </h3>
+                            <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                              ▼
+                            </span>
+                          </summary>
+                          <div className="mt-3 space-y-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={focusConfig.task_1.enabled}
                                 onChange={(e) =>
                                   setFocusConfig({
                                     ...focusConfig,
                                     task_1: {
                                       ...focusConfig.task_1,
-                                      subtitle: e.target.value,
+                                      enabled: e.target.checked,
                                     },
                                   })
                                 }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder="Task description"
+                                className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                               />
+                              <span className="text-xs text-gray-600">
+                                Enabled
+                              </span>
+                            </label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                  Title
+                                </label>
+                                <input
+                                  type="text"
+                                  value={focusConfig.task_1.title}
+                                  onChange={(e) =>
+                                    setFocusConfig({
+                                      ...focusConfig,
+                                      task_1: {
+                                        ...focusConfig.task_1,
+                                        title: e.target.value,
+                                      },
+                                    })
+                                  }
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                  placeholder="Task title"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                  Subtitle
+                                </label>
+                                <input
+                                  type="text"
+                                  value={focusConfig.task_1.subtitle}
+                                  onChange={(e) =>
+                                    setFocusConfig({
+                                      ...focusConfig,
+                                      task_1: {
+                                        ...focusConfig.task_1,
+                                        subtitle: e.target.value,
+                                      },
+                                    })
+                                  }
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                  placeholder="Task description"
+                                />
+                              </div>
                             </div>
-                          </div>
 
                             {/* Custom Icon Upload */}
-                          <div>
+                            <div>
                               <label className="block text-xs font-medium text-gray-700 mb-2">
                                 Custom Icon
-                            </label>
+                              </label>
                               <p className="text-xs text-gray-500 mb-2">
                                 Upload a custom icon to replace the default.
                                 Leave empty to use the default icon.
@@ -2921,14 +3958,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   <button
                                     type="button"
                                     onClick={() =>
-                                setFocusConfig({
-                                  ...focusConfig,
-                                  task_1: {
-                                    ...focusConfig.task_1,
+                                      setFocusConfig({
+                                        ...focusConfig,
+                                        task_1: {
+                                          ...focusConfig.task_1,
                                           icon_url: null,
-                                  },
-                                })
-                              }
+                                        },
+                                      })
+                                    }
                                     className="text-xs text-red-600 hover:text-red-700"
                                   >
                                     Remove Icon
@@ -2973,7 +4010,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     setUploadingTaskIcon(null);
                                   }
                                 }}
-                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
+                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#fef3c7] file:text-black hover:file:bg-[#fbbf24] disabled:opacity-50"
                                 disabled={uploadingTaskIcon === "task_1"}
                               />
                               {uploadingTaskIcon === "task_1" && (
@@ -3001,7 +4038,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   .map((audio, index) => {
                                     // Find the actual index in the full library
                                     const actualIndex = audioLibrary.findIndex(
-                                      (a) => a.id === audio.id
+                                      (a) => a.id === audio.id,
                                     );
                                     return (
                                       <div
@@ -3017,7 +4054,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                             Day {index + 1}
                                           </span>
                                           {actualIndex === currentDayIndex && (
-                                            <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full font-medium">
+                                            <span className="text-xs bg-[#fbbf24] text-black px-2 py-0.5 rounded-full font-semibold">
                                               Today
                                             </span>
                                           )}
@@ -3042,7 +4079,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                                 type="button"
                                                 onClick={() =>
                                                   setCurrentDayIndex(
-                                                    actualIndex
+                                                    actualIndex,
                                                   )
                                                 }
                                                 className="text-xs text-purple-600 hover:text-purple-700 font-medium"
@@ -3055,7 +4092,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                               onClick={() => {
                                                 const newLibrary =
                                                   audioLibrary.filter(
-                                                    (_, i) => i !== actualIndex
+                                                    (_, i) => i !== actualIndex,
                                                   );
                                                 // Re-index the library
                                                 const reindexed =
@@ -3074,7 +4111,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                                   actualIndex < currentDayIndex
                                                 ) {
                                                   setCurrentDayIndex(
-                                                    currentDayIndex - 1
+                                                    currentDayIndex - 1,
                                                   );
                                                 }
                                               }}
@@ -3110,12 +4147,12 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                         ];
                                         if (!validTypes.includes(file.type)) {
                                           setToastMessage(
-                                            "❌ Please upload a valid audio file (MP3, WAV, M4A)"
+                                            "❌ Please upload a valid audio file (MP3, WAV, M4A)",
                                           );
                                           setShowToast(true);
                                           setTimeout(
                                             () => setShowToast(false),
-                                            3000
+                                            3000,
                                           );
                                           return;
                                         }
@@ -3123,12 +4160,12 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                         // Validate file size (50MB)
                                         if (file.size > 50 * 1024 * 1024) {
                                           setToastMessage(
-                                            "❌ File size must be less than 50MB"
+                                            "❌ File size must be less than 50MB",
                                           );
                                           setShowToast(true);
                                           setTimeout(
                                             () => setShowToast(false),
-                                            3000
+                                            3000,
                                           );
                                           return;
                                         }
@@ -3144,7 +4181,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                             {
                                               method: "POST",
                                               body: formData,
-                                            }
+                                            },
                                           );
 
                                           const data = await res.json();
@@ -3161,34 +4198,34 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                               newAudio,
                                             ]);
                                             setToastMessage(
-                                              "✅ Audio uploaded! Remember to save your configuration."
+                                              "✅ Audio uploaded! Remember to save your configuration.",
                                             );
                                             setShowToast(true);
                                             setTimeout(
                                               () => setShowToast(false),
-                                              3000
+                                              3000,
                                             );
                                           } else {
                                             setToastMessage(
                                               "❌ " +
                                                 (data.error ||
-                                                  "Failed to upload audio")
+                                                  "Failed to upload audio"),
                                             );
                                             setShowToast(true);
                                             setTimeout(
                                               () => setShowToast(false),
-                                              3000
+                                              3000,
                                             );
                                           }
                                         } catch (error) {
                                           console.error("Upload error:", error);
                                           setToastMessage(
-                                            "❌ Failed to upload audio"
+                                            "❌ Failed to upload audio",
                                           );
                                           setShowToast(true);
                                           setTimeout(
                                             () => setShowToast(false),
-                                            3000
+                                            3000,
                                           );
                                         } finally {
                                           setUploadingAudio(false);
@@ -3218,7 +4255,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                           <span>➕</span>
                                           Add Day (
                                           {audioLibrary.filter(
-                                            (a) => a.audio_url
+                                            (a) => a.audio_url,
                                           ).length + 1}
                                           /30)
                                         </>
@@ -3230,84 +4267,84 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               <p className="text-xs text-gray-500 mt-2">
                                 MP3, WAV, or M4A • Max 50MB per file
                               </p>
+                            </div>
                           </div>
-                        </div>
-                      </details>
-                    </div>
+                        </details>
+                      </div>
 
-                    {/* Task 2 */}
-                    <div className="pb-4 border-b border-gray-100">
-                      <details className="group">
-                        <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
-                          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
-                            Task 2 (Intention)
-                          </h3>
-                          <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
-                            ▼
-                          </span>
-                        </summary>
-                        <div className="mt-3 space-y-3">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={focusConfig.task_2.enabled}
-                              onChange={(e) =>
-                                setFocusConfig({
-                                  ...focusConfig,
-                                  task_2: {
-                                    ...focusConfig.task_2,
-                                    enabled: e.target.checked,
-                                  },
-                                })
-                              }
-                              className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                            />
-                            <span className="text-xs text-gray-600">
-                              Enabled
+                      {/* Task 2 */}
+                      <div className="pb-4 border-b border-gray-100">
+                        <details className="group">
+                          <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
+                            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                              Task 2 (Intention)
+                            </h3>
+                            <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                              ▼
                             </span>
-                          </label>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Title
-                              </label>
+                          </summary>
+                          <div className="mt-3 space-y-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
                               <input
-                                type="text"
-                                value={focusConfig.task_2.title}
+                                type="checkbox"
+                                checked={focusConfig.task_2.enabled}
                                 onChange={(e) =>
                                   setFocusConfig({
                                     ...focusConfig,
                                     task_2: {
                                       ...focusConfig.task_2,
-                                      title: e.target.value,
+                                      enabled: e.target.checked,
                                     },
                                   })
                                 }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder="Task title"
+                                className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                               />
+                              <span className="text-xs text-gray-600">
+                                Enabled
+                              </span>
+                            </label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                  Title
+                                </label>
+                                <input
+                                  type="text"
+                                  value={focusConfig.task_2.title}
+                                  onChange={(e) =>
+                                    setFocusConfig({
+                                      ...focusConfig,
+                                      task_2: {
+                                        ...focusConfig.task_2,
+                                        title: e.target.value,
+                                      },
+                                    })
+                                  }
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                  placeholder="Task title"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                  Subtitle
+                                </label>
+                                <input
+                                  type="text"
+                                  value={focusConfig.task_2.subtitle}
+                                  onChange={(e) =>
+                                    setFocusConfig({
+                                      ...focusConfig,
+                                      task_2: {
+                                        ...focusConfig.task_2,
+                                        subtitle: e.target.value,
+                                      },
+                                    })
+                                  }
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                  placeholder="Task description"
+                                />
+                              </div>
                             </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Subtitle
-                              </label>
-                              <input
-                                type="text"
-                                value={focusConfig.task_2.subtitle}
-                                onChange={(e) =>
-                                  setFocusConfig({
-                                    ...focusConfig,
-                                    task_2: {
-                                      ...focusConfig.task_2,
-                                      subtitle: e.target.value,
-                                    },
-                                  })
-                                }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder="Task description"
-                              />
-                            </div>
-                          </div>
 
                             {/* Custom Icon Upload for Task 2 */}
                             <div>
@@ -3381,7 +4418,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     setUploadingTaskIcon(null);
                                   }
                                 }}
-                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
+                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#fef3c7] file:text-black hover:file:bg-[#fbbf24] disabled:opacity-50"
                                 disabled={uploadingTaskIcon === "task_2"}
                               />
                               {uploadingTaskIcon === "task_2" && (
@@ -3389,84 +4426,84 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   Uploading...
                                 </p>
                               )}
+                            </div>
                           </div>
-                        </div>
-                      </details>
-                    </div>
+                        </details>
+                      </div>
 
-                    {/* Task 3 */}
-                    <div className="pb-4 border-b border-gray-100">
-                      <details className="group">
-                        <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
-                          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
-                            Task 3 (Evening)
-                          </h3>
-                          <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
-                            ▼
-                          </span>
-                        </summary>
-                        <div className="mt-3 space-y-3">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={focusConfig.task_3.enabled}
-                              onChange={(e) =>
-                                setFocusConfig({
-                                  ...focusConfig,
-                                  task_3: {
-                                    ...focusConfig.task_3,
-                                    enabled: e.target.checked,
-                                  },
-                                })
-                              }
-                              className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                            />
-                            <span className="text-xs text-gray-600">
-                              Enabled
+                      {/* Task 3 */}
+                      <div className="pb-4 border-b border-gray-100">
+                        <details className="group">
+                          <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
+                            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                              Task 3 (Evening)
+                            </h3>
+                            <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                              ▼
                             </span>
-                          </label>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Title
-                              </label>
+                          </summary>
+                          <div className="mt-3 space-y-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
                               <input
-                                type="text"
-                                value={focusConfig.task_3.title}
+                                type="checkbox"
+                                checked={focusConfig.task_3.enabled}
                                 onChange={(e) =>
                                   setFocusConfig({
                                     ...focusConfig,
                                     task_3: {
                                       ...focusConfig.task_3,
-                                      title: e.target.value,
+                                      enabled: e.target.checked,
                                     },
                                   })
                                 }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder="Task title"
+                                className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                               />
+                              <span className="text-xs text-gray-600">
+                                Enabled
+                              </span>
+                            </label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                  Title
+                                </label>
+                                <input
+                                  type="text"
+                                  value={focusConfig.task_3.title}
+                                  onChange={(e) =>
+                                    setFocusConfig({
+                                      ...focusConfig,
+                                      task_3: {
+                                        ...focusConfig.task_3,
+                                        title: e.target.value,
+                                      },
+                                    })
+                                  }
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                  placeholder="Task title"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                  Subtitle
+                                </label>
+                                <input
+                                  type="text"
+                                  value={focusConfig.task_3.subtitle}
+                                  onChange={(e) =>
+                                    setFocusConfig({
+                                      ...focusConfig,
+                                      task_3: {
+                                        ...focusConfig.task_3,
+                                        subtitle: e.target.value,
+                                      },
+                                    })
+                                  }
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                  placeholder="Task description"
+                                />
+                              </div>
                             </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Subtitle
-                              </label>
-                              <input
-                                type="text"
-                                value={focusConfig.task_3.subtitle}
-                                onChange={(e) =>
-                                  setFocusConfig({
-                                    ...focusConfig,
-                                    task_3: {
-                                      ...focusConfig.task_3,
-                                      subtitle: e.target.value,
-                                    },
-                                  })
-                                }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder="Task description"
-                              />
-                            </div>
-                          </div>
 
                             {/* Custom Icon Upload for Task 3 */}
                             <div>
@@ -3540,7 +4577,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     setUploadingTaskIcon(null);
                                   }
                                 }}
-                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
+                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#fef3c7] file:text-black hover:file:bg-[#fbbf24] disabled:opacity-50"
                                 disabled={uploadingTaskIcon === "task_3"}
                               />
                               {uploadingTaskIcon === "task_3" && (
@@ -3548,64 +4585,64 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   Uploading...
                                 </p>
                               )}
+                            </div>
                           </div>
-                        </div>
-                      </details>
-                    </div>
+                        </details>
+                      </div>
 
-                    {/* Day Notes */}
-                    <div>
-                      <details className="group">
-                        <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
-                          <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
-                            Day Notes Section
-                          </h3>
-                          <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
-                            ▼
-                          </span>
-                        </summary>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                              Title
-                            </label>
-                            <input
-                              type="text"
-                              value={focusConfig.day_notes.title}
-                              onChange={(e) =>
-                                setFocusConfig({
-                                  ...focusConfig,
-                                  day_notes: {
-                                    ...focusConfig.day_notes,
-                                    title: e.target.value,
-                                  },
-                                })
-                              }
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              placeholder="Day Notes"
-                            />
+                      {/* Day Notes */}
+                      <div>
+                        <details className="group">
+                          <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
+                            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                              Day Notes Section
+                            </h3>
+                            <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                              ▼
+                            </span>
+                          </summary>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Title
+                              </label>
+                              <input
+                                type="text"
+                                value={focusConfig.day_notes.title}
+                                onChange={(e) =>
+                                  setFocusConfig({
+                                    ...focusConfig,
+                                    day_notes: {
+                                      ...focusConfig.day_notes,
+                                      title: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                placeholder="Day Notes"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Subtitle
+                              </label>
+                              <input
+                                type="text"
+                                value={focusConfig.day_notes.subtitle}
+                                onChange={(e) =>
+                                  setFocusConfig({
+                                    ...focusConfig,
+                                    day_notes: {
+                                      ...focusConfig.day_notes,
+                                      subtitle: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                placeholder="Description"
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                              Subtitle
-                            </label>
-                            <input
-                              type="text"
-                              value={focusConfig.day_notes.subtitle}
-                              onChange={(e) =>
-                                setFocusConfig({
-                                  ...focusConfig,
-                                  day_notes: {
-                                    ...focusConfig.day_notes,
-                                    subtitle: e.target.value,
-                                  },
-                                })
-                              }
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              placeholder="Description"
-                            />
-                          </div>
-                        </div>
 
                           {/* Custom Icon Upload for Day Notes */}
                           <div className="mt-3">
@@ -3639,7 +4676,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 >
                                   Remove Icon
                                 </button>
-                    </div>
+                              </div>
                             )}
 
                             <input
@@ -3679,7 +4716,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   setUploadingTaskIcon(null);
                                 }
                               }}
-                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
+                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#fef3c7] file:text-black hover:file:bg-[#fbbf24] disabled:opacity-50"
                               disabled={uploadingTaskIcon === "day_notes"}
                             />
                             {uploadingTaskIcon === "day_notes" && (
@@ -3687,36 +4724,36 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 Uploading...
                               </p>
                             )}
-                    </div>
+                          </div>
                         </details>
                       </div>
 
                       {/* Save Button */}
                       <div className="flex justify-end pt-4 border-t border-gray-100 mt-6">
-                    <button
-                      onClick={() =>
-                        handleSaveConfig(
+                        <button
+                          onClick={() =>
+                            handleSaveConfig(
                               "focus_tab",
                               {
                                 ...focusConfig,
                                 audio_library: audioLibrary.filter(
-                                  (a) => a.audio_url
+                                  (a) => a.audio_url,
                                 ),
                                 current_day_index: currentDayIndex,
                               },
-                              "✅ Focus tab config saved successfully!"
-                        )
-                      }
-                      disabled={
+                              "✅ Focus tab config saved successfully!",
+                            )
+                          }
+                          disabled={
                             isSavingConfig && savingSection === "focus_tab"
-                      }
-                          className="px-6 py-2.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
+                          }
+                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                           {isSavingConfig && savingSection === "focus_tab"
-                        ? "Saving..."
+                            ? "Saving..."
                             : "Save Focus Tab"}
-                    </button>
-                  </div>
+                        </button>
+                      </div>
                     </div>
                   </details>
                 </div>
@@ -3745,335 +4782,335 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           Mindfulness Logs
                         </h3>
                         <div className="space-y-4">
-                    {/* Modal Title */}
-                    <div className="pb-4 border-b border-gray-100">
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                        Modal Title
-                      </label>
-                      <input
-                        type="text"
-                        value={awarenessConfig.modal_title}
-                        onChange={(e) =>
-                          setAwarenessConfig({
-                            ...awarenessConfig,
-                            modal_title: e.target.value,
-                          })
-                        }
-                        onFocus={(e) => e.target.select()}
-                        onKeyDown={(e) => {
-                          if ((e.metaKey || e.ctrlKey) && e.key === "a") {
-                            e.target.select();
-                          }
-                        }}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Nice catch!"
-                      />
-                      <p className="text-xs text-gray-400 mt-1">
-                        Title shown when user logs a mindfulness moment
-                      </p>
-                    </div>
+                          {/* Modal Title */}
+                          <div className="pb-4 border-b border-gray-100">
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Modal Title
+                            </label>
+                            <input
+                              type="text"
+                              value={awarenessConfig.modal_title}
+                              onChange={(e) =>
+                                setAwarenessConfig({
+                                  ...awarenessConfig,
+                                  modal_title: e.target.value,
+                                })
+                              }
+                              onFocus={(e) => e.target.select()}
+                              onKeyDown={(e) => {
+                                if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+                                  e.target.select();
+                                }
+                              }}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              placeholder="Nice catch!"
+                            />
+                            <p className="text-xs text-gray-400 mt-1">
+                              Title shown when user logs a mindfulness moment
+                            </p>
+                          </div>
 
-                    {/* Mindfulness Logs */}
-                    {awarenessConfig.logs.map((log, index) => (
-                      <div
-                        key={log.id}
-                        className="pb-4 border-b border-gray-100 last:border-0 last:pb-0"
-                      >
-                        <details className="group">
-                          <summary className="flex items-center justify-between cursor-pointer list-none">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-3 h-3 rounded-full shrink-0"
-                                style={{ backgroundColor: log.color }}
-                              />
-                              <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
-                                Log {index + 1}: {log.label}
-                              </h3>
-                            </div>
-                            <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
-                              ▼
-                            </span>
-                          </summary>
-                          <div className="mt-4 space-y-3 pl-5">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Log Label
-                              </label>
-                              <input
-                                type="text"
-                                value={log.label}
-                                onChange={(e) => {
+                          {/* Mindfulness Logs */}
+                          {awarenessConfig.logs.map((log, index) => (
+                            <div
+                              key={log.id}
+                              className="pb-4 border-b border-gray-100 last:border-0 last:pb-0"
+                            >
+                              <details className="group">
+                                <summary className="flex items-center justify-between cursor-pointer list-none">
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className="w-3 h-3 rounded-full shrink-0"
+                                      style={{ backgroundColor: log.color }}
+                                    />
+                                    <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                                      Log {index + 1}: {log.label}
+                                    </h3>
+                                  </div>
+                                  <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                                    ▼
+                                  </span>
+                                </summary>
+                                <div className="mt-4 space-y-3 pl-5">
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                      Log Label
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={log.label}
+                                      onChange={(e) => {
                                         const newLogs = [
                                           ...awarenessConfig.logs,
                                         ];
-                                  newLogs[index].label = e.target.value;
-                                  setAwarenessConfig({
-                                    ...awarenessConfig,
-                                    logs: newLogs,
-                                  });
-                                }}
-                                onFocus={(e) => e.target.select()}
-                                onKeyDown={(e) => {
-                                  if (
-                                    (e.metaKey || e.ctrlKey) &&
-                                    e.key === "a"
-                                  ) {
-                                    e.target.select();
-                                  }
-                                }}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder="e.g. Present moment"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Prompt Question
-                              </label>
-                              <input
-                                type="text"
-                                value={log.prompt}
-                                onChange={(e) => {
+                                        newLogs[index].label = e.target.value;
+                                        setAwarenessConfig({
+                                          ...awarenessConfig,
+                                          logs: newLogs,
+                                        });
+                                      }}
+                                      onFocus={(e) => e.target.select()}
+                                      onKeyDown={(e) => {
+                                        if (
+                                          (e.metaKey || e.ctrlKey) &&
+                                          e.key === "a"
+                                        ) {
+                                          e.target.select();
+                                        }
+                                      }}
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                      placeholder="e.g. Present moment"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                      Prompt Question
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={log.prompt}
+                                      onChange={(e) => {
                                         const newLogs = [
                                           ...awarenessConfig.logs,
                                         ];
-                                  newLogs[index].prompt = e.target.value;
-                                  setAwarenessConfig({
-                                    ...awarenessConfig,
-                                    logs: newLogs,
-                                  });
-                                }}
-                                onFocus={(e) => e.target.select()}
-                                onKeyDown={(e) => {
-                                  if (
-                                    (e.metaKey || e.ctrlKey) &&
-                                    e.key === "a"
-                                  ) {
-                                    e.target.select();
-                                  }
-                                }}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                placeholder="Question to ask the user"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Placeholder Text
-                              </label>
-                              <textarea
-                                rows={2}
-                                value={log.placeholder}
-                                onChange={(e) => {
+                                        newLogs[index].prompt = e.target.value;
+                                        setAwarenessConfig({
+                                          ...awarenessConfig,
+                                          logs: newLogs,
+                                        });
+                                      }}
+                                      onFocus={(e) => e.target.select()}
+                                      onKeyDown={(e) => {
+                                        if (
+                                          (e.metaKey || e.ctrlKey) &&
+                                          e.key === "a"
+                                        ) {
+                                          e.target.select();
+                                        }
+                                      }}
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                      placeholder="Question to ask the user"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                      Placeholder Text
+                                    </label>
+                                    <textarea
+                                      rows={2}
+                                      value={log.placeholder}
+                                      onChange={(e) => {
                                         const newLogs = [
                                           ...awarenessConfig.logs,
                                         ];
                                         newLogs[index].placeholder =
                                           e.target.value;
-                                  setAwarenessConfig({
-                                    ...awarenessConfig,
-                                    logs: newLogs,
-                                  });
-                                }}
-                                onFocus={(e) => e.target.select()}
-                                onKeyDown={(e) => {
-                                  if (
-                                    (e.metaKey || e.ctrlKey) &&
-                                    e.key === "a"
-                                  ) {
-                                    e.target.select();
-                                  }
-                                }}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                                placeholder="Example answer text"
-                              />
+                                        setAwarenessConfig({
+                                          ...awarenessConfig,
+                                          logs: newLogs,
+                                        });
+                                      }}
+                                      onFocus={(e) => e.target.select()}
+                                      onKeyDown={(e) => {
+                                        if (
+                                          (e.metaKey || e.ctrlKey) &&
+                                          e.key === "a"
+                                        ) {
+                                          e.target.select();
+                                        }
+                                      }}
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
+                                      placeholder="Example answer text"
+                                    />
+                                  </div>
+                                </div>
+                              </details>
                             </div>
-                          </div>
-                        </details>
+                          ))}
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
 
                       {/* Divider */}
                       <div className="border-t border-gray-200"></div>
 
                       {/* EMOTIONAL STATE TRACKING Section */}
-                    <div>
+                      <div>
                         <h3 className="text-sm font-bold text-purple-600 uppercase tracking-wider mb-4">
                           Emotional State Tracking
                         </h3>
                         <div className="space-y-4">
-                    {/* Log Label */}
-                    <div className="pb-4 border-b border-gray-100">
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                        Log Label
-                      </label>
-                      <input
-                        type="text"
-                        value={emotionalStateConfig.log_label}
-                        onChange={(e) =>
-                          setEmotionalStateConfig({
-                            ...emotionalStateConfig,
-                            log_label: e.target.value,
-                          })
-                        }
-                        onFocus={(e) => e.target.select()}
-                        onKeyDown={(e) => {
-                          if ((e.metaKey || e.ctrlKey) && e.key === "a") {
-                            e.target.select();
-                          }
-                        }}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Emotional State"
-                      />
-                      <p className="text-xs text-gray-400 mt-1">
-                        Label shown in the awareness tab section
-                      </p>
-                    </div>
+                          {/* Log Label */}
+                          <div className="pb-4 border-b border-gray-100">
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Log Label
+                            </label>
+                            <input
+                              type="text"
+                              value={emotionalStateConfig.log_label}
+                              onChange={(e) =>
+                                setEmotionalStateConfig({
+                                  ...emotionalStateConfig,
+                                  log_label: e.target.value,
+                                })
+                              }
+                              onFocus={(e) => e.target.select()}
+                              onKeyDown={(e) => {
+                                if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+                                  e.target.select();
+                                }
+                              }}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              placeholder="Emotional State"
+                            />
+                            <p className="text-xs text-gray-400 mt-1">
+                              Label shown in the awareness tab section
+                            </p>
+                          </div>
 
-                    {/* Modal Subtitle */}
-                    <div className="pb-4 border-b border-gray-100">
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                        Modal Subtitle
-                      </label>
-                      <input
-                        type="text"
-                        value={emotionalStateConfig.modal_subtitle}
-                        onChange={(e) =>
-                          setEmotionalStateConfig({
-                            ...emotionalStateConfig,
-                            modal_subtitle: e.target.value,
-                          })
-                        }
-                        onFocus={(e) => e.target.select()}
-                        onKeyDown={(e) => {
-                          if ((e.metaKey || e.ctrlKey) && e.key === "a") {
-                            e.target.select();
-                          }
-                        }}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Select all that apply"
-                      />
-                      <p className="text-xs text-gray-400 mt-1">
-                        Instruction text shown in the selection modal
-                      </p>
-                    </div>
+                          {/* Modal Subtitle */}
+                          <div className="pb-4 border-b border-gray-100">
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Modal Subtitle
+                            </label>
+                            <input
+                              type="text"
+                              value={emotionalStateConfig.modal_subtitle}
+                              onChange={(e) =>
+                                setEmotionalStateConfig({
+                                  ...emotionalStateConfig,
+                                  modal_subtitle: e.target.value,
+                                })
+                              }
+                              onFocus={(e) => e.target.select()}
+                              onKeyDown={(e) => {
+                                if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+                                  e.target.select();
+                                }
+                              }}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              placeholder="Select all that apply"
+                            />
+                            <p className="text-xs text-gray-400 mt-1">
+                              Instruction text shown in the selection modal
+                            </p>
+                          </div>
 
-                    {/* Categories */}
-                    {emotionalStateConfig.categories.map(
-                      (category, catIndex) => (
-                        <div
-                          key={category.id}
-                          className="pb-4 border-b border-gray-100 last:border-0 last:pb-0"
-                        >
+                          {/* Categories */}
+                          {emotionalStateConfig.categories.map(
+                            (category, catIndex) => (
+                              <div
+                                key={category.id}
+                                className="pb-4 border-b border-gray-100 last:border-0 last:pb-0"
+                              >
                                 <details
                                   className="group"
                                   open={catIndex === 0}
                                 >
-                            <summary className="flex items-center justify-between cursor-pointer list-none">
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="w-3 h-3 rounded-full shrink-0"
+                                  <summary className="flex items-center justify-between cursor-pointer list-none">
+                                    <div className="flex items-center gap-2">
+                                      <div
+                                        className="w-3 h-3 rounded-full shrink-0"
                                         style={{
                                           backgroundColor: category.color,
                                         }}
-                                />
-                                <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                                      />
+                                      <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
                                         Category {catIndex + 1}:{" "}
                                         {category.label}
-                                </h3>
-                              </div>
-                              <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
-                                ▼
-                              </span>
-                            </summary>
-                            <div className="mt-4 space-y-3 pl-5">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                  Category Label
-                                </label>
-                                <input
-                                  type="text"
-                                  value={category.label}
-                                  onChange={(e) => {
-                                    const newCategories = [
-                                      ...emotionalStateConfig.categories,
-                                    ];
-                                    newCategories[catIndex].label =
-                                      e.target.value;
-                                    setEmotionalStateConfig({
-                                      ...emotionalStateConfig,
-                                      categories: newCategories,
-                                    });
-                                  }}
-                                  onFocus={(e) => e.target.select()}
-                                  onKeyDown={(e) => {
-                                    if (
-                                      (e.metaKey || e.ctrlKey) &&
-                                      e.key === "a"
-                                    ) {
-                                      e.preventDefault();
-                                      e.target.select();
-                                    }
-                                  }}
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                  placeholder="e.g. CHALLENGING"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                  Category Color
-                                </label>
-                                <div className="flex gap-2 items-center">
-                                  <input
-                                    type="color"
-                                    value={category.color}
-                                    onChange={(e) => {
-                                      const newCategories = [
-                                        ...emotionalStateConfig.categories,
-                                      ];
-                                      newCategories[catIndex].color =
-                                        e.target.value;
-                                      setEmotionalStateConfig({
-                                        ...emotionalStateConfig,
-                                        categories: newCategories,
-                                      });
-                                    }}
-                                    className="w-16 h-10 rounded-lg border border-gray-300 cursor-pointer"
-                                  />
-                                  <input
-                                    type="text"
-                                    value={category.color}
-                                    onChange={(e) => {
-                                      const newCategories = [
-                                        ...emotionalStateConfig.categories,
-                                      ];
-                                      newCategories[catIndex].color =
-                                        e.target.value;
-                                      setEmotionalStateConfig({
-                                        ...emotionalStateConfig,
-                                        categories: newCategories,
-                                      });
-                                    }}
-                                    onFocus={(e) => e.target.select()}
-                                    onKeyDown={(e) => {
-                                      if (
-                                        (e.metaKey || e.ctrlKey) &&
-                                        e.key === "a"
-                                      ) {
-                                        e.preventDefault();
-                                        e.target.select();
-                                      }
-                                    }}
-                                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono"
-                                    placeholder="#3b82f6"
-                                  />
-                                </div>
-                              </div>
-                              <div>
+                                      </h3>
+                                    </div>
+                                    <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
+                                      ▼
+                                    </span>
+                                  </summary>
+                                  <div className="mt-4 space-y-3 pl-5">
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                        Category Label
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={category.label}
+                                        onChange={(e) => {
+                                          const newCategories = [
+                                            ...emotionalStateConfig.categories,
+                                          ];
+                                          newCategories[catIndex].label =
+                                            e.target.value;
+                                          setEmotionalStateConfig({
+                                            ...emotionalStateConfig,
+                                            categories: newCategories,
+                                          });
+                                        }}
+                                        onFocus={(e) => e.target.select()}
+                                        onKeyDown={(e) => {
+                                          if (
+                                            (e.metaKey || e.ctrlKey) &&
+                                            e.key === "a"
+                                          ) {
+                                            e.preventDefault();
+                                            e.target.select();
+                                          }
+                                        }}
+                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                        placeholder="e.g. CHALLENGING"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                        Category Color
+                                      </label>
+                                      <div className="flex gap-2 items-center">
+                                        <input
+                                          type="color"
+                                          value={category.color}
+                                          onChange={(e) => {
+                                            const newCategories = [
+                                              ...emotionalStateConfig.categories,
+                                            ];
+                                            newCategories[catIndex].color =
+                                              e.target.value;
+                                            setEmotionalStateConfig({
+                                              ...emotionalStateConfig,
+                                              categories: newCategories,
+                                            });
+                                          }}
+                                          className="w-16 h-10 rounded-lg border border-gray-300 cursor-pointer"
+                                        />
+                                        <input
+                                          type="text"
+                                          value={category.color}
+                                          onChange={(e) => {
+                                            const newCategories = [
+                                              ...emotionalStateConfig.categories,
+                                            ];
+                                            newCategories[catIndex].color =
+                                              e.target.value;
+                                            setEmotionalStateConfig({
+                                              ...emotionalStateConfig,
+                                              categories: newCategories,
+                                            });
+                                          }}
+                                          onFocus={(e) => e.target.select()}
+                                          onKeyDown={(e) => {
+                                            if (
+                                              (e.metaKey || e.ctrlKey) &&
+                                              e.key === "a"
+                                            ) {
+                                              e.preventDefault();
+                                              e.target.select();
+                                            }
+                                          }}
+                                          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent font-mono"
+                                          placeholder="#3b82f6"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div>
                                       <div className="flex justify-between items-center mb-2">
                                         <label className="block text-xs font-medium text-gray-700">
                                           Emotion Options
-                                </label>
+                                        </label>
                                         <button
                                           type="button"
                                           onClick={() =>
@@ -4102,7 +5139,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                               onDragStart={() =>
                                                 handleDragStartEmotionOption(
                                                   catIndex,
-                                                  optIndex
+                                                  optIndex,
                                                 )
                                               }
                                               onDragOver={
@@ -4111,7 +5148,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                               onDrop={() =>
                                                 handleDropEmotionOption(
                                                   catIndex,
-                                                  optIndex
+                                                  optIndex,
                                                 )
                                               }
                                               className="border border-gray-200 rounded-lg p-3 space-y-2 cursor-move hover:border-purple-300 transition-colors"
@@ -4165,7 +5202,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                                       catIndex,
                                                       optIndex,
                                                       "name",
-                                      e.target.value
+                                                      e.target.value,
                                                     )
                                                   }
                                                   placeholder="Emotion name"
@@ -4176,7 +5213,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                                   onClick={() =>
                                                     handleRemoveEmotionOption(
                                                       catIndex,
-                                                      optIndex
+                                                      optIndex,
                                                     )
                                                   }
                                                   className="text-red-600 hover:text-red-700 text-xs px-2"
@@ -4198,7 +5235,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                                       catIndex,
                                                       optIndex,
                                                       "practice_name",
-                                                      e.target.value
+                                                      e.target.value,
                                                     )
                                                   }
                                                   placeholder="Recommended Practice Name (e.g., Breath Reset)"
@@ -4226,7 +5263,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                                       onClick={() =>
                                                         handleRemoveEmotionAudio(
                                                           catIndex,
-                                                          optIndex
+                                                          optIndex,
                                                         )
                                                       }
                                                       className="text-red-600 hover:text-red-700 font-medium"
@@ -4251,7 +5288,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                                       handleEmotionAudioUpload(
                                                         e,
                                                         catIndex,
-                                                        optIndex
+                                                        optIndex,
                                                       )
                                                     }
                                                     className="hidden"
@@ -4283,14 +5320,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                                 </div>
                                               )}
                                             </div>
-                                          )
+                                          ),
                                         )}
                                       </div>
                                     </div>
                                   </div>
                                 </details>
                               </div>
-                            )
+                            ),
                           )}
                         </div>
                       </div>
@@ -4303,23 +5340,23 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             await handleSaveConfig(
                               "awareness_tab",
                               awarenessConfig,
-                              ""
+                              "",
                             );
                             const cleanedConfig = {
-                                      ...emotionalStateConfig,
+                              ...emotionalStateConfig,
                               categories: emotionalStateConfig.categories.map(
                                 (cat) => ({
                                   ...cat,
                                   options: cat.options.filter(
-                                    (opt) => opt.name && opt.name.trim() !== ""
+                                    (opt) => opt.name && opt.name.trim() !== "",
                                   ),
-                                })
+                                }),
                               ),
                             };
                             await handleSaveConfig(
                               "emotional_state_tab",
                               cleanedConfig,
-                              "✅ Awareness tab config saved successfully!"
+                              "✅ Awareness tab config saved successfully!",
                             );
                           }}
                           disabled={
@@ -4327,7 +5364,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             (savingSection === "awareness_tab" ||
                               savingSection === "emotional_state_tab")
                           }
-                          className="px-6 py-2.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isSavingConfig &&
                           (savingSection === "awareness_tab" ||
@@ -4380,7 +5417,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     ((tokenUsage?.subscriberCount || 1) *
                                       (tokenUsage?.tokenLimit || 1000000))) *
                                     100,
-                                  100
+                                  100,
                                 )}%`,
                               }}
                             />
@@ -4481,7 +5518,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               setUploadingBotProfilePicture(false);
                             }
                           }}
-                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
+                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#fef3c7] file:text-black hover:file:bg-[#fbbf24] disabled:opacity-50"
                           disabled={uploadingBotProfilePicture}
                         />
                         {uploadingBotProfilePicture && (
@@ -4510,15 +5547,15 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               system_prompt: e.target.value,
                             })
                           }
-                                  onKeyDown={(e) => {
+                          onKeyDown={(e) => {
                             if ((e.metaKey || e.ctrlKey) && e.key === "a") {
-                                      e.preventDefault();
+                              e.preventDefault();
                               if (systemPromptRef.current) {
                                 systemPromptRef.current.select();
                               }
                             }
                           }}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent font-mono text-sm"
                           rows={20}
                           placeholder="Enter the system prompt that defines how the AI coach behaves..."
                           spellCheck={false}
@@ -4527,8 +5564,234 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           💡 Tip: The system prompt defines the AI's role,
                           personality, and coaching approach. Be specific and
                           clear about the style of responses you want.
-                              </div>
+                        </div>
+                      </div>
+
+                      {/* Booking Configuration */}
+                      <div className="border-t border-gray-100 pt-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h3 className="text-sm font-semibold text-gray-700">
+                              "Book a Call" Feature
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Allow users to book calls with you directly from
+                              the Coach tab
+                            </p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={coachTabConfig.booking?.enabled || false}
+                              onChange={(e) =>
+                                setCoachTabConfig({
+                                  ...coachTabConfig,
+                                  booking: {
+                                    ...coachTabConfig.booking,
+                                    enabled: e.target.checked,
+                                  },
+                                })
+                              }
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-400"></div>
+                          </label>
+                        </div>
+
+                        {coachTabConfig.booking?.enabled && (
+                          <div className="space-y-4 mt-4 p-4 bg-gray-50 rounded-lg">
+                            {/* Button Text */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Button Text
+                              </label>
+                              <input
+                                type="text"
+                                value={
+                                  coachTabConfig.booking?.button_text || ""
+                                }
+                                onChange={(e) =>
+                                  setCoachTabConfig({
+                                    ...coachTabConfig,
+                                    booking: {
+                                      ...coachTabConfig.booking,
+                                      button_text: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                placeholder="Book a Call"
+                              />
                             </div>
+
+                            {/* AI Disclaimer */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                AI Disclaimer Text
+                              </label>
+                              <textarea
+                                value={
+                                  coachTabConfig.booking?.ai_disclaimer || ""
+                                }
+                                onChange={(e) =>
+                                  setCoachTabConfig({
+                                    ...coachTabConfig,
+                                    booking: {
+                                      ...coachTabConfig.booking,
+                                      ai_disclaimer: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                rows={2}
+                                placeholder="Responses in chat are AI-generated and not directly from {coach_name} herself."
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                Use {"{coach_name}"} to insert your name
+                              </p>
+                            </div>
+
+                            {/* Booking Options */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-2">
+                                Booking Options
+                              </label>
+                              {(coachTabConfig.booking?.options || []).map(
+                                (option, index) => (
+                                  <div
+                                    key={option.id}
+                                    className="mb-3 p-3 bg-white border border-gray-200 rounded-lg"
+                                  >
+                                    <div className="grid grid-cols-2 gap-2 mb-2">
+                                      <input
+                                        type="text"
+                                        value={option.title}
+                                        onChange={(e) => {
+                                          const newOptions = [
+                                            ...coachTabConfig.booking.options,
+                                          ];
+                                          newOptions[index].title =
+                                            e.target.value;
+                                          setCoachTabConfig({
+                                            ...coachTabConfig,
+                                            booking: {
+                                              ...coachTabConfig.booking,
+                                              options: newOptions,
+                                            },
+                                          });
+                                        }}
+                                        className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                        placeholder="Call title"
+                                      />
+                                      <input
+                                        type="text"
+                                        value={option.duration}
+                                        onChange={(e) => {
+                                          const newOptions = [
+                                            ...coachTabConfig.booking.options,
+                                          ];
+                                          newOptions[index].duration =
+                                            e.target.value;
+                                          setCoachTabConfig({
+                                            ...coachTabConfig,
+                                            booking: {
+                                              ...coachTabConfig.booking,
+                                              options: newOptions,
+                                            },
+                                          });
+                                        }}
+                                        className="px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                        placeholder="Duration"
+                                      />
+                                    </div>
+                                    <input
+                                      type="text"
+                                      value={option.description}
+                                      onChange={(e) => {
+                                        const newOptions = [
+                                          ...coachTabConfig.booking.options,
+                                        ];
+                                        newOptions[index].description =
+                                          e.target.value;
+                                        setCoachTabConfig({
+                                          ...coachTabConfig,
+                                          booking: {
+                                            ...coachTabConfig.booking,
+                                            options: newOptions,
+                                          },
+                                        });
+                                      }}
+                                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400 mb-2"
+                                      placeholder="Description"
+                                    />
+                                    <input
+                                      type="url"
+                                      value={option.url}
+                                      onChange={(e) => {
+                                        const newOptions = [
+                                          ...coachTabConfig.booking.options,
+                                        ];
+                                        newOptions[index].url = e.target.value;
+                                        setCoachTabConfig({
+                                          ...coachTabConfig,
+                                          booking: {
+                                            ...coachTabConfig.booking,
+                                            options: newOptions,
+                                          },
+                                        });
+                                      }}
+                                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400 mb-2"
+                                      placeholder="Booking URL (Calendly, Cal.com, etc.)"
+                                    />
+                                    <button
+                                      onClick={() => {
+                                        const newOptions =
+                                          coachTabConfig.booking.options.filter(
+                                            (_, i) => i !== index,
+                                          );
+                                        setCoachTabConfig({
+                                          ...coachTabConfig,
+                                          booking: {
+                                            ...coachTabConfig.booking,
+                                            options: newOptions,
+                                          },
+                                        });
+                                      }}
+                                      className="text-xs text-red-600 hover:text-red-700"
+                                    >
+                                      Remove option
+                                    </button>
+                                  </div>
+                                ),
+                              )}
+                              <button
+                                onClick={() => {
+                                  const newOptions = [
+                                    ...(coachTabConfig.booking?.options || []),
+                                    {
+                                      id: Date.now(),
+                                      title: "",
+                                      duration: "",
+                                      description: "",
+                                      url: "",
+                                    },
+                                  ];
+                                  setCoachTabConfig({
+                                    ...coachTabConfig,
+                                    booking: {
+                                      ...coachTabConfig.booking,
+                                      options: newOptions,
+                                    },
+                                  });
+                                }}
+                                className="text-sm text-amber-600 hover:text-amber-700 font-medium"
+                              >
+                                + Add booking option
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
                       {/* Save Button */}
                       <div className="flex justify-end pt-4 border-t border-gray-100">
@@ -4537,19 +5800,19 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             handleSaveConfig(
                               "coach_tab",
                               coachTabConfig,
-                              "✅ Coach Tab configuration saved successfully!"
+                              "✅ Coach Tab configuration saved successfully!",
                             )
                           }
                           disabled={
                             isSavingConfig && savingSection === "coach_tab"
                           }
-                          className="px-6 py-2.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isSavingConfig && savingSection === "coach_tab"
                             ? "Saving..."
                             : "Save Coach Configuration"}
                         </button>
-                  </div>
+                      </div>
                     </div>
                   </details>
                 </div>
@@ -4559,34 +5822,34 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                   <details className="group">
                     <summary className="p-6 border-b border-gray-100 bg-gray-50/50 cursor-pointer list-none flex justify-between items-center">
                       <div>
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      Page Visibility
-                    </h2>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Control who can see your page
-                    </p>
-                  </div>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          Page Visibility
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Control who can see your page
+                        </p>
+                      </div>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
                         ▼
                       </span>
                     </summary>
-                  <div className="p-6">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        defaultChecked={coach?.is_active}
-                        className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          Make page public
+                    <div className="p-6">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          defaultChecked={coach?.is_active}
+                          className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                        />
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            Make page public
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Allow new subscribers to find and join your page
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-500">
-                          Allow new subscribers to find and join your page
-                        </div>
-                      </div>
-                    </label>
-                  </div>
+                      </label>
+                    </div>
                   </details>
                 </div>
               </div>
@@ -4635,7 +5898,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     </svg>
                     Preview Client View
                   </Link>
-                  <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors">
+                  <button className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-black bg-[#fbbf24] rounded-lg hover:bg-[#f59e0b] transition-colors">
                     <svg
                       className="w-4 h-4"
                       fill="none"
@@ -4659,13 +5922,147 @@ Remember: You're here to empower them to find their own answers, not to fix thei
             <div className="p-8">
               <div className="max-w-7xl mx-auto">
                 <p className="text-center text-gray-500 py-12">
-                  No collections yet. Click "Add Collection" to create your first themed resource collection.
+                  No collections yet. Click "Add Collection" to create your
+                  first themed resource collection.
                 </p>
               </div>
             </div>
           </>
         )}
       </div>
+
+      {/* Draggable Preview Modal */}
+      {showPreview && (
+        <div
+          style={{
+            position: "fixed",
+            left: `${previewPosition.x}px`,
+            top: `${previewPosition.y}px`,
+            width: "375px",
+            backgroundColor: "#ffffff",
+            borderRadius: "16px",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            zIndex: 9999,
+            overflow: "hidden",
+            border: "1px solid #e5e7eb",
+          }}
+        >
+          {/* Grab Bar */}
+          <div
+            onMouseDown={handlePreviewMouseDown}
+            style={{
+              padding: "12px 16px",
+              backgroundColor: "#f9fafb",
+              borderBottom: "1px solid #e5e7eb",
+              cursor: isDragging ? "grabbing" : "grab",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              userSelect: "none",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#6b7280"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="5" r="1"></circle>
+                <circle cx="12" cy="12" r="1"></circle>
+                <circle cx="12" cy="19" r="1"></circle>
+              </svg>
+              <span
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#374151",
+                }}
+              >
+                Mobile Preview
+              </span>
+            </div>
+            <button
+              onClick={() => setShowPreview(false)}
+              style={{
+                padding: "4px",
+                backgroundColor: "transparent",
+                border: "none",
+                cursor: "pointer",
+                color: "#6b7280",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+
+          {/* iPhone-style Preview Frame */}
+          <div
+            style={{
+              height: "667px",
+              backgroundColor: "#ffffff",
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            <iframe
+              ref={previewIframeRef}
+              src="/user/dashboard?preview=true"
+              onLoad={() => {
+                // Send initial config when iframe loads
+                if (previewIframeRef.current) {
+                  const config = {
+                    header: headerConfig,
+                    branding: brandingConfig,
+                    focus_tab: focusConfig,
+                    awareness_tab: awarenessConfig,
+                    emotional_state_tab: emotionalStateConfig,
+                    coach_tab: coachTabConfig,
+                    audio_library: audioLibrary,
+                    current_day_index: currentDayIndex,
+                  };
+                  console.log(
+                    "📤 Sending initial config on iframe load:",
+                    config,
+                  );
+                  previewIframeRef.current.contentWindow.postMessage(
+                    {
+                      type: "PREVIEW_CONFIG_UPDATE",
+                      config: config,
+                    },
+                    window.location.origin,
+                  );
+                }
+              }}
+              style={{
+                width: "100%",
+                height: "100%",
+                border: "none",
+              }}
+              title="Mobile Preview"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

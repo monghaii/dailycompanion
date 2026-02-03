@@ -133,9 +133,9 @@ export default function CoachLandingPage() {
           }}
         >
           <div className="fade-in">
-            {coach.logo_url && (
+            {(coach.bot_profile_picture_url || coach.logo_url) && (
               <img
-                src={coach.logo_url}
+                src={coach.bot_profile_picture_url || coach.logo_url}
                 alt={coach.business_name}
                 style={{
                   width: "120px",

@@ -46,7 +46,7 @@ export async function GET(request) {
     // Get all users assigned to this coach (including those without subscriptions)
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, full_name, email, created_at, role')
+      .select('id, first_name, last_name, full_name, email, created_at, role')
       .eq('coach_id', coach.id)
       .eq('role', 'user')
       .order('created_at', { ascending: false });
@@ -82,6 +82,8 @@ export async function GET(request) {
       const subscription = subMap[profile.id];
       return {
         id: profile.id,
+        firstName: profile.first_name || '',
+        lastName: profile.last_name || '',
         name: profile.full_name || 'Unknown',
         email: profile.email,
         subscriptionStatus: subscription?.status || 'no_subscription',

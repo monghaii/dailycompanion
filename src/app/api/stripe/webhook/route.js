@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { supabase } from '@/lib/supabase';
+import { syncUserToKit } from '@/lib/kit-sync';
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -74,6 +75,31 @@ export async function POST(request) {
           });
           
           console.log(`[Webhook] User subscription activated: user=${session.metadata.userId}, coach=${session.metadata.coachId}`);
+          
+          // Sync user to Kit (ConvertKit) if coach has it enabled
+          try {
+            // Get user details for Kit sync
+            const { data: user } = await supabase
+              .from('profiles')
+              .select('email, first_name, last_name')
+              .eq('id', session.metadata.userId)
+              .single();
+            
+            if (user) {
+              await syncUserToKit({
+                userId: session.metadata.userId,
+                coachId: session.metadata.coachId,
+                email: user.email,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                subscriptionStatus: 'active',
+              });
+              console.log(`[Webhook] Kit sync initiated for user: ${session.metadata.userId}`);
+            }
+          } catch (kitError) {
+            // Don't fail the webhook if Kit sync fails
+            console.error('[Webhook] Kit sync error:', kitError);
+          }
         }
         break;
       }
