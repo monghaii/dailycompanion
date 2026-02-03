@@ -15,7 +15,7 @@ export async function GET(request, { params }) {
     // Get coach by slug
     const { data: coach, error: coachError } = await supabase
       .from('coaches')
-      .select('id, slug, business_name, bio, tagline, landing_headline, landing_subheadline, landing_cta, logo_url, theme_color, user_monthly_price_cents, user_yearly_price_cents, is_active, coach_config')
+      .select('id, slug, business_name, bio, tagline, landing_headline, landing_subheadline, landing_cta, logo_url, theme_color, user_monthly_price_cents, user_yearly_price_cents, is_active')
       .eq('slug', slug)
       .single();
 
@@ -54,7 +54,7 @@ export async function GET(request, { params }) {
             name: coach.business_name,
             title: 'Life & Wellness Coach',
             bio: coach.bio || 'Dedicated to helping you achieve your goals and live your best life.',
-            photo_url: coach.coach_config?.coach_tab?.bot_profile_picture_url || coach.logo_url
+            photo_url: coach.logo_url
           },
           pricing: {
             monthly_highlight: true,
@@ -89,7 +89,6 @@ export async function GET(request, { params }) {
         landing_subheadline: coach.landing_subheadline,
         landing_cta: coach.landing_cta,
         logo_url: coach.logo_url,
-        bot_profile_picture_url: coach.coach_config?.coach_tab?.bot_profile_picture_url || null,
         theme_color: coach.theme_color,
         is_active: coach.is_active,
         monthly_price_cents: coach.user_monthly_price_cents,
