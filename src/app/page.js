@@ -1,8 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Home() {
   return (
-    <div style={{ minHeight: "100vh" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "#ffffff" }}>
       {/* Navigation */}
       <nav
         style={{
@@ -11,7 +14,6 @@ export default function Home() {
           left: 0,
           right: 0,
           zIndex: 50,
-          borderBottom: "1px solid #e5e7eb",
           backgroundColor: "white",
         }}
       >
@@ -19,318 +21,150 @@ export default function Home() {
           style={{
             maxWidth: "1200px",
             margin: "0 auto",
-            padding: "0 24px",
+            padding: "20px 40px",
             display: "flex",
-            height: "64px",
             alignItems: "center",
             justifyContent: "space-between",
           }}
         >
+          {/* Logo */}
           <Link
             href="/"
             style={{
-              fontSize: "20px",
-              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
               textDecoration: "none",
               color: "inherit",
             }}
           >
-            <span style={{ color: "#2563eb" }}>daily</span>companion
-          </Link>
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <Link
-              href="/login"
-              className="btn btn-primary"
-              style={{ fontSize: "14px" }}
+            <Image
+              src="/logo.png"
+              alt="Daily Companion"
+              width={40}
+              height={40}
+              style={{ width: "40px", height: "40px" }}
+            />
+            <span
+              style={{
+                fontSize: "20px",
+                fontWeight: 600,
+                color: "#000000",
+              }}
             >
-              Not a coach?
-            </Link>
-          </div>
+              Daily Companion
+            </span>
+          </Link>
+
+          {/* Coach Login Link */}
+          <Link
+            href="/coach/login"
+            style={{
+              fontSize: "16px",
+              color: "#000000",
+              textDecoration: "none",
+              fontWeight: 400,
+            }}
+          >
+            Coach Login
+          </Link>
         </div>
       </nav>
 
-      {/* Hero */}
-      <main style={{ paddingTop: "128px", paddingBottom: "80px" }}>
-        <div
-          style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}
-        >
-          <div
-            style={{ maxWidth: "768px", margin: "0 auto", textAlign: "center" }}
-          >
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "8px 16px",
-                borderRadius: "9999px",
-                backgroundColor: "#f3f4f6",
-                fontSize: "14px",
-                color: "#6b7280",
-                marginBottom: "32px",
-              }}
-            >
-              <span
-                style={{
-                  width: "8px",
-                  height: "8px",
-                  borderRadius: "50%",
-                  backgroundColor: "#22c55e",
-                }}
-              ></span>
-              Now accepting coaches
-            </div>
-
-            <h1
-              style={{
-                fontSize: "clamp(36px, 5vw, 60px)",
-                fontWeight: 700,
-                lineHeight: 1.1,
-                letterSpacing: "-0.02em",
-                marginBottom: "24px",
-                color: "#111827",
-              }}
-            >
-              Your coaching business, simplified.
-            </h1>
-
-            <p
-              style={{
-                fontSize: "20px",
-                color: "#6b7280",
-                maxWidth: "560px",
-                margin: "0 auto 40px",
-              }}
-            >
-              Build a thriving online coaching practice. Share content, connect
-              with clients, and grow your revenue—all in one beautiful platform.
-            </p>
-
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                justifyContent: "center",
-                gap: "16px",
-              }}
-            >
-              <Link
-                href="/coach/signup"
-                className="btn btn-primary"
-                style={{ padding: "16px 32px", fontSize: "16px" }}
-              >
-                Get Started — $50/mo
-              </Link>
-              <Link
-                href="/coach/login"
-                className="btn btn-secondary"
-                style={{ padding: "16px 32px", fontSize: "16px" }}
-              >
-                Coach Login
-              </Link>
-            </div>
-          </div>
-
-          {/* Features */}
-          <div
-            style={{
-              marginTop: "128px",
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-              gap: "24px",
-            }}
-          >
-            <div
-              style={{
-                padding: "32px",
-                borderRadius: "16px",
-                backgroundColor: "#f9fafb",
-                border: "1px solid #e5e7eb",
-              }}
-            >
-              <div style={{ fontSize: "40px", marginBottom: "16px" }}>📚</div>
-              <h3
-                style={{
-                  fontSize: "20px",
-                  fontWeight: 600,
-                  marginBottom: "8px",
-                }}
-              >
-                Content Hub
-              </h3>
-              <p style={{ color: "#6b7280" }}>
-                Upload videos, articles, and resources. Your clients get a
-                single destination for all your content.
-              </p>
-            </div>
-            <div
-              style={{
-                padding: "32px",
-                borderRadius: "16px",
-                backgroundColor: "#f9fafb",
-                border: "1px solid #e5e7eb",
-              }}
-            >
-              <div style={{ fontSize: "40px", marginBottom: "16px" }}>💳</div>
-              <h3
-                style={{
-                  fontSize: "20px",
-                  fontWeight: 600,
-                  marginBottom: "8px",
-                }}
-              >
-                Subscriptions
-              </h3>
-              <p style={{ color: "#6b7280" }}>
-                Set your own pricing. We handle payments, billing, and
-                payouts—you focus on coaching.
-              </p>
-            </div>
-            <div
-              style={{
-                padding: "32px",
-                borderRadius: "16px",
-                backgroundColor: "#f9fafb",
-                border: "1px solid #e5e7eb",
-              }}
-            >
-              <div style={{ fontSize: "40px", marginBottom: "16px" }}>✨</div>
-              <h3
-                style={{
-                  fontSize: "20px",
-                  fontWeight: 600,
-                  marginBottom: "8px",
-                }}
-              >
-                Your Brand
-              </h3>
-              <p style={{ color: "#6b7280" }}>
-                Custom landing page with your branding. A professional presence
-                without the tech hassle.
-              </p>
-            </div>
-          </div>
-
-          {/* Pricing */}
-          <div style={{ marginTop: "128px", textAlign: "center" }}>
-            <h2
-              style={{
-                fontSize: "clamp(28px, 4vw, 40px)",
-                fontWeight: 700,
-                marginBottom: "16px",
-              }}
-            >
-              One plan supports your entire business.
-            </h2>
-            <p style={{ color: "#6b7280", marginBottom: "48px" }}>
-              One plan. Everything included. No hidden fees.
-            </p>
-
-            <div
-              style={{
-                maxWidth: "448px",
-                margin: "0 auto",
-                padding: "32px",
-                borderRadius: "16px",
-                backgroundColor: "#f9fafb",
-                border: "1px solid #e5e7eb",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  justifyContent: "center",
-                  gap: "8px",
-                  marginBottom: "24px",
-                }}
-              >
-                <span style={{ fontSize: "48px", fontWeight: 700 }}>$50</span>
-                <span style={{ color: "#6b7280" }}>/month</span>
-              </div>
-              <div
-                style={{
-                  fontSize: "14px",
-                  color: "#6b7280",
-                  marginBottom: "24px",
-                }}
-              >
-                or $500/year (save $100)
-              </div>
-              <ul
-                style={{
-                  listStyle: "none",
-                  padding: 0,
-                  margin: "0 0 32px",
-                  textAlign: "left",
-                }}
-              >
-                {[
-                  "Custom content uploads",
-                  "Free landing page",
-                  "Subscriber management",
-                  "Advanced analytics",
-                  "Customizable branding",
-                  "Stripe payments & payouts",
-                  "Only 20% platform fee on subscriber revenue",
-                ].map((item, i) => (
-                  <li
-                    key={i}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                      color: "#6b7280",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    <svg
-                      style={{
-                        width: "20px",
-                        height: "20px",
-                        color: "#22c55e",
-                        flexShrink: 0,
-                      }}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/coach/signup"
-                className="btn btn-primary"
-                style={{ width: "100%", padding: "16px", fontSize: "16px" }}
-              >
-                Start Your Coaching Business
-              </Link>
-            </div>
-          </div>
+      {/* Hero Section */}
+      <main
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+          padding: "80px 24px 80px",
+          textAlign: "center",
+        }}
+      >
+        {/* Logo Icon */}
+        <div style={{ marginBottom: "60px" }}>
+          <Image
+            src="/logo.png"
+            alt="Daily Companion Logo"
+            width={120}
+            height={120}
+            style={{ width: "120px", height: "120px" }}
+          />
         </div>
-      </main>
 
-      {/* Footer */}
-      <footer style={{ borderTop: "1px solid #e5e7eb", padding: "32px 0" }}>
-        <div
+        {/* Main Headline */}
+        <h1
           style={{
-            maxWidth: "1200px",
-            margin: "0 auto",
-            padding: "0 24px",
-            textAlign: "center",
-            fontSize: "14px",
-            color: "#6b7280",
+            fontSize: "clamp(42px, 6vw, 72px)",
+            fontWeight: 700,
+            lineHeight: 1.1,
+            letterSpacing: "-0.02em",
+            marginBottom: "32px",
+            color: "#000000",
+            maxWidth: "900px",
           }}
         >
-          © {new Date().getFullYear()} Daily Companion. All rights reserved.
-        </div>
-      </footer>
+          Grow Your Business.
+          <br />
+          Grow Your Impact.
+        </h1>
+
+        {/* Subtitle */}
+        <p
+          style={{
+            fontSize: "clamp(18px, 2vw, 22px)",
+            color: "#666666",
+            maxWidth: "800px",
+            margin: "0 auto 16px",
+            lineHeight: 1.6,
+          }}
+        >
+          A coaching companion built to scale your coaching business before,
+          during, and beyond coaching programs.
+        </p>
+
+        {/* Italic Tagline */}
+        <p
+          style={{
+            fontSize: "clamp(18px, 2vw, 22px)",
+            color: "#666666",
+            fontStyle: "italic",
+            marginBottom: "48px",
+          }}
+        >
+          Built by Coaches. For Coaches.
+        </p>
+
+        {/* CTA Button with Gradient */}
+        <Link
+          href="/coach/signup"
+          style={{
+            display: "inline-block",
+            padding: "20px 60px",
+            fontSize: "20px",
+            fontWeight: 600,
+            color: "#ffffff",
+            background: "linear-gradient(135deg, #DC2626 0%, #7C3AED 100%)",
+            border: "none",
+            borderRadius: "12px",
+            textDecoration: "none",
+            cursor: "pointer",
+            transition: "transform 0.2s, box-shadow 0.2s",
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "0 10px 25px rgba(220, 38, 38, 0.3)";
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
+        >
+          Get Started
+        </Link>
+      </main>
     </div>
   );
 }

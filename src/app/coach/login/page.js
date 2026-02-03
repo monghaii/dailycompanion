@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 export default function CoachLogin() {
@@ -62,21 +63,22 @@ export default function CoachLogin() {
     }
   };
 
-  const inputStyle = {
+  const inputStyle = (hasValue) => ({
     width: "100%",
-    padding: "12px 16px",
+    padding: "16px",
     fontSize: "16px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #e5e7eb",
     borderRadius: "8px",
-    backgroundColor: "#fff",
+    backgroundColor: hasValue ? "#dbeafe" : "#fff",
     color: "#111827",
     outline: "none",
-  };
+    transition: "background-color 0.2s",
+  });
 
   const labelStyle = {
     display: "block",
-    marginBottom: "6px",
-    fontSize: "14px",
+    marginBottom: "8px",
+    fontSize: "15px",
     fontWeight: 500,
     color: "#374151",
   };
@@ -85,49 +87,48 @@ export default function CoachLogin() {
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#f9fafb",
+        backgroundColor: "#f3f4f6",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "24px",
+        padding: "40px 24px",
       }}
     >
-      <div style={{ width: "100%", maxWidth: "420px" }}>
+      <div style={{ width: "100%", maxWidth: "540px" }}>
+        {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
-          <Link
-            href="/"
-            style={{
-              fontSize: "20px",
-              fontWeight: 600,
-              textDecoration: "none",
-              color: "inherit",
-            }}
-          >
-            <span style={{ color: "#2563eb" }}>daily</span>companion
+          <Link href="/" style={{ display: "inline-block" }}>
+            <Image
+              src="/logo.png"
+              alt="Daily Companion"
+              width={80}
+              height={80}
+              style={{ width: "80px", height: "80px", margin: "0 auto 24px", cursor: "pointer" }}
+            />
           </Link>
           <h1
             style={{
-              fontSize: "28px",
+              fontSize: "32px",
               fontWeight: 700,
-              marginTop: "24px",
               marginBottom: "8px",
               color: "#111827",
             }}
           >
             Welcome back, coach
           </h1>
-          <p style={{ color: "#6b7280", fontSize: "16px" }}>
+          <p style={{ color: "#6b7280", fontSize: "18px", margin: 0 }}>
             Sign in to access your dashboard
           </p>
         </div>
 
+        {/* Form */}
         <form
           onSubmit={handleSubmit}
           style={{
             backgroundColor: "#fff",
-            padding: "32px",
-            borderRadius: "12px",
-            border: "1px solid #e5e7eb",
+            padding: "40px",
+            borderRadius: "16px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
           }}
         >
           {error && (
@@ -139,33 +140,33 @@ export default function CoachLogin() {
                 border: "1px solid #fecaca",
                 color: "#dc2626",
                 fontSize: "14px",
-                marginBottom: "20px",
+                marginBottom: "24px",
               }}
             >
               {error}
             </div>
           )}
 
-          <div style={{ marginBottom: "20px" }}>
+          <div style={{ marginBottom: "24px" }}>
             <label style={labelStyle}>Email</label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              style={inputStyle}
-              placeholder="jane@example.com"
+              style={inputStyle(formData.email)}
+              placeholder="coaching@ivjaeger.com"
               required
             />
           </div>
 
-          <div style={{ marginBottom: "24px" }}>
+          <div style={{ marginBottom: "32px" }}>
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: "6px",
+                marginBottom: "8px",
               }}
             >
               <label style={labelStyle}>Password</label>
@@ -173,8 +174,9 @@ export default function CoachLogin() {
                 href="/coach/forgot-password"
                 style={{
                   fontSize: "14px",
-                  color: "#2563eb",
+                  color: "#3b82f6",
                   textDecoration: "none",
+                  fontWeight: 500,
                 }}
               >
                 Forgot password?
@@ -185,7 +187,7 @@ export default function CoachLogin() {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              style={inputStyle}
+              style={inputStyle(formData.password)}
               placeholder="••••••••"
               required
             />
@@ -196,15 +198,25 @@ export default function CoachLogin() {
             disabled={isLoading}
             style={{
               width: "100%",
-              padding: "14px",
-              fontSize: "16px",
-              fontWeight: 500,
-              backgroundColor: "#2563eb",
-              color: "#fff",
+              padding: "18px",
+              fontSize: "18px",
+              fontWeight: 700,
+              backgroundColor: isLoading ? "#9ca3af" : "#fbbf24",
+              color: "#000000",
               border: "none",
-              borderRadius: "8px",
+              borderRadius: "12px",
               cursor: isLoading ? "not-allowed" : "pointer",
-              opacity: isLoading ? 0.6 : 1,
+              transition: "all 0.2s",
+            }}
+            onMouseOver={(e) => {
+              if (!isLoading) {
+                e.currentTarget.style.backgroundColor = "#f59e0b";
+              }
+            }}
+            onMouseOut={(e) => {
+              if (!isLoading) {
+                e.currentTarget.style.backgroundColor = "#fbbf24";
+              }
             }}
           >
             {isLoading ? "Signing In..." : "Sign In"}
@@ -213,17 +225,17 @@ export default function CoachLogin() {
           <p
             style={{
               textAlign: "center",
-              marginTop: "20px",
-              fontSize: "14px",
+              marginTop: "24px",
+              fontSize: "15px",
               color: "#6b7280",
             }}
           >
             Don't have an account?{" "}
             <Link
               href="/coach/signup"
-              style={{ color: "#2563eb", textDecoration: "none" }}
+              style={{ color: "#dc2626", textDecoration: "none", fontWeight: 500 }}
             >
-              Start coaching
+              Sign up.
             </Link>
           </p>
         </form>

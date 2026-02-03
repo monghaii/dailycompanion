@@ -5455,6 +5455,7 @@ export default function UserDashboard() {
                       fontSize: "16px",
                       fontWeight: 600,
                       cursor: "pointer",
+                      marginBottom: "90px", // Clear the bottom tab bar
                     }}
                   >
                     Sign Out

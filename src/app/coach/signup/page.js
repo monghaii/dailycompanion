@@ -1,27 +1,31 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function CoachSignup() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    fullName: '',
-    businessName: '',
-    slug: '',
+    email: "",
+    password: "",
+    fullName: "",
+    businessName: "",
+    slug: "",
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    if (name === 'businessName') {
-      const slug = value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    if (name === "businessName") {
+      const slug = value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
       setFormData((prev) => ({ ...prev, slug }));
     }
   };
@@ -29,23 +33,23 @@ export default function CoachSignup() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, role: 'coach' }),
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...formData, role: "coach" }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to create account');
+        throw new Error(data.error || "Failed to create account");
       }
 
       // Redirect to dashboard - they'll see subscription prompt there
-      router.push('/dashboard');
+      router.push("/dashboard");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -53,113 +57,160 @@ export default function CoachSignup() {
     }
   };
 
-  const inputStyle = {
-    width: '100%',
-    padding: '12px 16px',
-    fontSize: '16px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    backgroundColor: '#fff',
-    color: '#111827',
-    outline: 'none',
-  };
+  const inputStyle = (hasValue) => ({
+    width: "100%",
+    padding: "16px",
+    fontSize: "16px",
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    backgroundColor: hasValue ? "#dbeafe" : "#fff",
+    color: "#111827",
+    outline: "none",
+    transition: "background-color 0.2s",
+  });
 
   const labelStyle = {
-    display: 'block',
-    marginBottom: '6px',
-    fontSize: '14px',
+    display: "block",
+    marginBottom: "8px",
+    fontSize: "15px",
     fontWeight: 500,
-    color: '#374151',
+    color: "#374151",
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-      <div style={{ width: '100%', maxWidth: '420px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <Link href="/" style={{ fontSize: '20px', fontWeight: 600, textDecoration: 'none', color: 'inherit' }}>
-            <span style={{ color: '#2563eb' }}>daily</span>companion
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#ffffff",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "40px 24px",
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: "540px" }}>
+        {/* Logo */}
+        <div style={{ textAlign: "center", marginBottom: "32px" }}>
+          <Link href="/" style={{ display: "inline-block" }}>
+            <Image
+              src="/logo.png"
+              alt="Daily Companion"
+              width={80}
+              height={80}
+              style={{
+                width: "80px",
+                height: "80px",
+                margin: "0 auto 24px",
+                cursor: "pointer",
+              }}
+            />
           </Link>
-          <h1 style={{ fontSize: '28px', fontWeight: 700, marginTop: '24px', marginBottom: '8px', color: '#111827' }}>
-            Start your coaching journey
-          </h1>
-          <p style={{ color: '#6b7280', fontSize: '16px' }}>
+          <p style={{ color: "#6b7280", fontSize: "18px", margin: 0 }}>
             Create your coach account and launch your platform
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ backgroundColor: '#fff', padding: '32px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+        {/* Form */}
+        <form
+          onSubmit={handleSubmit}
+          style={{
+            backgroundColor: "#fff",
+            padding: "40px",
+            borderRadius: "16px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+          }}
+        >
           {error && (
-            <div style={{ padding: '12px 16px', borderRadius: '8px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: '14px', marginBottom: '20px' }}>
+            <div
+              style={{
+                padding: "12px 16px",
+                borderRadius: "8px",
+                backgroundColor: "#fef2f2",
+                border: "1px solid #fecaca",
+                color: "#dc2626",
+                fontSize: "14px",
+                marginBottom: "24px",
+              }}
+            >
               {error}
             </div>
           )}
 
-          <div style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: "24px" }}>
             <label style={labelStyle}>Full Name</label>
             <input
               type="text"
               name="fullName"
               value={formData.fullName}
               onChange={handleChange}
-              style={inputStyle}
+              style={inputStyle(formData.fullName)}
               placeholder="Jane Smith"
               required
             />
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: "24px" }}>
             <label style={labelStyle}>Email</label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              style={inputStyle}
-              placeholder="jane@example.com"
+              style={inputStyle(formData.email)}
+              placeholder="coaching@ivjaeger.com"
               required
             />
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: "24px" }}>
             <label style={labelStyle}>Password</label>
             <input
               type="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
-              style={inputStyle}
+              style={inputStyle(formData.password)}
               placeholder="••••••••"
               minLength={8}
               required
             />
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <label style={labelStyle}>Business Name</label>
+          <div style={{ marginBottom: "24px" }}>
+            <label style={{ ...labelStyle, color: "#dc2626" }}>
+              Companion Name
+            </label>
             <input
               type="text"
               name="businessName"
               value={formData.businessName}
               onChange={handleChange}
-              style={inputStyle}
-              placeholder="Jane's Fitness Coaching"
+              style={inputStyle(formData.businessName)}
+              placeholder="Jane's Mindfulness Coaching"
               required
             />
           </div>
 
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: "32px" }}>
             <label style={labelStyle}>Your URL</label>
-            <div style={{ display: 'flex' }}>
-              <span style={{
-                padding: '12px 16px',
-                backgroundColor: '#f3f4f6',
-                border: '1px solid #d1d5db',
-                borderRight: 'none',
-                borderRadius: '8px 0 0 8px',
-                fontSize: '14px',
-                color: '#6b7280',
-                whiteSpace: 'nowrap'
-              }}>
+            <div
+              style={{
+                display: "flex",
+                border: "1px solid #e5e7eb",
+                borderRadius: "8px",
+                overflow: "hidden",
+              }}
+            >
+              <span
+                style={{
+                  padding: "16px",
+                  backgroundColor: "#f9fafb",
+                  fontSize: "15px",
+                  color: "#6b7280",
+                  whiteSpace: "nowrap",
+                  borderRight: "1px solid #e5e7eb",
+                }}
+              >
                 dailycompanion.com/coach/
               </span>
               <input
@@ -167,13 +218,20 @@ export default function CoachSignup() {
                 name="slug"
                 value={formData.slug}
                 onChange={handleChange}
-                style={{ ...inputStyle, borderRadius: '0 8px 8px 0' }}
+                style={{
+                  flex: 1,
+                  padding: "16px",
+                  fontSize: "16px",
+                  border: "none",
+                  outline: "none",
+                  backgroundColor: formData.slug ? "#dbeafe" : "#fff",
+                }}
                 placeholder="jane-fitness"
                 pattern="[a-z0-9-]+"
                 required
               />
             </div>
-            <p style={{ marginTop: '6px', fontSize: '12px', color: '#9ca3af' }}>
+            <p style={{ marginTop: "8px", fontSize: "13px", color: "#9ca3af" }}>
               Only lowercase letters, numbers, and hyphens
             </p>
           </div>
@@ -182,28 +240,62 @@ export default function CoachSignup() {
             type="submit"
             disabled={isLoading}
             style={{
-              width: '100%',
-              padding: '14px',
-              fontSize: '16px',
-              fontWeight: 500,
-              backgroundColor: '#2563eb',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              opacity: isLoading ? 0.6 : 1,
+              width: "100%",
+              padding: "18px",
+              fontSize: "18px",
+              fontWeight: 700,
+              backgroundColor: isLoading ? "#9ca3af" : "#fbbf24",
+              color: "#000000",
+              border: "none",
+              borderRadius: "12px",
+              cursor: isLoading ? "not-allowed" : "pointer",
+              transition: "all 0.2s",
+            }}
+            onMouseOver={(e) => {
+              if (!isLoading) {
+                e.currentTarget.style.backgroundColor = "#f59e0b";
+              }
+            }}
+            onMouseOut={(e) => {
+              if (!isLoading) {
+                e.currentTarget.style.backgroundColor = "#fbbf24";
+              }
             }}
           >
-            {isLoading ? 'Creating Account...' : 'Create Coach Account'}
+            {isLoading ? "Creating Account..." : "Create Coach Account"}
           </button>
 
-          <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: '#6b7280' }}>
-            Already have an account?{' '}
-            <Link href="/coach/login" style={{ color: '#2563eb', textDecoration: 'none' }}>Sign in</Link>
+          <p
+            style={{
+              textAlign: "center",
+              marginTop: "24px",
+              fontSize: "14px",
+              color: "#6b7280",
+            }}
+          >
+            Already have an account?{" "}
+            <Link
+              href="/coach/login"
+              style={{
+                color: "#2563eb",
+                textDecoration: "none",
+                fontWeight: 500,
+              }}
+            >
+              Sign in
+            </Link>
           </p>
         </form>
 
-        <p style={{ marginTop: '24px', textAlign: 'center', fontSize: '12px', color: '#9ca3af' }}>
+        <p
+          style={{
+            marginTop: "24px",
+            textAlign: "center",
+            fontSize: "13px",
+            color: "#9ca3af",
+            lineHeight: 1.6,
+          }}
+        >
           By signing up, you agree to our Terms of Service and Privacy Policy.
           <br />
           After signup, you'll be asked to subscribe ($50/mo or $500/yr).
