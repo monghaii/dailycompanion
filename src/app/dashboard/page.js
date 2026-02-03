@@ -1962,6 +1962,49 @@ Remember: You're here to empower them to find their own answers, not to fix thei
             </div>
             <div className="p-8">
               <div className="max-w-7xl mx-auto space-y-6">
+                {/* Platform Subscription Required Banner */}
+                {coach?.platform_subscription_status !== "active" && (
+                  <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-400 rounded-xl p-6 shadow-lg">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0">
+                        <svg
+                          className="w-8 h-8 text-amber-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">
+                          🚀 Activate Your Coach Account
+                        </h3>
+                        <p className="text-gray-700 mb-4">
+                          Subscribe to the coaching platform to unlock all features, connect your Stripe account, and start accepting clients.
+                        </p>
+                        <div className="flex flex-wrap gap-3 items-center">
+                          <button
+                            onClick={handleSubscribe}
+                            disabled={checkoutLoading}
+                            className="px-6 py-3 bg-[#fbbf24] text-black font-bold rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
+                          >
+                            {checkoutLoading ? "Loading..." : "Subscribe Now →"}
+                          </button>
+                          <span className="text-sm text-gray-600">
+                            💰 Only <strong>$149/month</strong> + $499 setup fee (one-time)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Stripe Connect Status */}
                 <div className="bg-white rounded-lg shadow p-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">
@@ -1987,45 +2030,57 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <p className="text-sm text-gray-600">
-                        Connect your Stripe account to receive payments from
-                        your clients.
-                      </p>
-                      <button
-                        onClick={handleConnectStripe}
-                        disabled={isStripeLoading}
-                        className="px-4 py-2 bg-[#fbbf24] text-black rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 font-semibold"
-                      >
-                        {isStripeLoading
-                          ? "Loading..."
-                          : "Connect Stripe Account"}
-                      </button>
+                      {coach?.platform_subscription_status === "active" ? (
+                        <>
+                          <p className="text-sm text-gray-600">
+                            Connect your Stripe account to receive payments from
+                            your clients.
+                          </p>
+                          <button
+                            onClick={handleConnectStripe}
+                            disabled={isStripeLoading}
+                            className="px-4 py-2 bg-[#fbbf24] text-black rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 font-semibold"
+                          >
+                            {isStripeLoading
+                              ? "Loading..."
+                              : "Connect Stripe Account"}
+                          </button>
+                        </>
+                      ) : (
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                          <p className="text-sm text-gray-600">
+                            🔒 Subscribe to the platform first to unlock Stripe Connect and start accepting clients.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {/* Payment Info */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                    Revenue Share
-                  </h2>
-                  <div className="space-y-2 text-sm text-gray-700">
-                    <p>
-                      • User subscription: <strong>$19.99/month</strong>
-                    </p>
-                    <p>
-                      • Platform fee: <strong>$7.00</strong>
-                    </p>
-                    <p>
-                      • You receive:{" "}
-                      <strong>$12.99 per subscriber/month</strong>
-                    </p>
-                    <p className="text-xs text-gray-500 mt-3">
-                      Payouts are processed automatically to your connected bank
-                      account.
-                    </p>
+                {/* Payment Info - Only show when subscribed */}
+                {coach?.platform_subscription_status === "active" && (
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                      Revenue Share
+                    </h2>
+                    <div className="space-y-2 text-sm text-gray-700">
+                      <p>
+                        • User subscription: <strong>$19.99/month</strong>
+                      </p>
+                      <p>
+                        • Platform fee: <strong>$7.00</strong>
+                      </p>
+                      <p>
+                        • You receive:{" "}
+                        <strong>$12.99 per subscriber/month</strong>
+                      </p>
+                      <p className="text-xs text-gray-500 mt-3">
+                        Payouts are processed automatically to your connected bank
+                        account.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
