@@ -3,6 +3,9 @@ import "./globals.css";
 export const metadata = {
   title: "Daily Companion — Coaching Platform",
   description: "Build a thriving online coaching practice. Share content, connect with clients, and grow your revenue.",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({ children }) {
