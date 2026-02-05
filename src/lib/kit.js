@@ -23,14 +23,14 @@ export async function addSubscriberToKit({
   formId = null,
 }) {
   if (!apiKey || !email) {
-    throw new Error('API key and email are required');
+    throw new Error("API key and email are required");
   }
 
   try {
     // Kit API endpoint
     const endpoint = formId
       ? `https://api.convertkit.com/v3/forms/${formId}/subscribe`
-      : 'https://api.convertkit.com/v3/subscribers';
+      : "https://api.convertkit.com/v3/subscribers";
 
     const payload = {
       api_key: apiKey,
@@ -54,12 +54,12 @@ export async function addSubscriberToKit({
       if (lastName) payload.fields.last_name = lastName;
     }
 
-    console.log('[Kit] Adding subscriber:', { email, tags, formId });
+    console.log("[Kit] Adding subscriber:", { email, tags, formId });
 
     const response = await fetch(endpoint, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
     });
@@ -67,14 +67,14 @@ export async function addSubscriberToKit({
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('[Kit] Error response:', data);
-      throw new Error(data.message || 'Failed to add subscriber to Kit');
+      console.error("[Kit] Error response:", data);
+      throw new Error(data.message || "Failed to add subscriber to Kit");
     }
 
-    console.log('[Kit] Subscriber added successfully');
+    console.log("[Kit] Subscriber added successfully");
     return data;
   } catch (error) {
-    console.error('[Kit] Error adding subscriber:', error);
+    console.error("[Kit] Error adding subscriber:", error);
     throw error;
   }
 }
@@ -86,13 +86,13 @@ export async function addSubscriberToKit({
  */
 export async function testKitConnection(apiKey) {
   if (!apiKey) {
-    return { success: false, error: 'API key is required' };
+    return { success: false, error: "API key is required" };
   }
 
   try {
     // Use the account endpoint to verify the API key
     const response = await fetch(
-      `https://api.convertkit.com/v3/account?api_key=${apiKey}`
+      `https://api.convertkit.com/v3/account?api_key=${apiKey}`,
     );
 
     const data = await response.json();
@@ -100,7 +100,7 @@ export async function testKitConnection(apiKey) {
     if (!response.ok) {
       return {
         success: false,
-        error: data.message || 'Invalid API key',
+        error: data.message || "Invalid API key",
       };
     }
 
@@ -112,10 +112,10 @@ export async function testKitConnection(apiKey) {
       },
     };
   } catch (error) {
-    console.error('[Kit] Connection test error:', error);
+    console.error("[Kit] Connection test error:", error);
     return {
       success: false,
-      error: error.message || 'Failed to connect to Kit',
+      error: error.message || "Failed to connect to Kit",
     };
   }
 }
@@ -129,25 +129,22 @@ export async function testKitConnection(apiKey) {
  */
 export async function tagSubscriber({ apiKey, email, tags }) {
   if (!apiKey || !email || !tags || tags.length === 0) {
-    throw new Error('API key, email, and tags are required');
+    throw new Error("API key, email, and tags are required");
   }
 
   try {
     const promises = tags.map(async (tagName) => {
-      const response = await fetch(
-        `https://api.convertkit.com/v3/tags`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            api_key: apiKey,
-            tag: { name: tagName },
-            email: email,
-          }),
-        }
-      );
+      const response = await fetch(`https://api.convertkit.com/v3/tags`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          api_key: apiKey,
+          tag: { name: tagName },
+          email: email,
+        }),
+      });
 
       if (!response.ok) {
         const data = await response.json();
@@ -158,10 +155,10 @@ export async function tagSubscriber({ apiKey, email, tags }) {
     });
 
     await Promise.all(promises);
-    console.log('[Kit] Subscriber tagged successfully');
+    console.log("[Kit] Subscriber tagged successfully");
     return { success: true };
   } catch (error) {
-    console.error('[Kit] Error tagging subscriber:', error);
+    console.error("[Kit] Error tagging subscriber:", error);
     throw error;
   }
 }
@@ -174,34 +171,31 @@ export async function tagSubscriber({ apiKey, email, tags }) {
  */
 export async function unsubscribeFromKit({ apiKey, email }) {
   if (!apiKey || !email) {
-    throw new Error('API key and email are required');
+    throw new Error("API key and email are required");
   }
 
   try {
-    const response = await fetch(
-      'https://api.convertkit.com/v3/unsubscribe',
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          api_key: apiKey,
-          email: email,
-        }),
-      }
-    );
+    const response = await fetch("https://api.convertkit.com/v3/unsubscribe", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        api_key: apiKey,
+        email: email,
+      }),
+    });
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to unsubscribe from Kit');
+      throw new Error(data.message || "Failed to unsubscribe from Kit");
     }
 
-    console.log('[Kit] Subscriber unsubscribed');
+    console.log("[Kit] Subscriber unsubscribed");
     return data;
   } catch (error) {
-    console.error('[Kit] Error unsubscribing:', error);
+    console.error("[Kit] Error unsubscribing:", error);
     throw error;
   }
 }

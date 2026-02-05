@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export default function CustomDomainWizard() {
   const [domains, setDomains] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newDomain, setNewDomain] = useState('');
+  const [newDomain, setNewDomain] = useState("");
   const [adding, setAdding] = useState(false);
   const [verifying, setVerifying] = useState(null);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [verificationData, setVerificationData] = useState(null);
 
   useEffect(() => {
@@ -19,35 +19,42 @@ export default function CustomDomainWizard() {
 
   // Auto-refresh SSL status for domains with pending SSL
   useEffect(() => {
-    const pendingSSLDomains = domains.filter(d => d.status === 'verified' && d.ssl_status === 'pending');
-    
+    const pendingSSLDomains = domains.filter(
+      (d) => d.status === "verified" && d.ssl_status === "pending",
+    );
+
     if (pendingSSLDomains.length === 0) return;
 
     // Check every 60 seconds for SSL updates
     const interval = setInterval(async () => {
-      console.log('[CustomDomain] Auto-checking SSL status...');
-      
+      console.log("[CustomDomain] Auto-checking SSL status...");
+
       // Check SSL for all pending domains
       for (const domain of pendingSSLDomains) {
         try {
-          const res = await fetch('/api/domains/check-ssl', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+          const res = await fetch("/api/domains/check-ssl", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ domainId: domain.id }),
           });
-          
+
           if (res.ok) {
             const data = await res.json();
-            if (data.updated && data.ssl_status === 'active') {
-              console.log('[CustomDomain] SSL is now active for', domain.full_domain);
-              setSuccess('✓ SSL certificate is now active! Your domain is fully ready.');
+            if (data.updated && data.ssl_status === "active") {
+              console.log(
+                "[CustomDomain] SSL is now active for",
+                domain.full_domain,
+              );
+              setSuccess(
+                "✓ SSL certificate is now active! Your domain is fully ready.",
+              );
             }
           }
         } catch (error) {
-          console.error('[CustomDomain] SSL check error:', error);
+          console.error("[CustomDomain] SSL check error:", error);
         }
       }
-      
+
       // Refresh the full list
       fetchDomains();
     }, 60000); // 60 seconds
@@ -57,13 +64,13 @@ export default function CustomDomainWizard() {
 
   async function fetchDomains() {
     try {
-      const res = await fetch('/api/domains');
+      const res = await fetch("/api/domains");
       const data = await res.json();
       if (res.ok) {
         setDomains(data.domains);
       }
     } catch (err) {
-      console.error('Failed to fetch domains:', err);
+      console.error("Failed to fetch domains:", err);
     } finally {
       setLoading(false);
     }
@@ -71,25 +78,25 @@ export default function CustomDomainWizard() {
 
   async function handleAddDomain() {
     if (!newDomain.trim()) {
-      setError('Please enter a domain');
+      setError("Please enter a domain");
       return;
     }
 
     setAdding(true);
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     try {
-      const res = await fetch('/api/domains/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/domains/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ domain: newDomain }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Failed to add domain');
+        setError(data.error || "Failed to add domain");
         return;
       }
 
@@ -97,17 +104,16 @@ export default function CustomDomainWizard() {
       if (data.message) {
         setSuccess(data.message);
       } else {
-        setSuccess('Domain added! Follow the instructions below to verify.');
+        setSuccess("Domain added! Follow the instructions below to verify.");
       }
-      
-      setNewDomain('');
+
+      setNewDomain("");
       setShowAddModal(false);
-      
+
       // Refresh the domains list
       await fetchDomains();
-      
     } catch (err) {
-      setError('Failed to add domain');
+      setError("Failed to add domain");
     } finally {
       setAdding(false);
     }
@@ -115,21 +121,26 @@ export default function CustomDomainWizard() {
 
   async function handleVerifyDomain(domainId) {
     setVerifying(domainId);
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
     setVerificationData(null);
 
     try {
-      const res = await fetch('/api/domains/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/domains/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ domainId }),
       });
 
       const data = await res.json();
 
       if (data.verified) {
-        setSuccess(data.message + (data.ssl_status === 'pending' ? ' SSL certificate is being issued...' : ''));
+        setSuccess(
+          data.message +
+            (data.ssl_status === "pending"
+              ? " SSL certificate is being issued..."
+              : ""),
+        );
         fetchDomains();
       } else {
         setError(data.message);
@@ -140,7 +151,7 @@ export default function CustomDomainWizard() {
         fetchDomains();
       }
     } catch (err) {
-      setError('Failed to verify domain');
+      setError("Failed to verify domain");
     } finally {
       setVerifying(null);
     }
@@ -148,98 +159,109 @@ export default function CustomDomainWizard() {
 
   async function handleRefreshStatus(domainId) {
     setVerifying(domainId);
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     try {
-      const res = await fetch('/api/domains/check-ssl', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/domains/check-ssl", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ domainId }),
       });
 
       const data = await res.json();
 
       if (data.success) {
-        if (data.ssl_status === 'active') {
-          setSuccess('✓ SSL certificate is now active! Your domain is fully ready.');
+        if (data.ssl_status === "active") {
+          setSuccess(
+            "✓ SSL certificate is now active! Your domain is fully ready.",
+          );
         } else {
-          setSuccess('Domain is verified. SSL certificate is still being issued...');
+          setSuccess(
+            "Domain is verified. SSL certificate is still being issued...",
+          );
         }
         fetchDomains();
       } else {
-        setError(data.error || 'Failed to check SSL status');
+        setError(data.error || "Failed to check SSL status");
       }
     } catch (err) {
-      setError('Failed to refresh status');
+      setError("Failed to refresh status");
     } finally {
       setVerifying(null);
     }
   }
 
   async function handleRemoveDomain(domainId) {
-    if (!confirm('Are you sure you want to remove this domain?')) {
+    if (!confirm("Are you sure you want to remove this domain?")) {
       return;
     }
 
     try {
-      const res = await fetch('/api/domains/remove', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/domains/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ domainId }),
       });
 
       if (res.ok) {
-        setSuccess('Domain removed successfully');
+        setSuccess("Domain removed successfully");
         fetchDomains();
       } else {
         const data = await res.json();
-        setError(data.error || 'Failed to remove domain');
+        setError(data.error || "Failed to remove domain");
       }
     } catch (err) {
-      setError('Failed to remove domain');
+      setError("Failed to remove domain");
     }
   }
 
   function getStatusBadge(status, sslStatus) {
     const badges = {
-      pending: { bg: '#FEF3C7', color: '#92400E', text: 'Pending Setup' },
-      verifying: { bg: '#DBEAFE', color: '#1E40AF', text: 'Verifying...' },
-      verified: { bg: '#D1FAE5', color: '#065F46', text: 'Verified ✓' },
-      failed: { bg: '#FEE2E2', color: '#991B1B', text: 'Failed' },
-      disabled: { bg: '#F3F4F6', color: '#6B7280', text: 'Disabled' },
+      pending: { bg: "#FEF3C7", color: "#92400E", text: "Pending Setup" },
+      verifying: { bg: "#DBEAFE", color: "#1E40AF", text: "Verifying..." },
+      verified: { bg: "#D1FAE5", color: "#065F46", text: "Verified ✓" },
+      failed: { bg: "#FEE2E2", color: "#991B1B", text: "Failed" },
+      disabled: { bg: "#F3F4F6", color: "#6B7280", text: "Disabled" },
     };
 
     const badge = badges[status] || badges.pending;
-    
+
     return (
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
         <span
           style={{
-            display: 'inline-block',
-            padding: '4px 12px',
-            borderRadius: '12px',
-            fontSize: '12px',
-            fontWeight: '600',
+            display: "inline-block",
+            padding: "4px 12px",
+            borderRadius: "12px",
+            fontSize: "12px",
+            fontWeight: "600",
             backgroundColor: badge.bg,
             color: badge.color,
           }}
         >
           {badge.text}
         </span>
-        {status === 'verified' && (
+        {status === "verified" && (
           <span
             style={{
-              display: 'inline-block',
-              padding: '4px 12px',
-              borderRadius: '12px',
-              fontSize: '12px',
-              fontWeight: '600',
-              backgroundColor: sslStatus === 'active' ? '#D1FAE5' : '#FEF3C7',
-              color: sslStatus === 'active' ? '#065F46' : '#92400E',
+              display: "inline-block",
+              padding: "4px 12px",
+              borderRadius: "12px",
+              fontSize: "12px",
+              fontWeight: "600",
+              backgroundColor: sslStatus === "active" ? "#D1FAE5" : "#FEF3C7",
+              color: sslStatus === "active" ? "#065F46" : "#92400E",
             }}
           >
-            {sslStatus === 'active' ? 'SSL Active 🔒' : 'SSL Pending'}
+            {sslStatus === "active" ? "SSL Active 🔒" : "SSL Pending"}
           </span>
         )}
       </div>
@@ -248,8 +270,8 @@ export default function CustomDomainWizard() {
 
   if (loading) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center' }}>
-        <div style={{ fontSize: '24px' }}>Loading domains...</div>
+      <div style={{ padding: "40px", textAlign: "center" }}>
+        <div style={{ fontSize: "24px" }}>Loading domains...</div>
       </div>
     );
   }
@@ -257,427 +279,614 @@ export default function CustomDomainWizard() {
   return (
     <div>
       {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <h2 style={{ fontSize: '28px', fontWeight: 'bold', margin: 0 }}>
-              Custom Domain
-            </h2>
-            {domains.some(d => d.status === 'verified' && d.ssl_status === 'pending') && (
-              <span style={{ 
-                fontSize: '12px', 
-                color: '#92400E', 
-                backgroundColor: '#FEF3C7',
-                padding: '4px 8px',
-                borderRadius: '6px',
-                fontWeight: '600'
-              }}>
-                🔄 Auto-checking SSL status...
-              </span>
-            )}
-          </div>
-          <p style={{ color: '#6B7280', fontSize: '16px' }}>
-            Connect your own domain to serve your coaching landing page and user experience.
-          </p>
+      <div style={{ marginBottom: "32px" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            marginBottom: "8px",
+          }}
+        >
+          <h2 style={{ fontSize: "28px", fontWeight: "bold", margin: 0 }}>
+            Custom Domain
+          </h2>
+          {domains.some(
+            (d) => d.status === "verified" && d.ssl_status === "pending",
+          ) && (
+            <span
+              style={{
+                fontSize: "12px",
+                color: "#92400E",
+                backgroundColor: "#FEF3C7",
+                padding: "4px 8px",
+                borderRadius: "6px",
+                fontWeight: "600",
+              }}
+            >
+              🔄 Auto-checking SSL status...
+            </span>
+          )}
         </div>
+        <p style={{ color: "#6B7280", fontSize: "16px" }}>
+          Connect your own domain to serve your coaching landing page and user
+          experience.
+        </p>
+      </div>
 
-        {/* Alerts */}
-        {error && (
+      {/* Alerts */}
+      {error && (
+        <div
+          style={{
+            padding: "16px",
+            marginBottom: "24px",
+            backgroundColor: "#FEE2E2",
+            color: "#991B1B",
+            borderRadius: "8px",
+            border: "1px solid #FCA5A5",
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div
+          style={{
+            padding: "16px",
+            marginBottom: "24px",
+            backgroundColor: "#D1FAE5",
+            color: "#065F46",
+            borderRadius: "8px",
+            border: "1px solid #6EE7B7",
+          }}
+        >
+          {success}
+        </div>
+      )}
+
+      {/* Add Domain Button */}
+      {domains.length === 0 ? (
+        <div
+          style={{
+            padding: "60px",
+            textAlign: "center",
+            backgroundColor: "#F9FAFB",
+            borderRadius: "12px",
+            border: "2px dashed #D1D5DB",
+          }}
+        >
+          <div style={{ fontSize: "48px", marginBottom: "16px" }}>🌐</div>
+          <h3
+            style={{ fontSize: "20px", fontWeight: "600", marginBottom: "8px" }}
+          >
+            No custom domain configured
+          </h3>
+          <p style={{ color: "#6B7280", marginBottom: "24px" }}>
+            Add your custom domain to get started
+          </p>
+          <button
+            onClick={() => setShowAddModal(true)}
+            style={{
+              padding: "12px 24px",
+              backgroundColor: "#fbbf24",
+              color: "black",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "16px",
+              fontWeight: "600",
+              cursor: "pointer",
+            }}
+            onMouseOver={(e) =>
+              (e.currentTarget.style.backgroundColor = "#f59e0b")
+            }
+            onMouseOut={(e) =>
+              (e.currentTarget.style.backgroundColor = "#fbbf24")
+            }
+          >
+            + Add Custom Domain
+          </button>
+        </div>
+      ) : (
+        <div>
+          {/* Info message */}
           <div
             style={{
-              padding: '16px',
-              marginBottom: '24px',
-              backgroundColor: '#FEE2E2',
-              color: '#991B1B',
-              borderRadius: '8px',
-              border: '1px solid #FCA5A5',
+              padding: "12px 16px",
+              marginBottom: "24px",
+              backgroundColor: "#FEF3C7",
+              color: "#92400E",
+              borderRadius: "8px",
+              border: "1px solid #FDE68A",
+              fontSize: "14px",
             }}
           >
-            {error}
+            ℹ️ Only one custom domain is allowed per coach account.
           </div>
-        )}
 
-        {success && (
+          {/* Domains List */}
           <div
-            style={{
-              padding: '16px',
-              marginBottom: '24px',
-              backgroundColor: '#D1FAE5',
-              color: '#065F46',
-              borderRadius: '8px',
-              border: '1px solid #6EE7B7',
-            }}
+            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
           >
-            {success}
-          </div>
-        )}
-
-        {/* Add Domain Button */}
-        {domains.length === 0 ? (
-          <div
-            style={{
-              padding: '60px',
-              textAlign: 'center',
-              backgroundColor: '#F9FAFB',
-              borderRadius: '12px',
-              border: '2px dashed #D1D5DB',
-            }}
-          >
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🌐</div>
-            <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px' }}>
-              No custom domain configured
-            </h3>
-            <p style={{ color: '#6B7280', marginBottom: '24px' }}>
-              Add your custom domain to get started
-            </p>
-            <button
-              onClick={() => setShowAddModal(true)}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#fbbf24',
-                color: 'black',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: 'pointer',
-              }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f59e0b'}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#fbbf24'}
-            >
-              + Add Custom Domain
-            </button>
-          </div>
-        ) : (
-          <div>
-            {/* Info message */}
-            <div
-              style={{
-                padding: '12px 16px',
-                marginBottom: '24px',
-                backgroundColor: '#FEF3C7',
-                color: '#92400E',
-                borderRadius: '8px',
-                border: '1px solid #FDE68A',
-                fontSize: '14px',
-              }}
-            >
-              ℹ️ Only one custom domain is allowed per coach account.
-            </div>
-
-            {/* Domains List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {domains.map((domain) => (
+            {domains.map((domain) => (
+              <div
+                key={domain.id}
+                style={{
+                  padding: "24px",
+                  backgroundColor: "white",
+                  borderRadius: "12px",
+                  border: "1px solid #E5E7EB",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                }}
+              >
                 <div
-                  key={domain.id}
                   style={{
-                    padding: '24px',
-                    backgroundColor: 'white',
-                    borderRadius: '12px',
-                    border: '1px solid #E5E7EB',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: "16px",
+                    flexWrap: "wrap",
+                    gap: "16px",
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
-                    <div>
-                      <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px' }}>
-                        {domain.full_domain}
-                      </h3>
-                      {getStatusBadge(domain.status, domain.ssl_status)}
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      {domain.status === 'pending' || domain.status === 'failed' ? (
-                        <button
-                          onClick={() => handleVerifyDomain(domain.id)}
-                          disabled={verifying === domain.id}
-                          style={{
-                            padding: '8px 16px',
-                            backgroundColor: verifying === domain.id ? '#9CA3AF' : '#10B981',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            cursor: verifying === domain.id ? 'not-allowed' : 'pointer',
-                          }}
-                        >
-                          {verifying === domain.id ? 'Verifying...' : 'Verify'}
-                        </button>
-                      ) : domain.status === 'verified' && domain.ssl_status === 'pending' ? (
-                        <button
-                          onClick={() => handleRefreshStatus(domain.id)}
-                          disabled={verifying === domain.id}
-                          style={{
-                            padding: '8px 16px',
-                            backgroundColor: verifying === domain.id ? '#9CA3AF' : '#fbbf24',
-                            color: verifying === domain.id ? 'white' : 'black',
-                            border: 'none',
-                            borderRadius: '6px',
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            cursor: verifying === domain.id ? 'not-allowed' : 'pointer',
-                          }}
-                        >
-                          {verifying === domain.id ? 'Checking...' : 'Check SSL Status'}
-                        </button>
-                      ) : null}
-                      <button
-                        onClick={() => handleRemoveDomain(domain.id)}
-                        style={{
-                          padding: '8px 16px',
-                          backgroundColor: '#EF4444',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-
-                  {domain.status === 'pending' || domain.status === 'failed' ? (
-                    <div
+                  <div>
+                    <h3
                       style={{
-                        padding: '16px',
-                        backgroundColor: '#F3F4F6',
-                        borderRadius: '8px',
-                        marginTop: '16px',
+                        fontSize: "20px",
+                        fontWeight: "600",
+                        marginBottom: "8px",
                       }}
                     >
-                      <h4 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>
-                        📋 DNS Configuration Instructions
-                      </h4>
-                      <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '16px' }}>
-                        Add the following DNS record to your domain provider:
-                      </p>
-                      <div
+                      {domain.full_domain}
+                    </h3>
+                    {getStatusBadge(domain.status, domain.ssl_status)}
+                  </div>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    {domain.status === "pending" ||
+                    domain.status === "failed" ? (
+                      <button
+                        onClick={() => handleVerifyDomain(domain.id)}
+                        disabled={verifying === domain.id}
                         style={{
-                          padding: '12px',
-                          backgroundColor: '#1F2937',
-                          color: '#10B981',
-                          borderRadius: '6px',
-                          fontFamily: 'monospace',
-                          fontSize: '14px',
+                          padding: "8px 16px",
+                          backgroundColor:
+                            verifying === domain.id ? "#9CA3AF" : "#10B981",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          fontSize: "14px",
+                          fontWeight: "600",
+                          cursor:
+                            verifying === domain.id ? "not-allowed" : "pointer",
                         }}
                       >
-                        <div>Type: <span style={{ color: 'white' }}>A</span></div>
-                        <div>Name: <span style={{ color: 'white' }}>{domain.subdomain || '@'}</span></div>
-                        <div>Value: <span style={{ color: 'white' }}>{domain.expected_a_record}</span></div>
-                        <div>TTL: <span style={{ color: 'white' }}>3600</span></div>
+                        {verifying === domain.id ? "Verifying..." : "Verify"}
+                      </button>
+                    ) : domain.status === "verified" &&
+                      domain.ssl_status === "pending" ? (
+                      <button
+                        onClick={() => handleRefreshStatus(domain.id)}
+                        disabled={verifying === domain.id}
+                        style={{
+                          padding: "8px 16px",
+                          backgroundColor:
+                            verifying === domain.id ? "#9CA3AF" : "#fbbf24",
+                          color: verifying === domain.id ? "white" : "black",
+                          border: "none",
+                          borderRadius: "6px",
+                          fontSize: "14px",
+                          fontWeight: "600",
+                          cursor:
+                            verifying === domain.id ? "not-allowed" : "pointer",
+                        }}
+                      >
+                        {verifying === domain.id
+                          ? "Checking..."
+                          : "Check SSL Status"}
+                      </button>
+                    ) : null}
+                    <button
+                      onClick={() => handleRemoveDomain(domain.id)}
+                      style={{
+                        padding: "8px 16px",
+                        backgroundColor: "#EF4444",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        fontSize: "14px",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+
+                {domain.status === "pending" || domain.status === "failed" ? (
+                  <div
+                    style={{
+                      padding: "16px",
+                      backgroundColor: "#F3F4F6",
+                      borderRadius: "8px",
+                      marginTop: "16px",
+                    }}
+                  >
+                    <h4
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      📋 DNS Configuration Instructions
+                    </h4>
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "#6B7280",
+                        marginBottom: "16px",
+                      }}
+                    >
+                      Add the following DNS record to your domain provider:
+                    </p>
+                    <div
+                      style={{
+                        padding: "12px",
+                        backgroundColor: "#1F2937",
+                        color: "#10B981",
+                        borderRadius: "6px",
+                        fontFamily: "monospace",
+                        fontSize: "14px",
+                      }}
+                    >
+                      <div>
+                        Type: <span style={{ color: "white" }}>A</span>
                       </div>
+                      <div>
+                        Name:{" "}
+                        <span style={{ color: "white" }}>
+                          {domain.subdomain || "@"}
+                        </span>
+                      </div>
+                      <div>
+                        Value:{" "}
+                        <span style={{ color: "white" }}>
+                          {domain.expected_a_record}
+                        </span>
+                      </div>
+                      <div>
+                        TTL: <span style={{ color: "white" }}>3600</span>
+                      </div>
+                    </div>
 
-                      {/* Show TXT verification if stored in domain record */}
-                      {domain.verification_method === 'txt' && domain.txt_verification_code && (
-                        <div style={{ marginTop: '16px' }}>
-                          <p style={{ fontSize: '14px', color: '#991B1B', fontWeight: '600', marginBottom: '8px' }}>
+                    {/* Show TXT verification if stored in domain record */}
+                    {domain.verification_method === "txt" &&
+                      domain.txt_verification_code && (
+                        <div style={{ marginTop: "16px" }}>
+                          <p
+                            style={{
+                              fontSize: "14px",
+                              color: "#991B1B",
+                              fontWeight: "600",
+                              marginBottom: "8px",
+                            }}
+                          >
                             ⚠️ Ownership Verification Required
                           </p>
-                          <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '8px' }}>
-                            This domain is currently linked to another Vercel account. Please add this TXT record to verify ownership:
+                          <p
+                            style={{
+                              fontSize: "14px",
+                              color: "#6B7280",
+                              marginBottom: "8px",
+                            }}
+                          >
+                            This domain is currently linked to another Vercel
+                            account. Please add this TXT record to verify
+                            ownership:
                           </p>
                           <div
                             style={{
-                              padding: '12px',
-                              backgroundColor: '#FEF2F2',
-                              border: '1px solid #FECACA',
-                              color: '#991B1B',
-                              borderRadius: '6px',
-                              fontFamily: 'monospace',
-                              fontSize: '14px',
+                              padding: "12px",
+                              backgroundColor: "#FEF2F2",
+                              border: "1px solid #FECACA",
+                              color: "#991B1B",
+                              borderRadius: "6px",
+                              fontFamily: "monospace",
+                              fontSize: "14px",
                             }}
                           >
-                            <div>Type: <strong>TXT</strong></div>
-                            <div>Name: <strong>_vercel</strong></div>
-                            <div style={{ marginTop: '4px', wordBreak: 'break-all' }}>Value: <strong>{domain.txt_verification_code}</strong></div>
+                            <div>
+                              Type: <strong>TXT</strong>
+                            </div>
+                            <div>
+                              Name: <strong>_vercel</strong>
+                            </div>
+                            <div
+                              style={{
+                                marginTop: "4px",
+                                wordBreak: "break-all",
+                              }}
+                            >
+                              Value:{" "}
+                              <strong>{domain.txt_verification_code}</strong>
+                            </div>
                           </div>
-                          <p style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '8px' }}>
-                            💡 After adding both the A record and TXT record, click "Verify" to complete the setup.
+                          <p
+                            style={{
+                              fontSize: "12px",
+                              color: "#9CA3AF",
+                              marginTop: "8px",
+                            }}
+                          >
+                            💡 After adding both the A record and TXT record,
+                            click "Verify" to complete the setup.
                           </p>
                         </div>
                       )}
 
-                      {/* Show verification data from API response (transient state) */}
-                      {verificationData && !domain.txt_verification_code && (
-                        <div style={{ marginTop: '16px' }}>
-                          <p style={{ fontSize: '14px', color: '#991B1B', fontWeight: '600', marginBottom: '8px' }}>
-                            ⚠️ Ownership Verification Required
-                          </p>
-                          <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '8px' }}>
-                            This domain is currently linked to another provider. Please add this TXT record to verify ownership:
-                          </p>
-                          <div
-                            style={{
-                              padding: '12px',
-                              backgroundColor: '#FEF2F2',
-                              border: '1px solid #FECACA',
-                              color: '#991B1B',
-                              borderRadius: '6px',
-                              fontFamily: 'monospace',
-                              fontSize: '14px',
-                            }}
-                          >
-                            <div>Type: <strong>{verificationData.type}</strong></div>
-                            <div>Name: <strong>{verificationData.name}</strong></div>
-                            <div style={{ marginTop: '4px', wordBreak: 'break-all' }}>Value: <strong>{verificationData.value}</strong></div>
-                          </div>
-                        </div>
-                      )}
-
-                      <p style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '12px' }}>
-                        ⏱️ DNS propagation can take up to 48 hours. Click "Verify" to check status.
-                      </p>
-                      {domain.failed_reason && (
+                    {/* Show verification data from API response (transient state) */}
+                    {verificationData && !domain.txt_verification_code && (
+                      <div style={{ marginTop: "16px" }}>
+                        <p
+                          style={{
+                            fontSize: "14px",
+                            color: "#991B1B",
+                            fontWeight: "600",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          ⚠️ Ownership Verification Required
+                        </p>
+                        <p
+                          style={{
+                            fontSize: "14px",
+                            color: "#6B7280",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          This domain is currently linked to another provider.
+                          Please add this TXT record to verify ownership:
+                        </p>
                         <div
                           style={{
-                            marginTop: '12px',
-                            padding: '12px',
-                            backgroundColor: '#FEE2E2',
-                            color: '#991B1B',
-                            borderRadius: '6px',
-                            fontSize: '14px',
+                            padding: "12px",
+                            backgroundColor: "#FEF2F2",
+                            border: "1px solid #FECACA",
+                            color: "#991B1B",
+                            borderRadius: "6px",
+                            fontFamily: "monospace",
+                            fontSize: "14px",
                           }}
                         >
-                          ❌ {domain.failed_reason}
+                          <div>
+                            Type: <strong>{verificationData.type}</strong>
+                          </div>
+                          <div>
+                            Name: <strong>{verificationData.name}</strong>
+                          </div>
+                          <div
+                            style={{ marginTop: "4px", wordBreak: "break-all" }}
+                          >
+                            Value: <strong>{verificationData.value}</strong>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  ) : domain.status === 'verified' ? (
-                    <div
+                      </div>
+                    )}
+
+                    <p
                       style={{
-                        padding: '16px',
-                        backgroundColor: '#ECFDF5',
-                        borderRadius: '8px',
-                        marginTop: '16px',
+                        fontSize: "12px",
+                        color: "#9CA3AF",
+                        marginTop: "12px",
                       }}
                     >
-                      <h4 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px', color: '#065F46' }}>
-                        ✅ Domain Active!
-                      </h4>
-                      <p style={{ fontSize: '14px', color: '#047857' }}>
-                        Your landing page is now accessible at{' '}
-                        <a
-                          href={`https://${domain.full_domain}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ fontWeight: '600', textDecoration: 'underline' }}
+                      ⏱️ DNS propagation can take up to 48 hours. Click "Verify"
+                      to check status.
+                    </p>
+                    {domain.failed_reason && (
+                      <div
+                        style={{
+                          marginTop: "12px",
+                          padding: "12px",
+                          backgroundColor: "#FEE2E2",
+                          color: "#991B1B",
+                          borderRadius: "6px",
+                          fontSize: "14px",
+                        }}
+                      >
+                        ❌ {domain.failed_reason}
+                      </div>
+                    )}
+                  </div>
+                ) : domain.status === "verified" ? (
+                  <div
+                    style={{
+                      padding: "16px",
+                      backgroundColor: "#ECFDF5",
+                      borderRadius: "8px",
+                      marginTop: "16px",
+                    }}
+                  >
+                    <h4
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "600",
+                        marginBottom: "8px",
+                        color: "#065F46",
+                      }}
+                    >
+                      ✅ Domain Active!
+                    </h4>
+                    <p style={{ fontSize: "14px", color: "#047857" }}>
+                      Your landing page is now accessible at{" "}
+                      <a
+                        href={`https://${domain.full_domain}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          fontWeight: "600",
+                          textDecoration: "underline",
+                        }}
+                      >
+                        {domain.full_domain}
+                      </a>
+                    </p>
+                    {domain.ssl_status === "pending" && (
+                      <div
+                        style={{
+                          marginTop: "12px",
+                          padding: "12px",
+                          backgroundColor: "#FEF3C7",
+                          borderRadius: "6px",
+                        }}
+                      >
+                        <p
+                          style={{
+                            fontSize: "13px",
+                            color: "#92400E",
+                            marginBottom: "8px",
+                          }}
                         >
-                          {domain.full_domain}
-                        </a>
-                      </p>
-                      {domain.ssl_status === 'pending' && (
-                        <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#FEF3C7', borderRadius: '6px' }}>
-                          <p style={{ fontSize: '13px', color: '#92400E', marginBottom: '8px' }}>
-                            🔒 <strong>SSL Certificate Pending</strong>
-                          </p>
-                          <p style={{ fontSize: '12px', color: '#92400E', marginBottom: '8px' }}>
-                            Your domain is verified, but the SSL certificate is still being issued by Vercel. This typically takes 5-30 minutes.
-                          </p>
-                          <p style={{ fontSize: '12px', color: '#92400E' }}>
-                            💡 <em>Tip: This page auto-refreshes every 60 seconds, or click "Check SSL Status" above to check manually.</em>
-                          </p>
-                        </div>
-                      )}
-                      {domain.ssl_status === 'active' && (
-                        <p style={{ fontSize: '12px', color: '#047857', marginTop: '8px' }}>
-                          🔒 SSL certificate is active. Your domain is fully secured with HTTPS!
+                          🔒 <strong>SSL Certificate Pending</strong>
                         </p>
-                      )}
-                    </div>
-                  ) : null}
-                </div>
-              ))}
-            </div>
+                        <p
+                          style={{
+                            fontSize: "12px",
+                            color: "#92400E",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          Your domain is verified, but the SSL certificate is
+                          still being issued by Vercel. This typically takes
+                          5-30 minutes.
+                        </p>
+                        <p style={{ fontSize: "12px", color: "#92400E" }}>
+                          💡{" "}
+                          <em>
+                            Tip: This page auto-refreshes every 60 seconds, or
+                            click "Check SSL Status" above to check manually.
+                          </em>
+                        </p>
+                      </div>
+                    )}
+                    {domain.ssl_status === "active" && (
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#047857",
+                          marginTop: "8px",
+                        }}
+                      >
+                        🔒 SSL certificate is active. Your domain is fully
+                        secured with HTTPS!
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Add Domain Modal */}
-        {showAddModal && (
+      {/* Add Domain Modal */}
+      {showAddModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setShowAddModal(false)}
+        >
           <div
             style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0,0,0,0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 1000,
+              backgroundColor: "white",
+              borderRadius: "12px",
+              padding: "32px",
+              maxWidth: "500px",
+              width: "90%",
             }}
-            onClick={() => setShowAddModal(false)}
+            onClick={(e) => e.stopPropagation()}
           >
+            <h3
+              style={{
+                fontSize: "24px",
+                fontWeight: "bold",
+                marginBottom: "16px",
+              }}
+            >
+              Add Custom Domain
+            </h3>
+            <p style={{ color: "#6B7280", marginBottom: "24px" }}>
+              Enter your domain name (e.g., mycoach.com or
+              coaching.mycompany.com)
+            </p>
+            <input
+              type="text"
+              value={newDomain}
+              onChange={(e) => setNewDomain(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAddDomain()}
+              placeholder="mycoach.com"
+              style={{
+                width: "100%",
+                padding: "12px",
+                border: "1px solid #D1D5DB",
+                borderRadius: "8px",
+                fontSize: "16px",
+                marginBottom: "24px",
+                boxSizing: "border-box",
+              }}
+            />
             <div
               style={{
-                backgroundColor: 'white',
-                borderRadius: '12px',
-                padding: '32px',
-                maxWidth: '500px',
-                width: '90%',
+                display: "flex",
+                gap: "12px",
+                justifyContent: "flex-end",
               }}
-              onClick={(e) => e.stopPropagation()}
             >
-              <h3 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
-                Add Custom Domain
-              </h3>
-              <p style={{ color: '#6B7280', marginBottom: '24px' }}>
-                Enter your domain name (e.g., mycoach.com or coaching.mycompany.com)
-              </p>
-              <input
-                type="text"
-                value={newDomain}
-                onChange={(e) => setNewDomain(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddDomain()}
-                placeholder="mycoach.com"
+              <button
+                onClick={() => setShowAddModal(false)}
                 style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '1px solid #D1D5DB',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  marginBottom: '24px',
-                  boxSizing: 'border-box',
+                  padding: "12px 24px",
+                  backgroundColor: "#F3F4F6",
+                  color: "#374151",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  cursor: "pointer",
                 }}
-              />
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  style={{
-                    padding: '12px 24px',
-                    backgroundColor: '#F3F4F6',
-                    color: '#374151',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddDomain}
-                  disabled={adding}
-                  style={{
-                    padding: '12px 24px',
-                    backgroundColor: adding ? '#9CA3AF' : '#fbbf24',
-                    color: adding ? 'white' : 'black',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    cursor: adding ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  {adding ? 'Adding...' : 'Add Domain'}
-                </button>
-              </div>
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddDomain}
+                disabled={adding}
+                style={{
+                  padding: "12px 24px",
+                  backgroundColor: adding ? "#9CA3AF" : "#fbbf24",
+                  color: adding ? "white" : "black",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  cursor: adding ? "not-allowed" : "pointer",
+                }}
+              >
+                {adding ? "Adding..." : "Add Domain"}
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 }

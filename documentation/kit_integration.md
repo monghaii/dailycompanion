@@ -1,11 +1,13 @@
 # Kit (ConvertKit) Integration
 
 ## Overview
+
 The Kit integration allows each coach to automatically sync their subscribers to their own Kit (ConvertKit) email list. When a user subscribes to their coaching program, they are automatically added as a subscriber in the coach's Kit account.
 
 ## Setup Instructions
 
 ### 1. Database Migration
+
 Run the migration to add Kit fields to the coaches table:
 
 ```sql
@@ -14,6 +16,7 @@ Run the migration to add Kit fields to the coaches table:
 ```
 
 This adds the following columns to the `coaches` table:
+
 - `kit_api_key` - Encrypted Kit API key
 - `kit_enabled` - Boolean flag to enable/disable sync
 - `kit_form_id` - Optional form ID to subscribe users to
@@ -23,6 +26,7 @@ This adds the following columns to the `coaches` table:
 - `kit_error_message` - Error message if sync failed
 
 ### 2. Environment Variable
+
 Add to your `.env.local`:
 
 ```bash
@@ -31,6 +35,7 @@ KIT_ENCRYPTION_KEY="your-32-character-secret-key!!!"
 ```
 
 **Important**: This key should be:
+
 - Exactly 32 characters long
 - Random and secure
 - Never committed to git
@@ -52,6 +57,7 @@ Coaches can configure Kit integration in their dashboard:
 ## How It Works
 
 ### Automatic Sync
+
 When a user subscribes to a coach's program:
 
 1. Stripe webhook fires (`checkout.session.completed`)
@@ -68,17 +74,21 @@ When a user subscribes to a coach's program:
    - Updates sync status in database
 
 ### Tags Applied
+
 Every subscriber gets these tags automatically:
+
 - `status:active` (or inactive, canceled, etc.)
 - `coach:{coach_name}` - Name of their coach
 - Any custom tags configured by the coach
 
 ### Manual Sync
+
 Currently only automatic sync on subscription is supported. Future enhancement: manual sync button to sync existing users.
 
 ## API Endpoints
 
 ### Test Kit Connection
+
 ```javascript
 POST /api/coach/kit/test
 Body: {
@@ -96,6 +106,7 @@ Response: {
 ```
 
 ### Save Kit Settings
+
 ```javascript
 POST /api/coach/kit/settings
 Body: {
@@ -113,6 +124,7 @@ Response: {
 ```
 
 ### Get Kit Settings
+
 ```javascript
 GET /api/coach/kit/settings
 Cookie: session_token=...
@@ -130,47 +142,52 @@ Response: {
 ## Kit API Library
 
 ### Add Subscriber
+
 ```javascript
-import { addSubscriberToKit } from '@/lib/kit';
+import { addSubscriberToKit } from "@/lib/kit";
 
 await addSubscriberToKit({
-  apiKey: 'your_kit_api_key',
-  email: 'user@example.com',
-  firstName: 'John',
-  lastName: 'Doe',
-  tags: ['new-subscriber', 'premium'],
-  formId: '1234567' // optional
+  apiKey: "your_kit_api_key",
+  email: "user@example.com",
+  firstName: "John",
+  lastName: "Doe",
+  tags: ["new-subscriber", "premium"],
+  formId: "1234567", // optional
 });
 ```
 
 ### Test Connection
-```javascript
-import { testKitConnection } from '@/lib/kit';
 
-const result = await testKitConnection('your_kit_api_key');
+```javascript
+import { testKitConnection } from "@/lib/kit";
+
+const result = await testKitConnection("your_kit_api_key");
 // { success: true, account: { name: "...", primary_email: "..." } }
 ```
 
 ### Tag Subscriber
+
 ```javascript
-import { tagSubscriber } from '@/lib/kit';
+import { tagSubscriber } from "@/lib/kit";
 
 await tagSubscriber({
-  apiKey: 'your_kit_api_key',
-  email: 'user@example.com',
-  tags: ['engaged', 'premium-tier']
+  apiKey: "your_kit_api_key",
+  email: "user@example.com",
+  tags: ["engaged", "premium-tier"],
 });
 ```
 
 ## Security
 
 ### API Key Encryption
+
 - API keys are encrypted before storage using AES-256-CBC
 - Encryption key is stored in environment variable (never committed)
 - Keys are only decrypted when needed for API calls
 - Keys are never exposed in API responses
 
 ### Error Handling
+
 - Kit sync errors don't break the main subscription flow
 - Errors are logged and stored in `kit_error_message`
 - Coaches can see sync status in their dashboard
@@ -178,18 +195,21 @@ await tagSubscriber({
 ## Troubleshooting
 
 ### Sync Status Shows "Error"
+
 1. Check that API key is valid in Kit dashboard
 2. Verify API key hasn't been revoked
 3. Check error message in settings
 4. Test connection button to verify
 
 ### Users Not Appearing in Kit
+
 1. Verify Kit integration is **enabled**
 2. Check sync status in settings
 3. Look for error messages
 4. Verify API key has correct permissions
 
 ### API Key Not Working
+
 - Get fresh API key from Kit: Settings → Advanced → API
 - Click "Test Connection" to verify
 - Make sure key is from correct Kit account
@@ -197,6 +217,7 @@ await tagSubscriber({
 ## Future Enhancements
 
 ### Planned Features
+
 - [ ] Manual sync button for existing users
 - [ ] Bulk sync all users
 - [ ] Sync on subscription cancellation (update tags)
@@ -207,11 +228,13 @@ await tagSubscriber({
 ## Support
 
 ### Kit Documentation
+
 - [Kit API Docs](https://developers.convertkit.com/)
 - [API Authentication](https://developers.convertkit.com/#authentication)
 - [Subscribers API](https://developers.convertkit.com/#subscribers)
 
 ### Common Issues
+
 - **403 Forbidden**: API key invalid or revoked
 - **422 Unprocessable**: Email already exists (this is OK, subscriber will be updated)
 - **Rate Limiting**: Kit has rate limits, handled automatically with retries
