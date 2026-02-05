@@ -14,6 +14,24 @@ export async function POST() {
       );
     }
 
+    // Check if user is a test premium user
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_test_premium')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.is_test_premium) {
+      // Disable test premium flag
+      await supabase
+        .from('profiles')
+        .update({ is_test_premium: false })
+        .eq('id', user.id);
+        
+      // We continue to cancel the subscription record below if it exists
+      // This ensures we fall back to the subscription's natural expiration
+    }
+
     // Get user's subscription
     const { data: subscription, error: subError } = await supabase
       .from('user_subscriptions')

@@ -5629,164 +5629,146 @@ function UserDashboardContent() {
                 </div>
               ) : (
                 <>
-                  {/* Current Plan Card */}
-                  <div
-                    style={{
-                      backgroundColor: subscriptionStatus?.isPremium
-                        ? "#f3e8ff"
-                        : "#f9fafb",
-                      border: subscriptionStatus?.isPremium
-                        ? "3px solid #a855f7"
-                        : "1px solid #e5e7eb",
-                      borderRadius: "12px",
-                      padding: "20px",
-                      marginBottom: "20px",
-                      position: "relative",
-                    }}
-                  >
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: "16px",
-                        right: "16px",
-                        backgroundColor: subscriptionStatus?.isPremium
-                          ? primaryColor
-                          : "#6b7280",
-                        color: "#fff",
-                        fontSize: "12px",
-                        fontWeight: 700,
-                        padding: "4px 12px",
-                        borderRadius: "12px",
-                      }}
-                    >
-                      CURRENT
-                    </span>
-                    <h4
-                      style={{
-                        fontSize: "18px",
-                        fontWeight: 700,
-                        color: "#1a1a1a",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      {subscriptionStatus?.isPremium ? "Premium" : "Free"}
-                    </h4>
-                    <p
-                      style={{
-                        fontSize: "14px",
-                        color: "#6b7280",
-                        marginBottom: "12px",
-                      }}
-                    >
-                      {subscriptionStatus?.isPremium
-                        ? subscriptionStatus.subscription
-                          ? `Subscription to ${subscriptionStatus.subscription.coach.business_name}`
-                          : "Test Account (Manual Access)"
-                        : "Access to daily practices"}
-                    </p>
-                    <div
-                      style={{
-                        fontSize: "32px",
-                        fontWeight: 700,
-                        color: "#1a1a1a",
-                      }}
-                    >
-                      {subscriptionStatus?.isPremium
-                        ? subscriptionStatus.subscription
-                          ? `$${subscriptionStatus.subscription.pricePerMonth}`
-                          : "$0"
-                        : "$0"}
-                      <span style={{ fontSize: "18px" }}>/month</span>
+                  {/* Test Account Banner */}
+                  {subscriptionStatus?.status === 'test_premium' && (
+                    <div style={{
+                      backgroundColor: '#eff6ff', 
+                      border: '1px solid #bfdbfe',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      marginBottom: '20px',
+                      color: '#1e40af',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <span>🛠️</span>
+                      <div>
+                        <strong>Test Account Mode:</strong>
+                        <div style={{ fontSize: '12px', marginTop: '2px' }}>
+                          You have complimentary premium access for testing purposes.
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Plans List */}
+                  <div style={{ marginTop: "12px", marginBottom: "24px" }}>
+                    
+                    {/* Basic Plan */}
+                    <div style={{ 
+                      border: "1px solid #e5e7eb", 
+                      borderRadius: "12px", 
+                      padding: "16px",
+                      display: "flex", 
+                      justifyContent: "space-between", 
+                      alignItems: "center",
+                      backgroundColor: "#fff",
+                      marginBottom: "12px"
+                    }}>
+                      <div>
+                        <div style={{ fontWeight: 600, color: "#1a1a1a" }}>Basic</div>
+                        <div style={{ fontSize: "14px", color: "#6b7280" }}>Access to daily practices</div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontWeight: 700, fontSize: "18px", color: "#1a1a1a" }}>$0</div>
+                          <div style={{ fontSize: "12px", color: "#6b7280" }}>/month</div>
+                        </div>
+                        {subscriptionStatus?.isPremium ? (
+                          <button 
+                            onClick={handleCancelSubscription}
+                            disabled={cancelingSubscription}
+                            style={{
+                              padding: "8px 16px",
+                              backgroundColor: "#fff",
+                              color: "#dc2626",
+                              border: "1px solid #fecaca",
+                              borderRadius: "8px",
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              cursor: cancelingSubscription ? "not-allowed" : "pointer",
+                              whiteSpace: "nowrap"
+                            }}
+                          >
+                            {cancelingSubscription ? "..." : "Downgrade"}
+                          </button>
+                        ) : (
+                          <span style={{
+                            backgroundColor: "#f3f4f6",
+                            color: "#6b7280",
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            padding: "4px 12px",
+                            borderRadius: "12px"
+                          }}>
+                            CURRENT
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    {subscriptionStatus?.isPremium &&
-                      subscriptionStatus.subscription?.willCancelAtPeriodEnd && (
-                        <div
-                          style={{
-                            marginTop: "12px",
-                            padding: "12px",
-                            backgroundColor: "#fef3c7",
-                            borderRadius: "8px",
-                            fontSize: "13px",
-                            color: "#92400e",
-                          }}
-                        >
-                          ⚠️ Subscription will end on{" "}
-                          {new Date(
-                            subscriptionStatus.subscription.currentPeriodEnd,
-                          ).toLocaleDateString()}
+                    {/* Premium Plan */}
+                    <div style={{ 
+                      border: `1px solid ${subscriptionStatus?.isPremium ? primaryColor : '#e5e7eb'}`, 
+                      borderRadius: "12px", 
+                      padding: "16px",
+                      display: "flex", 
+                      justifyContent: "space-between", 
+                      alignItems: "center",
+                      backgroundColor: subscriptionStatus?.isPremium ? "#fdf4ff" : "#fff",
+                      boxShadow: subscriptionStatus?.isPremium ? `0 0 0 1px ${primaryColor}` : "none"
+                    }}>
+                      <div>
+                        <div style={{ fontWeight: 600, color: "#1a1a1a" }}>Premium Monthly</div>
+                        <div style={{ fontSize: "14px", color: "#6b7280" }}>Full access to all features</div>
+                        {subscriptionStatus?.isPremium && subscriptionStatus.subscription?.currentPeriodEnd && (
+                          <div style={{ fontSize: "12px", color: primaryColor, marginTop: "4px" }}>
+                            Next billing: {new Date(subscriptionStatus.subscription.currentPeriodEnd).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontWeight: 700, fontSize: "18px", color: "#1a1a1a" }}>
+                            ${((user?.coach?.user_monthly_price_cents || 2999) / 100)}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#6b7280" }}>/month</div>
                         </div>
-                      )}
-
-                    {subscriptionStatus?.isPremium &&
-                      subscriptionStatus.subscription?.currentPeriodEnd && (
-                        <p
-                          style={{
+                        {subscriptionStatus?.isPremium ? (
+                          <span style={{
+                            backgroundColor: primaryColor,
+                            color: "#fff",
                             fontSize: "12px",
-                            color: "#9ca3af",
-                            marginTop: "8px",
-                          }}
-                        >
-                          Next billing:{" "}
-                          {new Date(
-                            subscriptionStatus.subscription.currentPeriodEnd,
-                          ).toLocaleDateString()}
-                        </p>
-                      )}
+                            fontWeight: 700,
+                            padding: "4px 12px",
+                            borderRadius: "12px"
+                          }}>
+                            CURRENT
+                          </span>
+                        ) : (
+                          <button 
+                            onClick={handleUpgradeToPremium}
+                            disabled={upgradingToPremium || !user?.coach}
+                            style={{
+                              padding: "8px 16px",
+                              backgroundColor: primaryColor,
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "8px",
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              cursor: (upgradingToPremium || !user?.coach) ? "not-allowed" : "pointer",
+                              whiteSpace: "nowrap"
+                            }}
+                          >
+                            {upgradingToPremium ? "..." : "Upgrade"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-
-                  {/* Action Buttons */}
-                  {!subscriptionStatus?.isPremium ? (
-                    <button
-                      onClick={handleUpgradeToPremium}
-                      disabled={upgradingToPremium || !user?.coach}
-                      style={{
-                        width: "100%",
-                        padding: "16px",
-                        backgroundColor: upgradingToPremium
-                          ? "#9ca3af"
-                          : primaryColor,
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "8px",
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        cursor:
-                          upgradingToPremium || !user?.coach
-                            ? "not-allowed"
-                            : "pointer",
-                        marginBottom: "12px",
-                      }}
-                    >
-                      {upgradingToPremium ? "Loading..." : "Upgrade to Premium"}
-                    </button>
-                  ) : (
-                    subscriptionStatus.subscription &&
-                    !subscriptionStatus.subscription.willCancelAtPeriodEnd && (
-                      <button
-                        onClick={handleCancelSubscription}
-                        disabled={cancelingSubscription}
-                        style={{
-                          width: "100%",
-                          padding: "16px",
-                          backgroundColor: "#fff",
-                          color: "#dc2626",
-                          border: "1px solid #fecaca",
-                          borderRadius: "8px",
-                          fontSize: "16px",
-                          fontWeight: 600,
-                          cursor: cancelingSubscription
-                            ? "not-allowed"
-                            : "pointer",
-                          marginBottom: "12px",
-                        }}
-                      >
-                        {cancelingSubscription
-                          ? "Canceling..."
-                          : "Cancel Subscription"}
-                      </button>
-                    )
-                  )}
 
                   <button
                     onClick={handleLogout}
