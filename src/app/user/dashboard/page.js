@@ -185,9 +185,16 @@ function UserDashboardContent() {
       setIsLoading(false);
     } else {
       fetchUser();
-      fetchSubscriptionStatus();
+      // fetchSubscriptionStatus() moved to separate useEffect dependent on user
     }
   }, [isPreviewMode]);
+
+  // Fetch subscription status once user is loaded
+  useEffect(() => {
+    if (user && !isPreviewMode) {
+      fetchSubscriptionStatus();
+    }
+  }, [user, isPreviewMode]);
 
   useEffect(() => {
     if (user && !configFetched.current) {

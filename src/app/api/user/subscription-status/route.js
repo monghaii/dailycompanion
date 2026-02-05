@@ -13,6 +13,22 @@ export async function GET() {
       );
     }
 
+    // Get user profile to check test premium flag
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_test_premium')
+      .eq('id', user.id)
+      .single();
+
+    // If user is flagged as test premium, grant access immediately
+    if (profile?.is_test_premium === true) {
+      return NextResponse.json({
+        isPremium: true,
+        status: 'test_premium',
+        subscription: null,
+      });
+    }
+
     // Get user's subscription
     const { data: subscription, error: subError } = await supabase
       .from('user_subscriptions')
