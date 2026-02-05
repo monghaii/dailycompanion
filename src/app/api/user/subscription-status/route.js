@@ -22,10 +22,34 @@ export async function GET() {
 
     // If user is flagged as test premium, grant access immediately
     if (profile?.is_test_premium === true) {
+      // Fetch coach details to mock the subscription object for UI
+      const { data: userWithCoach } = await supabase
+        .from('profiles')
+        .select(`
+          coach_id,
+          coaches:coach_id (
+            business_name,
+            slug,
+            user_monthly_price_cents
+          )
+        `)
+        .eq('id', user.id)
+        .single();
+
+      // Mock subscription object
+      const mockSubscription = userWithCoach?.coaches ? {
+        id: 'test_subscription',
+        coach: userWithCoach.coaches,
+        pricePerMonth: userWithCoach.coaches.user_monthly_price_cents / 100,
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+        canceledAt: null,
+        willCancelAtPeriodEnd: false,
+      } : null;
+
       return NextResponse.json({
         isPremium: true,
         status: 'test_premium',
-        subscription: null,
+        subscription: mockSubscription,
       });
     }
 

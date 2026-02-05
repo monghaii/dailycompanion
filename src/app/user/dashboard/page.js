@@ -5679,7 +5679,9 @@ function UserDashboardContent() {
                       }}
                     >
                       {subscriptionStatus?.isPremium
-                        ? `Subscription to ${subscriptionStatus.subscription.coach.business_name}`
+                        ? subscriptionStatus.subscription
+                          ? `Subscription to ${subscriptionStatus.subscription.coach.business_name}`
+                          : "Test Account (Manual Access)"
                         : "Access to daily practices"}
                     </p>
                     <div
@@ -5690,13 +5692,15 @@ function UserDashboardContent() {
                       }}
                     >
                       {subscriptionStatus?.isPremium
-                        ? `$${subscriptionStatus.subscription.pricePerMonth}`
+                        ? subscriptionStatus.subscription
+                          ? `$${subscriptionStatus.subscription.pricePerMonth}`
+                          : "$0"
                         : "$0"}
                       <span style={{ fontSize: "18px" }}>/month</span>
                     </div>
 
                     {subscriptionStatus?.isPremium &&
-                      subscriptionStatus.subscription.willCancelAtPeriodEnd && (
+                      subscriptionStatus.subscription?.willCancelAtPeriodEnd && (
                         <div
                           style={{
                             marginTop: "12px",
@@ -5715,7 +5719,7 @@ function UserDashboardContent() {
                       )}
 
                     {subscriptionStatus?.isPremium &&
-                      subscriptionStatus.subscription.currentPeriodEnd && (
+                      subscriptionStatus.subscription?.currentPeriodEnd && (
                         <p
                           style={{
                             fontSize: "12px",
@@ -5757,6 +5761,7 @@ function UserDashboardContent() {
                       {upgradingToPremium ? "Loading..." : "Upgrade to Premium"}
                     </button>
                   ) : (
+                    subscriptionStatus.subscription &&
                     !subscriptionStatus.subscription.willCancelAtPeriodEnd && (
                       <button
                         onClick={handleCancelSubscription}
