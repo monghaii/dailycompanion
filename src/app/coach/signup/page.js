@@ -177,7 +177,7 @@ export default function CoachSignup() {
           </div>
 
           <div style={{ marginBottom: "24px" }}>
-            <label style={{ ...labelStyle, color: "#dc2626" }}>
+            <label style={labelStyle}>
               Companion Name
             </label>
             <input
