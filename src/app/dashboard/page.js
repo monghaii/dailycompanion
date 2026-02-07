@@ -1983,7 +1983,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       </div>
                       <div className="flex-1">
                         <h3 className="text-xl font-bold text-gray-900 mb-2">
-                          🚀 Activate Your Coach Account
+                          Activate Your Coach Account
                         </h3>
                         <p className="text-gray-700 mb-4">
                           Subscribe to the coaching platform to unlock all features, connect your Stripe account, and start accepting clients.
@@ -1996,41 +1996,38 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           >
                             {checkoutLoading ? "Loading..." : "Subscribe Now →"}
                           </button>
-                          <span className="text-sm text-gray-600">
-                            💰 Only <strong>$149/month</strong> + $499 setup fee (one-time)
-                          </span>
                         </div>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Stripe Connect Status */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                    Stripe Connect
-                  </h2>
-                  {coach?.stripe_account_status === "active" ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm text-gray-700">
-                          Connected and active
-                        </span>
+                {/* Stripe Connect Status - Only show when subscribed */}
+                {coach?.platform_subscription_status === "active" && (
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                      Stripe Connect
+                    </h2>
+                    {coach?.stripe_account_status === "active" ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                          <span className="text-sm text-gray-700">
+                            Connected and active
+                          </span>
+                        </div>
+                        <button
+                          onClick={handleOpenStripeDashboard}
+                          disabled={isStripeLoading}
+                          className="px-4 py-2 bg-[#fbbf24] text-black rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 font-semibold"
+                        >
+                          {isStripeLoading
+                            ? "Loading..."
+                            : "Open Stripe Dashboard"}
+                        </button>
                       </div>
-                      <button
-                        onClick={handleOpenStripeDashboard}
-                        disabled={isStripeLoading}
-                        className="px-4 py-2 bg-[#fbbf24] text-black rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 font-semibold"
-                      >
-                        {isStripeLoading
-                          ? "Loading..."
-                          : "Open Stripe Dashboard"}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {coach?.platform_subscription_status === "active" ? (
+                    ) : (
+                      <div className="space-y-4">
                         <>
                           <p className="text-sm text-gray-600">
                             Connect your Stripe account to receive payments from
@@ -2046,16 +2043,10 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               : "Connect Stripe Account"}
                           </button>
                         </>
-                      ) : (
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                          <p className="text-sm text-gray-600">
-                            🔒 Subscribe to the platform first to unlock Stripe Connect and start accepting clients.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Payment Info - Only show when subscribed */}
                 {coach?.platform_subscription_status === "active" && (

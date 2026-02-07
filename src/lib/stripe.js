@@ -57,7 +57,7 @@ export async function createCoachCheckoutSession({ coachId, profileId, email }) 
           name: 'Daily Companion Coach Monthly Plan',
           description: 'Monthly subscription for coaches to access the platform',
         },
-        unit_amount: 5000, // $50.00
+        unit_amount: 14900, // $149.00
         recurring: {
           interval: 'month',
         },
