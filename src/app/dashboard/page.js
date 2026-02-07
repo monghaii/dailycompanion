@@ -341,6 +341,8 @@ function DashboardContent() {
   const [savingSection, setSavingSection] = useState(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [showCountryModal, setShowCountryModal] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState("US");
   const [headerConfig, setHeaderConfig] = useState({
     title: "BrainPeace",
     subtitle: "Mental Fitness for Active Minds",
@@ -1560,11 +1562,18 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     }
   };
 
-  const handleConnectStripe = async () => {
+  const handleConnectStripe = () => {
+    setShowCountryModal(true);
+  };
+
+  const confirmConnectStripe = async () => {
     setIsStripeLoading(true);
+    setShowCountryModal(false);
     try {
       const res = await fetch("/api/stripe/connect", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ country: selectedCountry }),
       });
       const data = await res.json();
 
@@ -6108,6 +6117,53 @@ Remember: You're here to empower them to find their own answers, not to fix thei
               }}
               title="Mobile Preview"
             />
+          </div>
+        </div>
+      )}
+      
+      {/* Country Selection Modal */}
+      {showCountryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold mb-2">Select Your Country</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Please select the country where your bank account is located.
+            </p>
+            <select
+              className="w-full p-2 border rounded-md mb-6 bg-white text-gray-900"
+              value={selectedCountry}
+              onChange={(e) => setSelectedCountry(e.target.value)}
+            >
+              <option value="US">United States</option>
+              <option value="DE">Germany</option>
+              <option value="GB">United Kingdom</option>
+              <option value="CA">Canada</option>
+              <option value="FR">France</option>
+              <option value="ES">Spain</option>
+              <option value="IT">Italy</option>
+              <option value="NL">Netherlands</option>
+              <option value="IE">Ireland</option>
+              <option value="BE">Belgium</option>
+              <option value="AT">Austria</option>
+              <option value="AU">Australia</option>
+              <option value="NZ">New Zealand</option>
+              <option value="CH">Switzerland</option>
+              <option value="SG">Singapore</option>
+            </select>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowCountryModal(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmConnectStripe}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
+              >
+                Continue to Stripe
+              </button>
+            </div>
           </div>
         </div>
       )}

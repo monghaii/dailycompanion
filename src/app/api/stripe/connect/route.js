@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { getCurrentUserWithCoach } from '@/lib/auth';
 import { createConnectAccount, createConnectOnboardingLink } from '@/lib/stripe';
 
-export async function POST() {
+export async function POST(request) {
   try {
     const user = await getCurrentUserWithCoach();
+    const { country } = await request.json().catch(() => ({})); // Read country from body
 
     if (!user) {
       return NextResponse.json(
@@ -27,6 +28,7 @@ export async function POST() {
       const account = await createConnectAccount({
         coachId: user.coach.id,
         email: user.email,
+        country, // Pass country to creation function
       });
       stripeAccountId = account.id;
     }
