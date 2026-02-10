@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserWithCoach } from '@/lib/auth';
-import { createConnectAccount, createConnectOnboardingLink } from '@/lib/stripe';
+import { createConnectAccount, createConnectOnboardingLink, deleteConnectAccount, stripe } from '@/lib/stripe';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request) {
   try {
@@ -22,6 +23,41 @@ export async function POST(request) {
     }
 
     let stripeAccountId = user.coach.stripe_account_id;
+
+    // Check if we need to recreate the account
+    if (stripeAccountId) {
+      try {
+        const existingAccount = await stripe.accounts.retrieve(stripeAccountId);
+        
+        // Recreate if incomplete OR wrong country
+        const needsRecreate = 
+          !existingAccount.details_submitted || 
+          (country && existingAccount.country !== country);
+
+        if (needsRecreate) {
+          console.log(`Recreating Stripe account for coach ${user.coach.id}: incomplete=${!existingAccount.details_submitted}, country mismatch=${existingAccount.country} !== ${country}`);
+          
+          // Delete old account
+          await deleteConnectAccount(stripeAccountId);
+          
+          // Clear from database
+          await supabase
+            .from('coaches')
+            .update({ stripe_account_id: null, stripe_account_status: null })
+            .eq('id', user.coach.id);
+          
+          stripeAccountId = null;
+        }
+      } catch (error) {
+        // If account doesn't exist in Stripe, clear it from database
+        console.log(`Stripe account ${stripeAccountId} not found, clearing from database`);
+        await supabase
+          .from('coaches')
+          .update({ stripe_account_id: null, stripe_account_status: null })
+          .eq('id', user.coach.id);
+        stripeAccountId = null;
+      }
+    }
 
     // Create Stripe Connect account if doesn't exist
     if (!stripeAccountId) {

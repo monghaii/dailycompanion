@@ -145,6 +145,11 @@ export async function createConnectAccount({ coachId, email, country }) {
   return account;
 }
 
+// Delete Stripe Connect account
+export async function deleteConnectAccount(accountId) {
+  await stripe.accounts.del(accountId);
+}
+
 // Create Stripe Connect onboarding link
 export async function createConnectOnboardingLink(accountId, coachId) {
   const accountLink = await stripe.accountLinks.create({
