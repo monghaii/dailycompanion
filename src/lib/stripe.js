@@ -117,6 +117,8 @@ export async function createCoachCheckoutSession({ coachId, profileId, email }) 
 
 // Create Stripe Connect account for coach
 export async function createConnectAccount({ coachId, email, country }) {
+  console.log('🔧 createConnectAccount called with:', { coachId, email, country });
+  
   const accountData = {
     type: 'express',
     email,
@@ -132,9 +134,14 @@ export async function createConnectAccount({ coachId, email, country }) {
   // If country is provided, add it to account creation
   if (country) {
     accountData.country = country;
+    console.log('✅ Setting account country to:', country);
+  } else {
+    console.warn('⚠️ No country provided, Stripe will default to US');
   }
 
+  console.log('📤 Creating Stripe account with data:', JSON.stringify(accountData, null, 2));
   const account = await stripe.accounts.create(accountData);
+  console.log('✅ Account created:', account.id, 'Country:', account.country);
 
   // Update coach with Stripe account ID
   await supabase
