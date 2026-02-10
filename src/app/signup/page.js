@@ -110,8 +110,19 @@ function SignupContent() {
     );
   }
 
-  const businessName = coachData?.businessName || "Daily Companion";
-  const primaryColor = coachData?.branding?.primaryColor || "#6366f1";
+  const businessName = coachData?.coach?.business_name || "Your Coach";
+  const primaryColor = coachData?.coach?.primary_color || coachData?.branding?.primary_color || "#6366f1";
+  const logoUrl = coachData?.coach?.app_logo_url || coachData?.branding?.app_logo_url || null;
+  const logoSize = coachData?.coach?.app_logo_size || coachData?.branding?.app_logo_size || "medium";
+
+  // Size mapping
+  const getSizeStyle = (size) => {
+    switch (size) {
+      case "small": return { maxWidth: "120px", height: "auto" };
+      case "large": return { maxWidth: "240px", height: "auto" };
+      default: return { maxWidth: "180px", height: "auto" }; // medium
+    }
+  };
 
   return (
     <div
@@ -135,15 +146,15 @@ function SignupContent() {
         }}
       >
         {/* Branding */}
-        <div style={{ textAlign: "center", marginBottom: "32px" }}>
-          {coachData?.branding?.logoUrl ? (
+        <div style={{ textAlign: "center", marginBottom: "32px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          {logoUrl ? (
             <img
-              src={coachData.branding.logoUrl}
+              src={logoUrl}
               alt={businessName}
               style={{
-                maxWidth: "180px",
-                height: "auto",
-                marginBottom: "16px",
+                ...getSizeStyle(logoSize),
+                marginBottom: "12px",
+                objectFit: "contain",
               }}
             />
           ) : (
@@ -152,41 +163,20 @@ function SignupContent() {
                 fontSize: "28px",
                 fontWeight: 700,
                 color: "#1a1a1a",
-                marginBottom: "8px",
+                marginBottom: "12px",
               }}
             >
               {businessName}
             </h1>
           )}
-          {coachData?.tagline && (
-            <p
-              style={{
-                fontSize: "14px",
-                color: "#6b7280",
-                marginTop: "8px",
-              }}
-            >
-              {coachData.tagline}
-            </p>
-          )}
-        </div>
-
-        {/* Form Header */}
-        <div style={{ marginBottom: "28px", textAlign: "center" }}>
-          <h2
+          <p
             style={{
-              fontSize: "24px",
-              fontWeight: 700,
+              fontSize: "18px",
+              fontWeight: 600,
               color: "#1a1a1a",
-              marginBottom: "8px",
             }}
           >
-            Start Your Journey
-          </h2>
-          <p style={{ fontSize: "14px", color: "#6b7280" }}>
-            {plan === "premium"
-              ? "Create your account and upgrade to premium"
-              : "Create your free account and begin building mental resilience today"}
+            Sign up now!
           </p>
         </div>
 
@@ -392,7 +382,7 @@ function SignupContent() {
         >
           Already have an account?{" "}
           <a
-            href="/login"
+            href={coachSlug ? `/login?coach=${coachSlug}` : "/login"}
             style={{
               color: primaryColor,
               textDecoration: "none",

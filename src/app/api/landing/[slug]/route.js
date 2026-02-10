@@ -22,6 +22,15 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "Coach not found" }, { status: 404 });
     }
 
+    // Get branding config for app logo and primary color
+    const { data: coachConfig } = await supabase
+      .from("coach_configs")
+      .select("config")
+      .eq("coach_id", coach.id)
+      .single();
+
+    const brandingData = coachConfig?.config?.branding || {};
+
     // Get landing config
     const { data: landingConfig, error: configError } = await supabase
       .from("coach_landing_configs")
@@ -90,12 +99,16 @@ export async function GET(request, { params }) {
         landing_subheadline: coach.landing_subheadline,
         landing_cta: coach.landing_cta,
         logo_url: coach.logo_url,
+        app_logo_url: brandingData.app_logo_url || null,
+        app_logo_size: brandingData.app_logo_size || "medium",
+        primary_color: brandingData.primary_color || coach.theme_color || "#6366f1",
         theme_color: coach.theme_color,
         is_active: coach.is_active,
         monthly_price_cents: coach.user_monthly_price_cents,
         yearly_price_cents: coach.user_yearly_price_cents,
       },
       config,
+      branding: brandingData,
     };
 
     return NextResponse.json(response);

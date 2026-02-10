@@ -83,9 +83,10 @@ export default function CoachLandingPage() {
 
   const config = landingData?.config || {};
   const coach = landingData?.coach || {};
+  const branding = landingData?.branding || {};
   const pricing = config.pricing || {};
   const testimonials = config.testimonials || [];
-  const primaryColor = coach.theme_color || "#7c3aed";
+  const primaryColor = branding.primary_color || coach.theme_color || "#7c3aed";
 
   const formatPrice = (cents) => {
     return `$${(cents / 100).toFixed(2)}`;

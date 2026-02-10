@@ -15,6 +15,30 @@ function LoginContent() {
     email: "",
     password: "",
   });
+  const [coachData, setCoachData] = useState(null);
+  const [isCheckingTheme, setIsCheckingTheme] = useState(true);
+
+  useEffect(() => {
+    if (coachSlug) {
+      fetchCoachData();
+    } else {
+      setIsCheckingTheme(false);
+    }
+  }, [coachSlug]);
+
+  const fetchCoachData = async () => {
+    try {
+      const response = await fetch(`/api/landing/${coachSlug}`);
+      if (response.ok) {
+        const data = await response.json();
+        setCoachData(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch coach data:", err);
+    } finally {
+      setIsCheckingTheme(false);
+    }
+  };
 
   // Auto-fill test credentials if available
   useEffect(() => {
@@ -71,6 +95,20 @@ function LoginContent() {
     }
   };
 
+  const businessName = coachData?.coach?.business_name;
+  const primaryColor = coachData?.coach?.primary_color || coachData?.branding?.primary_color || "#2563eb";
+  const logoUrl = coachData?.coach?.app_logo_url || coachData?.branding?.app_logo_url || null;
+  const logoSize = coachData?.coach?.app_logo_size || coachData?.branding?.app_logo_size || "medium";
+
+  // Size mapping
+  const getSizeStyle = (size) => {
+    switch (size) {
+      case "small": return { maxWidth: "120px", height: "auto" };
+      case "large": return { maxWidth: "240px", height: "auto" };
+      default: return { maxWidth: "180px", height: "auto" }; // medium
+    }
+  };
+
   const inputStyle = {
     width: "100%",
     padding: "12px 16px",
@@ -90,6 +128,22 @@ function LoginContent() {
     color: "#374151",
   };
 
+  if (isCheckingTheme) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          backgroundColor: "#f9fafb",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div style={{ color: "#6b7280" }}>Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -102,7 +156,7 @@ function LoginContent() {
       }}
     >
       <div style={{ width: "100%", maxWidth: "420px" }}>
-        <div style={{ textAlign: "center", marginBottom: "32px" }}>
+        <div style={{ textAlign: "center", marginBottom: "32px", display: "flex", flexDirection: "column", alignItems: "center" }}>
           <Link
             href="/"
             style={{
@@ -110,15 +164,32 @@ function LoginContent() {
               fontWeight: 600,
               textDecoration: "none",
               color: "inherit",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
             }}
           >
-            <span style={{ color: "#2563eb" }}>daily</span>companion
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={businessName || "Logo"}
+                style={{
+                  ...getSizeStyle(logoSize),
+                  marginBottom: "16px",
+                  objectFit: "contain",
+                }}
+              />
+            ) : businessName ? (
+              <span style={{ color: primaryColor, fontSize: "28px", fontWeight: 700, marginBottom: "8px" }}>
+                {businessName}
+              </span>
+            ) : null}
           </Link>
           <h1
             style={{
-              fontSize: "28px",
+              fontSize: "24px",
               fontWeight: 700,
-              marginTop: "24px",
+              marginTop: "12px",
               marginBottom: "8px",
               color: "#111827",
             }}
@@ -182,7 +253,7 @@ function LoginContent() {
                 href="/forgot-password"
                 style={{
                   fontSize: "14px",
-                  color: "#2563eb",
+                  color: primaryColor,
                   textDecoration: "none",
                 }}
               >
@@ -208,7 +279,7 @@ function LoginContent() {
               padding: "14px",
               fontSize: "16px",
               fontWeight: 500,
-              backgroundColor: "#2563eb",
+              backgroundColor: primaryColor,
               color: "#fff",
               border: "none",
               borderRadius: "8px",
@@ -230,35 +301,11 @@ function LoginContent() {
             Don't have an account?{" "}
             <Link
               href={coachSlug ? `/signup?coach=${coachSlug}` : "/signup"}
-              style={{ color: "#2563eb", textDecoration: "none" }}
+              style={{ color: primaryColor, textDecoration: "none" }}
             >
               Sign up
             </Link>
           </p>
-
-          <div
-            style={{
-              marginTop: "20px",
-              paddingTop: "20px",
-              borderTop: "1px solid #e5e7eb",
-            }}
-          >
-            <p
-              style={{
-                textAlign: "center",
-                fontSize: "14px",
-                color: "#6b7280",
-              }}
-            >
-              Are you a coach?{" "}
-              <Link
-                href="/coach/login"
-                style={{ color: "#2563eb", textDecoration: "none" }}
-              >
-                Coach login
-              </Link>
-            </p>
-          </div>
         </form>
       </div>
     </div>
