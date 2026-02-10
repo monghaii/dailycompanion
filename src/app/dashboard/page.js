@@ -6130,7 +6130,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
               Please select the country where your bank account is located.
             </p>
             <select
-              className="w-full p-2 border rounded-md mb-6 bg-white text-gray-900"
+              className="w-full p-2 border rounded-md mb-4 bg-white text-gray-900"
               value={selectedCountry}
               onChange={(e) => setSelectedCountry(e.target.value)}
             >
@@ -6150,6 +6150,11 @@ Remember: You're here to empower them to find their own answers, not to fix thei
               <option value="CH">Switzerland</option>
               <option value="SG">Singapore</option>
             </select>
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-6">
+              <p className="text-sm text-blue-900">
+                <span className="font-semibold">Important:</span> When Stripe asks for your email, use the same email address you used to sign up for Daily Companion ({user?.email}).
+              </p>
+            </div>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowCountryModal(false)}
