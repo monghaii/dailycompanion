@@ -33,6 +33,10 @@ function UserDashboardContent() {
   });
   const [focusEntry, setFocusEntry] = useState(null);
   const [isSavingFocus, setIsSavingFocus] = useState(false);
+  const [showIntentionModal, setShowIntentionModal] = useState(false);
+  const [intentionObstacles, setIntentionObstacles] = useState("");
+  const [intentionFocusWord, setIntentionFocusWord] = useState("");
+  const [isSavingIntention, setIsSavingIntention] = useState(false);
   const [notesModified, setNotesModified] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("Notes saved successfully");
@@ -196,12 +200,53 @@ function UserDashboardContent() {
     }
   }, [user, isPreviewMode]);
 
+  // Handle subscription status from Stripe checkout
+  useEffect(() => {
+    const subscriptionParam = searchParams?.get("subscription");
+
+    if (subscriptionParam === "canceled") {
+      setToastMessage(
+        "Checkout was canceled. You can upgrade anytime from Settings.",
+      );
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 5000);
+
+      // Clean up URL parameter
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("subscription");
+        window.history.replaceState({}, "", url.pathname);
+      }
+    } else if (subscriptionParam === "success") {
+      setToastMessage(
+        "🎉 Welcome to Premium! Your subscription is now active.",
+      );
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 5000);
+
+      // Trigger confetti
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+      });
+
+      // Clean up URL parameter
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("subscription");
+        window.history.replaceState({}, "", url.pathname);
+      }
+
+      // Refresh subscription status
+      if (user && !isPreviewMode) {
+        fetchSubscriptionStatus();
+      }
+    }
+  }, [searchParams, user, isPreviewMode]);
+
   useEffect(() => {
     if (user && !configFetched.current) {
-      console.log(
-        "📞 useEffect calling fetchCoachConfig ONCE, user:",
-        user?.email,
-      );
       configFetched.current = true;
       if (isPreviewMode) {
         // Set mock coach config for preview
@@ -254,10 +299,6 @@ function UserDashboardContent() {
       }
     }
   }, [user, isPreviewMode]);
-
-  useEffect(() => {
-    console.log("🔄 coachConfig state changed to:", coachConfig);
-  }, [coachConfig]);
 
   // Listen for config updates from parent window (preview mode)
   useEffect(() => {
@@ -454,6 +495,8 @@ function UserDashboardContent() {
         });
         setDayNotes(data.entry.focus_notes || "");
         setNotesModified(false); // Reset modified state on load
+        setIntentionObstacles(data.entry.intention_obstacles || "");
+        setIntentionFocusWord(data.entry.intention_focus_word || "");
       }
     } catch (error) {
       console.error("Failed to fetch daily entry:", error);
@@ -641,9 +684,9 @@ function UserDashboardContent() {
     }
   };
 
-  const handleUpgradeToPremium = async () => {
+  const handleChangeTier = async (tier, interval = "monthly") => {
     if (!user?.coach) {
-      alert("Please sign up through a coach first");
+      alert("No coach assigned. Please contact support.");
       return;
     }
 
@@ -652,7 +695,11 @@ function UserDashboardContent() {
       const res = await fetch("/api/stripe/user-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ coachSlug: user.coach.slug }),
+        body: JSON.stringify({
+          coachSlug: user.coach.slug,
+          tier: tier,
+          interval: interval,
+        }),
       });
 
       const data = await res.json();
@@ -668,6 +715,11 @@ function UserDashboardContent() {
     } finally {
       setUpgradingToPremium(false);
     }
+  };
+
+  const handleUpgradeToPremium = async () => {
+    // Default to tier 2 for backward compatibility
+    await handleChangeTier(2, "monthly");
   };
 
   const handleCancelSubscription = async () => {
@@ -814,6 +866,36 @@ function UserDashboardContent() {
         ...prev,
         [task]: !newValue,
       }));
+    }
+  };
+
+  const saveIntention = async (obstacles, focusWord) => {
+    setIsSavingIntention(true);
+    try {
+      const todayStr = getTodayInUserTimezone();
+      const res = await fetch("/api/daily-entries/focus", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: todayStr,
+          task_2_completed: true,
+          intention_obstacles: obstacles,
+          intention_focus_word: focusWord,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setFocusEntry(data.entry);
+        setCompletedTasks((prev) => ({ ...prev, intention: true }));
+        setIntentionObstacles(obstacles);
+        setIntentionFocusWord(focusWord);
+        setShowIntentionModal(false);
+      }
+    } catch (error) {
+      console.error("Failed to save intention:", error);
+    } finally {
+      setIsSavingIntention(false);
     }
   };
 
@@ -1639,17 +1721,27 @@ function UserDashboardContent() {
                   <button
                     onClick={() => toggleTask("morning")}
                     style={{
-                      width: "24px",
-                      height: "24px",
+                      width: "28px",
+                      height: "28px",
                       borderRadius: "50%",
-                      border: "2px solid #d1d5db",
+                      border: completedTasks.morning ? "none" : "2px solid #d1d5db",
                       backgroundColor: completedTasks.morning
-                        ? "#22c55e"
+                        ? (coachConfig?.branding?.primary_color || "#ef4444")
                         : "#fff",
                       cursor: "pointer",
                       flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 0,
                     }}
-                  />
+                  >
+                    {completedTasks.morning && (
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M2 7L5.5 10.5L12 3.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </button>
                 </div>
                 {getTodaysAudio() && (
                   <div
@@ -1762,76 +1854,111 @@ function UserDashboardContent() {
                   borderRadius: "12px",
                   marginBottom: "16px",
                   boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "16px",
+                  cursor: "pointer",
+                }}
+                onClick={() => {
+                  setShowIntentionModal(true);
                 }}
               >
                 <div
-                  style={{
-                    width: "56px",
-                    height: "56px",
-                    backgroundColor: "#f3e8ff",
-                    borderRadius: "12px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    overflow: "hidden",
-                  }}
+                  style={{ display: "flex", alignItems: "center", gap: "16px" }}
                 >
-                  {coachConfig?.focus_tab?.task_2?.icon_url ? (
-                    <img
-                      src={coachConfig.focus_tab.task_2.icon_url}
-                      alt="Task Icon"
-                      style={{
-                        width: "36px",
-                        height: "36px",
-                        objectFit: "contain",
-                      }}
-                    />
-                  ) : (
-                    <svg
-                      width="28"
-                      height="28"
-                      viewBox="0 0 20 20"
-                      fill="#a855f7"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
-                    </svg>
-                  )}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <h3
+                  <div
                     style={{
-                      fontSize: "18px",
-                      fontWeight: 600,
-                      color: "#1a1a1a",
-                      marginBottom: "4px",
+                      width: "56px",
+                      height: "56px",
+                      backgroundColor: "#f3e8ff",
+                      borderRadius: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      overflow: "hidden",
                     }}
                   >
-                    {coachConfig?.focus_tab?.task_2?.title || "Daily Intention"}
-                  </h3>
-                  <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                    {coachConfig?.focus_tab?.task_2?.subtitle ||
-                      "Set your focus for the day"}
-                  </p>
+                    {coachConfig?.focus_tab?.task_2?.icon_url ? (
+                      <img
+                        src={coachConfig.focus_tab.task_2.icon_url}
+                        alt="Task Icon"
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          objectFit: "contain",
+                        }}
+                      />
+                    ) : (
+                      <svg
+                        width="28"
+                        height="28"
+                        viewBox="0 0 20 20"
+                        fill="#a855f7"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
+                      </svg>
+                    )}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h3
+                      style={{
+                        fontSize: "18px",
+                        fontWeight: 600,
+                        color: "#1a1a1a",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      {coachConfig?.focus_tab?.task_2?.title ||
+                        "Daily Intention"}
+                    </h3>
+                    <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                      {completedTasks.intention && intentionFocusWord
+                        ? intentionFocusWord
+                        : coachConfig?.focus_tab?.task_2?.subtitle ||
+                          "Set your focus for the day"}
+                    </p>
+                  </div>
+                  {completedTasks.intention ? (
+                    <div
+                      style={{
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "50%",
+                        backgroundColor:
+                          coachConfig?.branding?.primary_color || "#ef4444",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 14 14"
+                        fill="none"
+                      >
+                        <path
+                          d="M2 7L5.5 10.5L12 3.5"
+                          stroke="#fff"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "50%",
+                        border: "2px solid #d1d5db",
+                        backgroundColor: "#fff",
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
                 </div>
-                <button
-                  onClick={() => toggleTask("intention")}
-                  style={{
-                    width: "24px",
-                    height: "24px",
-                    borderRadius: "50%",
-                    border: "2px solid #d1d5db",
-                    backgroundColor: completedTasks.intention
-                      ? "#22c55e"
-                      : "#fff",
-                    cursor: "pointer",
-                    flexShrink: 0,
-                  }}
-                />
               </div>
             )}
 
@@ -1903,17 +2030,27 @@ function UserDashboardContent() {
                 <button
                   onClick={() => toggleTask("evening")}
                   style={{
-                    width: "24px",
-                    height: "24px",
+                    width: "28px",
+                    height: "28px",
                     borderRadius: "50%",
-                    border: "2px solid #d1d5db",
+                    border: completedTasks.evening ? "none" : "2px solid #d1d5db",
                     backgroundColor: completedTasks.evening
-                      ? "#22c55e"
+                      ? (coachConfig?.branding?.primary_color || "#ef4444")
                       : "#fff",
                     cursor: "pointer",
                     flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
                   }}
-                />
+                >
+                  {completedTasks.evening && (
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M2 7L5.5 10.5L12 3.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </button>
               </div>
             )}
 
@@ -3208,9 +3345,13 @@ function UserDashboardContent() {
                         marginBottom: "16px",
                       }}
                     >
-                      {(coachConfig?.coach_tab?.bot_profile_picture_url || user.coach.logo_url) ? (
+                      {coachConfig?.coach_tab?.bot_profile_picture_url ||
+                      user.coach.logo_url ? (
                         <img
-                          src={coachConfig?.coach_tab?.bot_profile_picture_url || user.coach.logo_url}
+                          src={
+                            coachConfig?.coach_tab?.bot_profile_picture_url ||
+                            user.coach.logo_url
+                          }
                           alt={user.coach.business_name}
                           style={{
                             width: "100px",
@@ -3856,6 +3997,7 @@ function UserDashboardContent() {
                   subtitle: "Community calls, programs & resources",
                   id: "resources",
                   isPremium: true,
+                  requiresTier3: true, // Only tier 3 users can access
                 },
                 {
                   icon: <Calendar size={24} color="#3b82f6" strokeWidth={2} />,
@@ -3894,8 +4036,9 @@ function UserDashboardContent() {
                   isPremium: false,
                 },
               ].map((item, idx) => {
-                const isLocked =
-                  item.isPremium && !subscriptionStatus?.isPremium;
+                const isLocked = item.requiresTier3
+                  ? subscriptionStatus?.tier !== 3
+                  : item.isPremium && !subscriptionStatus?.isPremium;
                 return (
                   <div
                     key={idx}
@@ -4264,8 +4407,8 @@ function UserDashboardContent() {
         {/* Resource Hub Page */}
         {activeTab === "more" && moreSubpage === "resources" && (
           <div style={{ marginTop: "24px", position: "relative" }}>
-            {/* Locked Overlay */}
-            {!subscriptionStatus?.isPremium && (
+            {/* Locked Overlay - Only Tier 3 users can access */}
+            {subscriptionStatus?.tier !== 3 && (
               <div
                 style={{
                   position: "fixed",
@@ -5630,24 +5773,27 @@ function UserDashboardContent() {
               ) : (
                 <>
                   {/* Test Account Banner */}
-                  {subscriptionStatus?.status === 'test_premium' && (
-                    <div style={{
-                      backgroundColor: '#eff6ff', 
-                      border: '1px solid #bfdbfe',
-                      borderRadius: '8px',
-                      padding: '12px',
-                      marginBottom: '20px',
-                      color: '#1e40af',
-                      fontSize: '14px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}>
+                  {subscriptionStatus?.status === "test_premium" && (
+                    <div
+                      style={{
+                        backgroundColor: "#eff6ff",
+                        border: "1px solid #bfdbfe",
+                        borderRadius: "8px",
+                        padding: "12px",
+                        marginBottom: "20px",
+                        color: "#1e40af",
+                        fontSize: "14px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
                       <span>🛠️</span>
                       <div>
                         <strong>Test Account Mode:</strong>
-                        <div style={{ fontSize: '12px', marginTop: '2px' }}>
-                          You have complimentary premium access for testing purposes.
+                        <div style={{ fontSize: "12px", marginTop: "2px" }}>
+                          You have complimentary premium access for testing
+                          purposes.
                         </div>
                       </div>
                     </div>
@@ -5655,29 +5801,50 @@ function UserDashboardContent() {
 
                   {/* Plans List */}
                   <div style={{ marginTop: "12px", marginBottom: "24px" }}>
-                    
-                    {/* Basic Plan */}
-                    <div style={{ 
-                      border: "1px solid #e5e7eb", 
-                      borderRadius: "12px", 
-                      padding: "16px",
-                      display: "flex", 
-                      justifyContent: "space-between", 
-                      alignItems: "center",
-                      backgroundColor: "#fff",
-                      marginBottom: "12px"
-                    }}>
+                    {/* Basic Plan (Tier 1) */}
+                    <div
+                      style={{
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "12px",
+                        padding: "16px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        backgroundColor: "#fff",
+                        marginBottom: "12px",
+                      }}
+                    >
                       <div>
-                        <div style={{ fontWeight: 600, color: "#1a1a1a" }}>Basic</div>
-                        <div style={{ fontSize: "14px", color: "#6b7280" }}>Access to daily practices</div>
+                        <div style={{ fontWeight: 600, color: "#1a1a1a" }}>
+                          Basic (Free)
+                        </div>
+                        <div style={{ fontSize: "14px", color: "#6b7280" }}>
+                          Access to daily practices
+                        </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "16px",
+                        }}
+                      >
                         <div style={{ textAlign: "right" }}>
-                          <div style={{ fontWeight: 700, fontSize: "18px", color: "#1a1a1a" }}>$0</div>
-                          <div style={{ fontSize: "12px", color: "#6b7280" }}>/month</div>
+                          <div
+                            style={{
+                              fontWeight: 700,
+                              fontSize: "18px",
+                              color: "#1a1a1a",
+                            }}
+                          >
+                            $0
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                            /month
+                          </div>
                         </div>
                         {subscriptionStatus?.isPremium ? (
-                          <button 
+                          <button
                             onClick={handleCancelSubscription}
                             disabled={cancelingSubscription}
                             style={{
@@ -5688,68 +5855,130 @@ function UserDashboardContent() {
                               borderRadius: "8px",
                               fontSize: "14px",
                               fontWeight: 600,
-                              cursor: cancelingSubscription ? "not-allowed" : "pointer",
-                              whiteSpace: "nowrap"
+                              cursor: cancelingSubscription
+                                ? "not-allowed"
+                                : "pointer",
+                              whiteSpace: "nowrap",
                             }}
                           >
                             {cancelingSubscription ? "..." : "Downgrade"}
                           </button>
                         ) : (
-                          <span style={{
-                            backgroundColor: "#f3f4f6",
-                            color: "#6b7280",
-                            fontSize: "12px",
-                            fontWeight: 700,
-                            padding: "4px 12px",
-                            borderRadius: "12px"
-                          }}>
+                          <span
+                            style={{
+                              backgroundColor: "#f3f4f6",
+                              color: "#6b7280",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              padding: "4px 12px",
+                              borderRadius: "12px",
+                            }}
+                          >
                             CURRENT
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Premium Plan */}
-                    <div style={{ 
-                      border: `1px solid ${subscriptionStatus?.isPremium ? primaryColor : '#e5e7eb'}`, 
-                      borderRadius: "12px", 
-                      padding: "16px",
-                      display: "flex", 
-                      justifyContent: "space-between", 
-                      alignItems: "center",
-                      backgroundColor: subscriptionStatus?.isPremium ? "#fdf4ff" : "#fff",
-                      boxShadow: subscriptionStatus?.isPremium ? `0 0 0 1px ${primaryColor}` : "none"
-                    }}>
+                    {/* Premium Plan (Tier 2) */}
+                    <div
+                      style={{
+                        border: `1px solid ${subscriptionStatus?.tier === 2 ? primaryColor : "#e5e7eb"}`,
+                        borderRadius: "12px",
+                        padding: "16px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        backgroundColor:
+                          subscriptionStatus?.tier === 2 ? "#fdf4ff" : "#fff",
+                        boxShadow:
+                          subscriptionStatus?.tier === 2
+                            ? `0 0 0 1px ${primaryColor}`
+                            : "none",
+                        marginBottom: "12px",
+                      }}
+                    >
                       <div>
-                        <div style={{ fontWeight: 600, color: "#1a1a1a" }}>Premium Monthly</div>
-                        <div style={{ fontSize: "14px", color: "#6b7280" }}>Full access to all features</div>
-                        {subscriptionStatus?.isPremium && subscriptionStatus.subscription?.currentPeriodEnd && (
-                          <div style={{ fontSize: "12px", color: primaryColor, marginTop: "4px" }}>
-                            Next billing: {new Date(subscriptionStatus.subscription.currentPeriodEnd).toLocaleDateString()}
-                          </div>
-                        )}
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{ fontWeight: 700, fontSize: "18px", color: "#1a1a1a" }}>
-                            ${((user?.coach?.user_monthly_price_cents || 2999) / 100)}
-                          </div>
-                          <div style={{ fontSize: "12px", color: "#6b7280" }}>/month</div>
+                        <div style={{ fontWeight: 600, color: "#1a1a1a" }}>
+                          Premium
                         </div>
-                        {subscriptionStatus?.isPremium ? (
-                          <span style={{
-                            backgroundColor: primaryColor,
-                            color: "#fff",
-                            fontSize: "12px",
-                            fontWeight: 700,
-                            padding: "4px 12px",
-                            borderRadius: "12px"
-                          }}>
+                        <div style={{ fontSize: "14px", color: "#6b7280" }}>
+                          Full access to all features
+                        </div>
+                        {subscriptionStatus?.tier === 2 &&
+                          subscriptionStatus.subscription?.currentPeriodEnd && (
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: primaryColor,
+                                marginTop: "4px",
+                              }}
+                            >
+                              Next billing:{" "}
+                              {new Date(
+                                subscriptionStatus.subscription
+                                  .currentPeriodEnd,
+                              ).toLocaleDateString()}
+                            </div>
+                          )}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "16px",
+                        }}
+                      >
+                        <div style={{ textAlign: "right" }}>
+                          <div
+                            style={{
+                              fontWeight: 700,
+                              fontSize: "18px",
+                              color: "#1a1a1a",
+                            }}
+                          >
+                            $19.99
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                            /month
+                          </div>
+                        </div>
+                        {subscriptionStatus?.tier === 2 ? (
+                          <span
+                            style={{
+                              backgroundColor: primaryColor,
+                              color: "#fff",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              padding: "4px 12px",
+                              borderRadius: "12px",
+                            }}
+                          >
                             CURRENT
                           </span>
+                        ) : subscriptionStatus?.tier === 3 ? (
+                          <button
+                            onClick={() => handleChangeTier(2, "monthly")}
+                            disabled={upgradingToPremium}
+                            style={{
+                              padding: "8px 16px",
+                              backgroundColor: "#fff",
+                              color: primaryColor,
+                              border: `1px solid ${primaryColor}`,
+                              borderRadius: "8px",
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              cursor: upgradingToPremium
+                                ? "not-allowed"
+                                : "pointer",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {upgradingToPremium ? "..." : "Downgrade"}
+                          </button>
                         ) : (
-                          <button 
-                            onClick={handleUpgradeToPremium}
+                          <button
+                            onClick={() => handleChangeTier(2, "monthly")}
                             disabled={upgradingToPremium || !user?.coach}
                             style={{
                               padding: "8px 16px",
@@ -5759,8 +5988,11 @@ function UserDashboardContent() {
                               borderRadius: "8px",
                               fontSize: "14px",
                               fontWeight: 600,
-                              cursor: (upgradingToPremium || !user?.coach) ? "not-allowed" : "pointer",
-                              whiteSpace: "nowrap"
+                              cursor:
+                                upgradingToPremium || !user?.coach
+                                  ? "not-allowed"
+                                  : "pointer",
+                              whiteSpace: "nowrap",
                             }}
                           >
                             {upgradingToPremium ? "..." : "Upgrade"}
@@ -5768,6 +6000,144 @@ function UserDashboardContent() {
                         )}
                       </div>
                     </div>
+
+                    {/* Premium Plus Plan (Tier 3) */}
+                    <div
+                      style={{
+                        border: `1px solid ${subscriptionStatus?.tier === 3 ? primaryColor : "#e5e7eb"}`,
+                        borderRadius: "12px",
+                        padding: "16px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        backgroundColor:
+                          subscriptionStatus?.tier === 3 ? "#fdf4ff" : "#fff",
+                        boxShadow:
+                          subscriptionStatus?.tier === 3
+                            ? `0 0 0 1px ${primaryColor}`
+                            : "none",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 600, color: "#1a1a1a" }}>
+                          Premium Plus
+                          <span
+                            style={{
+                              marginLeft: "8px",
+                              fontSize: "11px",
+                              backgroundColor: "#fbbf24",
+                              color: "#000",
+                              padding: "2px 8px",
+                              borderRadius: "4px",
+                              fontWeight: 700,
+                            }}
+                          >
+                            ELITE
+                          </span>
+                        </div>
+                        <div style={{ fontSize: "14px", color: "#6b7280" }}>
+                          Premium + exclusive Resource Hub
+                        </div>
+                        {subscriptionStatus?.tier === 3 &&
+                          subscriptionStatus.subscription?.currentPeriodEnd && (
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: primaryColor,
+                                marginTop: "4px",
+                              }}
+                            >
+                              Next billing:{" "}
+                              {new Date(
+                                subscriptionStatus.subscription
+                                  .currentPeriodEnd,
+                              ).toLocaleDateString()}
+                            </div>
+                          )}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "16px",
+                        }}
+                      >
+                        <div style={{ textAlign: "right" }}>
+                          <div
+                            style={{
+                              fontWeight: 700,
+                              fontSize: "18px",
+                              color: "#1a1a1a",
+                            }}
+                          >
+                            $
+                            {(
+                              (user?.coach?.user_monthly_price_cents || 4999) /
+                              100
+                            ).toFixed(2)}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                            /month
+                          </div>
+                        </div>
+                        {subscriptionStatus?.tier === 3 ? (
+                          <span
+                            style={{
+                              backgroundColor: primaryColor,
+                              color: "#fff",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              padding: "4px 12px",
+                              borderRadius: "12px",
+                            }}
+                          >
+                            CURRENT
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleChangeTier(3, "monthly")}
+                            disabled={upgradingToPremium || !user?.coach}
+                            style={{
+                              padding: "8px 16px",
+                              backgroundColor: primaryColor,
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "8px",
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              cursor:
+                                upgradingToPremium || !user?.coach
+                                  ? "not-allowed"
+                                  : "pointer",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {upgradingToPremium
+                              ? "..."
+                              : subscriptionStatus?.tier === 2
+                                ? "Upgrade"
+                                : "Select"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Yearly Billing Info */}
+                  <div
+                    style={{
+                      backgroundColor: "#eff6ff",
+                      border: "1px solid #bfdbfe",
+                      borderRadius: "8px",
+                      padding: "12px",
+                      marginBottom: "16px",
+                      fontSize: "13px",
+                      color: "#1e40af",
+                    }}
+                  >
+                    💡 <strong>Save with yearly billing:</strong> Get 1 month
+                    free when you choose yearly (pay for 11 months, get 12
+                    months access). Select yearly during checkout.
                   </div>
 
                   <button
@@ -5793,6 +6163,126 @@ function UserDashboardContent() {
           </div>
         )}
       </div>
+
+      {/* Modal for Daily Intention */}
+      {showIntentionModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "20px",
+          }}
+          onClick={() => setShowIntentionModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: "16px",
+              padding: "28px",
+              width: "100%",
+              maxWidth: "400px",
+              boxShadow: "0 10px 40px rgba(0,0,0,0.15)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "20px", color: "#1a1a1a" }}>
+              {coachConfig?.focus_tab?.task_2?.intention_modal_title || "Set Your Intention"}
+            </h3>
+
+            <div style={{ marginBottom: "16px" }}>
+              <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
+                {coachConfig?.focus_tab?.task_2?.intention_obstacles_label || "What might get in the way today?"}
+              </label>
+              <textarea
+                value={intentionObstacles}
+                onChange={(e) => setIntentionObstacles(e.target.value)}
+                placeholder={coachConfig?.focus_tab?.task_2?.intention_obstacles_placeholder || "Meetings, distractions, fatigue, worry about..."}
+                style={{
+                  width: "100%",
+                  minHeight: "80px",
+                  padding: "12px",
+                  fontSize: "15px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "10px",
+                  resize: "vertical",
+                  outline: "none",
+                  fontFamily: "inherit",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: "24px" }}>
+              <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
+                {coachConfig?.focus_tab?.task_2?.intention_focus_label || "One word to refocus your energy"}
+              </label>
+              <input
+                type="text"
+                value={intentionFocusWord}
+                onChange={(e) => setIntentionFocusWord(e.target.value)}
+                placeholder={coachConfig?.focus_tab?.task_2?.intention_focus_placeholder || "Peace, Presence, Trust, Joy..."}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  fontSize: "15px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "10px",
+                  outline: "none",
+                  fontFamily: "inherit",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                onClick={() => setShowIntentionModal(false)}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  backgroundColor: "#f3f4f6",
+                  color: "#374151",
+                  border: "none",
+                  borderRadius: "10px",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => saveIntention(intentionObstacles, intentionFocusWord)}
+                disabled={isSavingIntention || !intentionFocusWord.trim()}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  backgroundColor: (!intentionFocusWord.trim() || isSavingIntention)
+                    ? "#d1d5db"
+                    : (coachConfig?.branding?.primary_color || "#a855f7"),
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "10px",
+                  cursor: (!intentionFocusWord.trim() || isSavingIntention) ? "not-allowed" : "pointer",
+                  opacity: isSavingIntention ? 0.7 : 1,
+                }}
+              >
+                {isSavingIntention ? "Saving..." : "Set Intention"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal for Mindfulness Entry */}
       {showModal && (
@@ -6292,11 +6782,31 @@ function UserDashboardContent() {
                   : upgradeModalContext}
             </h2>
 
+            {/* Description */}
+            {upgradeModalContext === "Resource Hub" && (
+              <p
+                style={{
+                  textAlign: "center",
+                  color: "#6b7280",
+                  fontSize: "14px",
+                  marginBottom: "16px",
+                }}
+              >
+                Requires Premium Plus (Tier 3) for exclusive access to community
+                calls, programs & resources.
+              </p>
+            )}
+
             {/* CTA Button */}
             <button
               onClick={() => {
                 setShowUpgradeModal(false);
-                handleUpgradeToPremium();
+                // For Resource Hub, upgrade to tier 3, otherwise tier 2
+                if (upgradeModalContext === "Resource Hub") {
+                  handleChangeTier(3, "monthly");
+                } else {
+                  handleUpgradeToPremium();
+                }
               }}
               disabled={upgradingToPremium}
               style={{
@@ -6369,24 +6879,30 @@ function UserDashboardContent() {
 
 export default function UserDashboard() {
   return (
-    <Suspense fallback={
-      <div style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#f9fafb"
-      }}>
-        <div style={{
-          width: "40px",
-          height: "40px",
-          border: "3px solid #e5e7eb",
-          borderTop: "3px solid #ef4444",
-          borderRadius: "50%",
-          animation: "spin 1s linear infinite"
-        }} />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#f9fafb",
+          }}
+        >
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              border: "3px solid #e5e7eb",
+              borderTop: "3px solid #ef4444",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+            }}
+          />
+        </div>
+      }
+    >
       <UserDashboardContent />
     </Suspense>
   );

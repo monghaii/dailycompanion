@@ -116,6 +116,23 @@ export default function CoachLandingPage() {
         .fade-in {
           animation: fadeIn 0.6s ease-out;
         }
+
+        @media (max-width: 640px) {
+          .nav-bar {
+            padding: 16px 20px !important;
+          }
+          .nav-brand-text {
+            font-size: 16px !important;
+          }
+          .nav-logo {
+            width: 32px !important;
+            height: 32px !important;
+          }
+          .nav-login-btn {
+            font-size: 13px !important;
+            padding: 8px 16px !important;
+          }
+        }
       `}</style>
 
       <div
@@ -124,10 +141,79 @@ export default function CoachLandingPage() {
           background: `linear-gradient(135deg, ${primaryColor}15 0%, ${primaryColor}05 100%)`,
         }}
       >
+        {/* Navigation Bar */}
+        <nav
+          className="nav-bar"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "20px 40px",
+            maxWidth: "1400px",
+            margin: "0 auto",
+          }}
+        >
+          {/* Logo/Brand */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            {coach.logo_url && (
+              <img
+                src={coach.logo_url}
+                alt={coach.business_name}
+                className="nav-logo"
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                }}
+              />
+            )}
+            <span
+              className="nav-brand-text"
+              style={{
+                fontSize: "20px",
+                fontWeight: 700,
+                color: "#1a1a1a",
+              }}
+            >
+              {coach.business_name}
+            </span>
+          </div>
+
+          {/* Login Button */}
+          <button
+            className="nav-login-btn"
+            onClick={() => {
+              window.location.href = `/login?coach=${params.coachSlug}`;
+            }}
+            style={{
+              backgroundColor: "transparent",
+              color: primaryColor,
+              fontSize: "15px",
+              fontWeight: 600,
+              padding: "10px 24px",
+              borderRadius: "8px",
+              border: `2px solid ${primaryColor}`,
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = primaryColor;
+              e.target.style.color = "#fff";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = "transparent";
+              e.target.style.color = primaryColor;
+            }}
+          >
+            Log In
+          </button>
+        </nav>
+
         {/* Hero Section */}
         <section
           style={{
-            padding: "80px 20px 60px",
+            padding: "40px 20px 60px",
             maxWidth: "1200px",
             margin: "0 auto",
             textAlign: "center",
@@ -175,7 +261,9 @@ export default function CoachLandingPage() {
             </p>
 
             <button
-              onClick={() => window.location.href = `/signup?coach=${params.coachSlug}&plan=free`}
+              onClick={() =>
+                (window.location.href = `/signup?coach=${params.coachSlug}&plan=free`)
+              }
               style={{
                 backgroundColor: primaryColor,
                 color: "#fff",
@@ -203,49 +291,50 @@ export default function CoachLandingPage() {
         </section>
 
         {/* Coach Info Section */}
-        <section
-          style={{
-            padding: "60px 20px",
-            maxWidth: "800px",
-            margin: "0 auto",
-            backgroundColor: "#fff",
-            borderRadius: "24px",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-            marginBottom: "60px",
-          }}
-        >
-          <div style={{ textAlign: "center" }}>
-            <h2
-              style={{
-                fontSize: "32px",
-                fontWeight: 700,
-                marginBottom: "10px",
-                color: "#1a1a1a",
-              }}
-            >
-              {coach.business_name}
-            </h2>
-            <p
-              style={{
-                fontSize: "18px",
-                color: primaryColor,
-                fontWeight: 600,
-                marginBottom: "20px",
-              }}
-            >
-              {coach.tagline || "Coach"}
-            </p>
-            <p
-              style={{
-                fontSize: "16px",
-                color: "#4b5563",
-                lineHeight: 1.7,
-              }}
-            >
-              {coach.bio || "Dedicated to helping you achieve your goals."}
-            </p>
-          </div>
-        </section>
+        <div style={{ padding: "0 16px", marginBottom: "60px" }}>
+          <section
+            style={{
+              padding: "60px 20px",
+              maxWidth: "800px",
+              margin: "0 auto",
+              backgroundColor: "#fff",
+              borderRadius: "24px",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+            }}
+          >
+            <div style={{ textAlign: "center" }}>
+              <h2
+                style={{
+                  fontSize: "32px",
+                  fontWeight: 700,
+                  marginBottom: "10px",
+                  color: "#1a1a1a",
+                }}
+              >
+                {coach.business_name}
+              </h2>
+              <p
+                style={{
+                  fontSize: "18px",
+                  color: primaryColor,
+                  fontWeight: 600,
+                  marginBottom: "20px",
+                }}
+              >
+                {coach.tagline || "Coach"}
+              </p>
+              <p
+                style={{
+                  fontSize: "16px",
+                  color: "#4b5563",
+                  lineHeight: 1.7,
+                }}
+              >
+                {coach.bio || "Dedicated to helping you achieve your goals."}
+              </p>
+            </div>
+          </section>
+        </div>
 
         {/* Pricing Section */}
         <section
@@ -270,8 +359,10 @@ export default function CoachLandingPage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-              gap: "30px",
+              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+              gap: "24px",
+              maxWidth: "1100px",
+              margin: "0 auto",
             }}
           >
             {/* Free Plan */}
@@ -279,14 +370,14 @@ export default function CoachLandingPage() {
               style={{
                 backgroundColor: "#fff",
                 borderRadius: "20px",
-                padding: "40px 30px",
+                padding: "36px 26px",
                 boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
                 border: "2px solid #e5e7eb",
               }}
             >
               <h3
                 style={{
-                  fontSize: "24px",
+                  fontSize: "22px",
                   fontWeight: 700,
                   marginBottom: "10px",
                   textAlign: "center",
@@ -294,64 +385,66 @@ export default function CoachLandingPage() {
               >
                 Free
               </h3>
-              <div style={{ marginBottom: "30px", textAlign: "center" }}>
+              <div style={{ marginBottom: "26px", textAlign: "center" }}>
                 <span
                   style={{
-                    fontSize: "48px",
+                    fontSize: "44px",
                     fontWeight: 700,
                     color: "#6b7280",
                   }}
                 >
                   $0
                 </span>
-                <span style={{ fontSize: "18px", color: "#6b7280" }}>/month</span>
+                <span style={{ fontSize: "16px", color: "#6b7280" }}>
+                  /month
+                </span>
               </div>
 
               <ul
                 style={{
                   listStyle: "none",
                   padding: 0,
-                  marginBottom: "30px",
-                  minHeight: "150px",
+                  marginBottom: "26px",
+                  minHeight: "140px",
                 }}
               >
                 <li
                   style={{
-                    marginBottom: "12px",
+                    marginBottom: "10px",
                     display: "flex",
                     alignItems: "center",
-                    gap: "10px",
-                    fontSize: "15px",
+                    gap: "8px",
+                    fontSize: "14px",
                     color: "#4b5563",
                   }}
                 >
-                  <span style={{ color: "#6b7280", fontSize: "20px" }}>✓</span>
+                  <span style={{ color: "#6b7280", fontSize: "18px" }}>✓</span>
                   Daily Focus check-ins
                 </li>
                 <li
                   style={{
-                    marginBottom: "12px",
+                    marginBottom: "10px",
                     display: "flex",
                     alignItems: "center",
-                    gap: "10px",
-                    fontSize: "15px",
+                    gap: "8px",
+                    fontSize: "14px",
                     color: "#4b5563",
                   }}
                 >
-                  <span style={{ color: "#6b7280", fontSize: "20px" }}>✓</span>
+                  <span style={{ color: "#6b7280", fontSize: "18px" }}>✓</span>
                   Basic task tracking
                 </li>
                 <li
                   style={{
-                    marginBottom: "12px",
+                    marginBottom: "10px",
                     display: "flex",
                     alignItems: "center",
-                    gap: "10px",
-                    fontSize: "15px",
+                    gap: "8px",
+                    fontSize: "14px",
                     color: "#4b5563",
                   }}
                 >
-                  <span style={{ color: "#6b7280", fontSize: "20px" }}>✓</span>
+                  <span style={{ color: "#6b7280", fontSize: "18px" }}>✓</span>
                   Community support
                 </li>
               </ul>
@@ -364,9 +457,9 @@ export default function CoachLandingPage() {
                   width: "100%",
                   backgroundColor: "#f3f4f6",
                   color: "#6b7280",
-                  fontSize: "16px",
+                  fontSize: "15px",
                   fontWeight: 600,
-                  padding: "14px 20px",
+                  padding: "12px 18px",
                   borderRadius: "12px",
                   border: "2px solid #e5e7eb",
                   cursor: "pointer",
@@ -383,14 +476,14 @@ export default function CoachLandingPage() {
               </button>
             </div>
 
-            {/* Premium Plan */}
+            {/* Premium Plan (Tier 2) */}
             <div
               style={{
                 backgroundColor: "#fff",
                 borderRadius: "20px",
-                padding: "40px 30px",
-                boxShadow: `0 8px 32px ${primaryColor}30`,
-                border: `3px solid ${primaryColor}`,
+                padding: "36px 26px",
+                boxShadow: `0 6px 28px ${primaryColor}25`,
+                border: `2px solid ${primaryColor}`,
                 position: "relative",
               }}
             >
@@ -402,17 +495,18 @@ export default function CoachLandingPage() {
                   transform: "translateX(-50%)",
                   backgroundColor: primaryColor,
                   color: "#fff",
-                  padding: "4px 16px",
+                  padding: "4px 14px",
                   borderRadius: "20px",
-                  fontSize: "12px",
+                  fontSize: "11px",
                   fontWeight: 600,
+                  letterSpacing: "0.5px",
                 }}
               >
-                PREMIUM
+                POPULAR
               </div>
               <h3
                 style={{
-                  fontSize: "24px",
+                  fontSize: "22px",
                   fontWeight: 700,
                   marginBottom: "10px",
                   textAlign: "center",
@@ -420,46 +514,47 @@ export default function CoachLandingPage() {
               >
                 Premium
               </h3>
-              <div style={{ marginBottom: "30px", textAlign: "center" }}>
+              <div style={{ marginBottom: "26px", textAlign: "center" }}>
                 <span
                   style={{
-                    fontSize: "48px",
+                    fontSize: "44px",
                     fontWeight: 700,
                     color: primaryColor,
                   }}
                 >
                   $19.99
                 </span>
-                <span style={{ fontSize: "18px", color: "#6b7280" }}>/month</span>
+                <span style={{ fontSize: "16px", color: "#6b7280" }}>
+                  /month
+                </span>
               </div>
 
               <ul
                 style={{
                   listStyle: "none",
                   padding: 0,
-                  marginBottom: "30px",
-                  minHeight: "150px",
+                  marginBottom: "26px",
+                  minHeight: "140px",
                 }}
               >
-                {(pricing.features || [
+                {[
                   "Everything in Free",
-                  "AI Coach conversations",
-                  "Awareness tracking & insights",
-                  "Premium content library",
-                  "Advanced analytics",
-                ]).map((feature, idx) => (
+                  "AI-powered coaching",
+                  "Progress tracking & insights",
+                  "Unlimited access to all features",
+                ].map((feature, idx) => (
                   <li
                     key={idx}
                     style={{
-                      marginBottom: "12px",
+                      marginBottom: "10px",
                       display: "flex",
                       alignItems: "center",
-                      gap: "10px",
-                      fontSize: "15px",
+                      gap: "8px",
+                      fontSize: "14px",
                       color: "#4b5563",
                     }}
                   >
-                    <span style={{ color: primaryColor, fontSize: "20px" }}>
+                    <span style={{ color: primaryColor, fontSize: "18px" }}>
                       ✓
                     </span>
                     {feature}
@@ -469,26 +564,166 @@ export default function CoachLandingPage() {
 
               <button
                 onClick={() => {
-                  window.location.href = `/signup?coach=${params.coachSlug}&plan=premium`;
+                  window.location.href = `/signup?coach=${params.coachSlug}&plan=premium&tier=2`;
                 }}
                 style={{
                   width: "100%",
                   backgroundColor: primaryColor,
                   color: "#fff",
-                  fontSize: "16px",
+                  fontSize: "15px",
                   fontWeight: 600,
-                  padding: "14px 20px",
+                  padding: "12px 18px",
                   borderRadius: "12px",
                   border: "none",
                   cursor: "pointer",
                   transition: "filter 0.2s",
                 }}
-                onMouseEnter={(e) => (e.target.style.filter = "brightness(0.9)")}
+                onMouseEnter={(e) =>
+                  (e.target.style.filter = "brightness(0.9)")
+                }
                 onMouseLeave={(e) => (e.target.style.filter = "brightness(1)")}
               >
                 Start Premium
               </button>
             </div>
+
+            {/* Premium Plus Plan (Tier 3) */}
+            <div
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: "20px",
+                padding: "36px 26px",
+                boxShadow: "0 8px 36px rgba(251, 191, 36, 0.3)",
+                border: "3px solid #fbbf24",
+                position: "relative",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  top: "-12px",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  backgroundColor: "#fbbf24",
+                  color: "#000",
+                  padding: "4px 14px",
+                  borderRadius: "20px",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  letterSpacing: "0.5px",
+                }}
+              >
+                ELITE
+              </div>
+              <h3
+                style={{
+                  fontSize: "22px",
+                  fontWeight: 700,
+                  marginBottom: "10px",
+                  textAlign: "center",
+                }}
+              >
+                Premium Plus
+              </h3>
+              <div style={{ marginBottom: "26px", textAlign: "center" }}>
+                <span
+                  style={{
+                    fontSize: "44px",
+                    fontWeight: 700,
+                    color: "#ea580c",
+                  }}
+                >
+                  {formatPrice(
+                    landingData?.pricing?.tier3_price_cents ||
+                      coach.user_monthly_price_cents ||
+                      4999,
+                  )}
+                </span>
+                <span style={{ fontSize: "16px", color: "#6b7280" }}>
+                  /month
+                </span>
+              </div>
+
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  marginBottom: "26px",
+                  minHeight: "140px",
+                }}
+              >
+                {[
+                  "Everything in Premium",
+                  "Exclusive Resource Hub access",
+                  "Community calls & programs",
+                  "Curated learning library",
+                ].map((feature, idx) => (
+                  <li
+                    key={idx}
+                    style={{
+                      marginBottom: "10px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      fontSize: "14px",
+                      color: "#4b5563",
+                    }}
+                  >
+                    <span style={{ color: "#ea580c", fontSize: "18px" }}>
+                      ✓
+                    </span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                onClick={() => {
+                  window.location.href = `/signup?coach=${params.coachSlug}&plan=premium&tier=3`;
+                }}
+                style={{
+                  width: "100%",
+                  backgroundColor: "#fbbf24",
+                  color: "#000",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  padding: "12px 18px",
+                  borderRadius: "12px",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "filter 0.2s",
+                }}
+                onMouseEnter={(e) =>
+                  (e.target.style.filter = "brightness(0.9)")
+                }
+                onMouseLeave={(e) => (e.target.style.filter = "brightness(1)")}
+              >
+                Start Premium Plus
+              </button>
+            </div>
+          </div>
+
+          {/* Yearly Savings Note */}
+          <div
+            style={{
+              marginTop: "32px",
+              textAlign: "center",
+              padding: "16px",
+              backgroundColor: "#eff6ff",
+              borderRadius: "12px",
+              border: "1px solid #bfdbfe",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "14px",
+                color: "#1e40af",
+                margin: 0,
+              }}
+            >
+              💡 <strong>Save with yearly billing:</strong> Get 1 month free
+              when you choose yearly billing (11 months for the price of 12)
+            </p>
           </div>
         </section>
 
@@ -583,7 +818,9 @@ export default function CoachLandingPage() {
             Your transformation starts today
           </p>
           <button
-            onClick={() => window.location.href = `/signup?coach=${params.coachSlug}&plan=free`}
+            onClick={() =>
+              (window.location.href = `/signup?coach=${params.coachSlug}&plan=free`)
+            }
             style={{
               backgroundColor: primaryColor,
               color: "#fff",
@@ -598,9 +835,36 @@ export default function CoachLandingPage() {
           >
             {coach.landing_cta || "Start Your Journey"}
           </button>
+
+          {/* Login Link */}
+          <p
+            style={{
+              marginTop: "24px",
+              fontSize: "15px",
+              color: "#6b7280",
+            }}
+          >
+            Already have an account?{" "}
+            <a
+              href={`/login?coach=${params.coachSlug}`}
+              style={{
+                color: primaryColor,
+                fontWeight: 600,
+                textDecoration: "none",
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.textDecoration = "underline";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.textDecoration = "none";
+              }}
+            >
+              Log in
+            </a>
+          </p>
         </section>
       </div>
-
     </>
   );
 }

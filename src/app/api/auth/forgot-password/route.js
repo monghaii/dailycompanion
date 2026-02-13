@@ -4,14 +4,20 @@ import { createClient } from "@supabase/supabase-js";
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { email, isCoach } = body;
+    const { email, isCoach, coachSlug } = body;
 
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
     // Determine redirect URL based on user type
-    const redirectPath = isCoach ? "/coach/reset-password" : "/reset-password";
+    let redirectPath = isCoach ? "/coach/reset-password" : "/reset-password";
+    
+    // Append coach slug for branded reset flow if present
+    if (!isCoach && coachSlug) {
+      redirectPath += `?coach=${coachSlug}`;
+    }
+
     const redirectUrl = `${
       process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
     }${redirectPath}`;

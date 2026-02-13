@@ -1,4 +1,5 @@
 import "./globals.css";
+import SiteBanner from "@/components/SiteBanner";
 
 export const metadata = {
   title: "Daily Companion — Coaching Platform",
@@ -11,7 +12,10 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <SiteBanner />
+        {children}
+      </body>
     </html>
   );
 }

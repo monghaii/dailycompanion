@@ -9,10 +9,8 @@ export default function Home() {
       {/* Navigation */}
       <nav
         style={{
-          position: "fixed",
+          position: "sticky",
           top: 0,
-          left: 0,
-          right: 0,
           zIndex: 50,
           backgroundColor: "white",
         }}

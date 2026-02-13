@@ -70,17 +70,27 @@ export async function POST(request) {
           );
         } else if (session.metadata?.type === "user_subscription") {
           // User subscribed to coach
-          await supabase.from("user_subscriptions").upsert({
+          const subscriptionData = {
             user_id: session.metadata.userId,
             coach_id: session.metadata.coachId,
             stripe_subscription_id: session.subscription,
             stripe_customer_id: session.customer,
             status: "active",
             current_period_start: new Date().toISOString(),
-          });
+            subscription_tier:
+              parseInt(session.metadata.subscription_tier) || 2,
+            billing_interval: session.metadata.billing_interval || "monthly",
+            price_cents:
+              parseInt(session.metadata.price_cents) ||
+              (parseInt(session.metadata.subscription_tier) === 3
+                ? 4999
+                : 1999),
+          };
+
+          await supabase.from("user_subscriptions").upsert(subscriptionData);
 
           console.log(
-            `[Webhook] User subscription activated: user=${session.metadata.userId}, coach=${session.metadata.coachId}`,
+            `[Webhook] User subscription activated: user=${session.metadata.userId}, coach=${session.metadata.coachId}, tier=${subscriptionData.subscription_tier}`,
           );
 
           // Sync user to Kit (ConvertKit) if coach has it enabled

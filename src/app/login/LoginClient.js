@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 function LoginContent({ coachSlug, initialCoachData }) {
   const router = useRouter();
   // const searchParams = useSearchParams(); // No longer needed for slug
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
@@ -15,9 +15,14 @@ function LoginContent({ coachSlug, initialCoachData }) {
     password: "",
   });
   const [coachData, setCoachData] = useState(initialCoachData);
-  const [isCheckingTheme, setIsCheckingTheme] = useState(!initialCoachData && !!coachSlug);
+  const [isCheckingTheme, setIsCheckingTheme] = useState(
+    !initialCoachData && !!coachSlug,
+  );
 
   useEffect(() => {
+    // Clear any existing session
+    fetch("/api/auth/logout", { method: "POST" });
+
     if (!initialCoachData && coachSlug) {
       fetchCoachData();
     } else {
@@ -79,9 +84,8 @@ function LoginContent({ coachSlug, initialCoachData }) {
       let redirectPath;
       if (data.profile.role === "coach") {
         redirectPath = "/dashboard";
-      } else if (coachSlug) {
-        redirectPath = `/coach/${coachSlug}/dashboard`;
       } else {
+        // All end users go to /user/dashboard regardless of coach slug
         redirectPath = "/user/dashboard";
       }
 
@@ -95,16 +99,26 @@ function LoginContent({ coachSlug, initialCoachData }) {
   };
 
   const businessName = coachData?.coach?.business_name;
-  const primaryColor = coachData?.coach?.primary_color || coachData?.branding?.primary_color || "#2563eb";
-  const logoUrl = coachData?.coach?.app_logo_url || coachData?.branding?.app_logo_url || null;
-  const logoSize = coachData?.coach?.app_logo_size || coachData?.branding?.app_logo_size || "medium";
+  const primaryColor =
+    coachData?.coach?.primary_color ||
+    coachData?.branding?.primary_color ||
+    "#2563eb";
+  const logoUrl =
+    coachData?.coach?.app_logo_url || coachData?.branding?.app_logo_url || null;
+  const logoSize =
+    coachData?.coach?.app_logo_size ||
+    coachData?.branding?.app_logo_size ||
+    "medium";
 
   // Size mapping
   const getSizeStyle = (size) => {
     switch (size) {
-      case "small": return { maxWidth: "120px", height: "auto" };
-      case "large": return { maxWidth: "240px", height: "auto" };
-      default: return { maxWidth: "180px", height: "auto" }; // medium
+      case "small":
+        return { maxWidth: "120px", height: "auto" };
+      case "large":
+        return { maxWidth: "240px", height: "auto" };
+      default:
+        return { maxWidth: "180px", height: "auto" }; // medium
     }
   };
 
@@ -155,7 +169,15 @@ function LoginContent({ coachSlug, initialCoachData }) {
       }}
     >
       <div style={{ width: "100%", maxWidth: "420px" }}>
-        <div style={{ textAlign: "center", marginBottom: "32px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div
+          style={{
+            textAlign: "center",
+            marginBottom: "32px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
           <Link
             href="/"
             style={{
@@ -179,7 +201,14 @@ function LoginContent({ coachSlug, initialCoachData }) {
                 }}
               />
             ) : businessName ? (
-              <span style={{ color: primaryColor, fontSize: "28px", fontWeight: 700, marginBottom: "8px" }}>
+              <span
+                style={{
+                  color: primaryColor,
+                  fontSize: "28px",
+                  fontWeight: 700,
+                  marginBottom: "8px",
+                }}
+              >
                 {businessName}
               </span>
             ) : null}
@@ -249,7 +278,11 @@ function LoginContent({ coachSlug, initialCoachData }) {
             >
               <label style={labelStyle}>Password</label>
               <Link
-                href="/forgot-password"
+                href={
+                  coachSlug
+                    ? `/forgot-password?coach=${coachSlug}`
+                    : "/forgot-password"
+                }
                 style={{
                   fontSize: "14px",
                   color: primaryColor,

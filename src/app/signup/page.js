@@ -17,8 +17,12 @@ function SignupContent() {
 
   const coachSlug = searchParams.get("coach");
   const plan = searchParams.get("plan") || "free"; // "free" or "premium"
+  const tier = parseInt(searchParams.get("tier")) || 2; // Default to tier 2 for premium
 
   useEffect(() => {
+    // Clear any existing session to prevent auth pollution
+    fetch("/api/auth/logout", { method: "POST" });
+
     if (coachSlug) {
       fetchCoachData();
     } else {
@@ -68,11 +72,14 @@ function SignupContent() {
 
       // Account created!
       if (plan === "premium") {
-        // Redirect to Stripe checkout for premium
+        // Redirect to Stripe checkout for premium (tier 2 or 3)
         const checkoutResponse = await fetch("/api/stripe/user-checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
+          body: JSON.stringify({
+            tier: tier,
+            interval: "monthly",
+          }),
         });
 
         const checkoutData = await checkoutResponse.json();
@@ -111,16 +118,26 @@ function SignupContent() {
   }
 
   const businessName = coachData?.coach?.business_name || "Your Coach";
-  const primaryColor = coachData?.coach?.primary_color || coachData?.branding?.primary_color || "#6366f1";
-  const logoUrl = coachData?.coach?.app_logo_url || coachData?.branding?.app_logo_url || null;
-  const logoSize = coachData?.coach?.app_logo_size || coachData?.branding?.app_logo_size || "medium";
+  const primaryColor =
+    coachData?.coach?.primary_color ||
+    coachData?.branding?.primary_color ||
+    "#6366f1";
+  const logoUrl =
+    coachData?.coach?.app_logo_url || coachData?.branding?.app_logo_url || null;
+  const logoSize =
+    coachData?.coach?.app_logo_size ||
+    coachData?.branding?.app_logo_size ||
+    "medium";
 
   // Size mapping
   const getSizeStyle = (size) => {
     switch (size) {
-      case "small": return { maxWidth: "120px", height: "auto" };
-      case "large": return { maxWidth: "240px", height: "auto" };
-      default: return { maxWidth: "180px", height: "auto" }; // medium
+      case "small":
+        return { maxWidth: "120px", height: "auto" };
+      case "large":
+        return { maxWidth: "240px", height: "auto" };
+      default:
+        return { maxWidth: "180px", height: "auto" }; // medium
     }
   };
 
@@ -146,7 +163,15 @@ function SignupContent() {
         }}
       >
         {/* Branding */}
-        <div style={{ textAlign: "center", marginBottom: "32px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div
+          style={{
+            textAlign: "center",
+            marginBottom: "32px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
           {logoUrl ? (
             <img
               src={logoUrl}
@@ -178,11 +203,40 @@ function SignupContent() {
           >
             Sign up now!
           </p>
+          {plan === "premium" && (
+            <div
+              style={{
+                marginTop: "12px",
+                padding: "8px 16px",
+                borderRadius: "8px",
+                backgroundColor: tier === 3 ? "#fef3c7" : "#dbeafe",
+                border: tier === 3 ? "1px solid #fbbf24" : "1px solid #93c5fd",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: tier === 3 ? "#92400e" : "#1e40af",
+                  margin: 0,
+                }}
+              >
+                {tier === 3 ? "✨ Premium Plus (Elite)" : "🚀 Premium"}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Signup Form */}
         <form onSubmit={handleSignup}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "12px",
+              marginBottom: "16px",
+            }}
+          >
             <div>
               <label
                 style={{
@@ -346,8 +400,8 @@ function SignupContent() {
             {isSubmitting
               ? "Creating account..."
               : plan === "premium"
-              ? "Continue to Payment"
-              : "Create Account"}
+                ? "Continue to Payment"
+                : "Create Account"}
           </button>
         </form>
 
@@ -399,17 +453,21 @@ function SignupContent() {
 
 export default function SignupPage() {
   return (
-    <Suspense fallback={
-      <div style={{ 
-        minHeight: "100vh", 
-        display: "flex", 
-        alignItems: "center", 
-        justifyContent: "center",
-        backgroundColor: "#ffffff"
-      }}>
-        <p style={{ color: "#6b7280" }}>Loading...</p>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#ffffff",
+          }}
+        >
+          <p style={{ color: "#6b7280" }}>Loading...</p>
+        </div>
+      }
+    >
       <SignupContent />
     </Suspense>
   );

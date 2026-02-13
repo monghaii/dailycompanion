@@ -355,7 +355,7 @@ function DashboardContent() {
     landing_headline: "",
     landing_subheadline: "",
     landing_cta: "",
-    user_monthly_price_cents: 2900,
+    user_monthly_price_cents: 4999,
     logo_url: null,
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -410,6 +410,11 @@ function DashboardContent() {
       title: "Set Daily Intention",
       subtitle: "What matters most today?",
       icon_url: null,
+      intention_modal_title: "Set Your Intention",
+      intention_obstacles_label: "What might get in the way today?",
+      intention_obstacles_placeholder: "Meetings, distractions, fatigue, worry about...",
+      intention_focus_label: "One word to refocus your energy",
+      intention_focus_placeholder: "Peace, Presence, Trust, Joy...",
     },
     task_3: {
       enabled: true,
@@ -815,7 +820,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           landing_headline: user.coach.landing_headline || "",
           landing_subheadline: user.coach.landing_subheadline || "",
           landing_cta: user.coach.landing_cta || "",
-          user_monthly_price_cents: user.coach.user_monthly_price_cents || 2900,
+          user_monthly_price_cents: user.coach.user_monthly_price_cents || 4999,
           logo_url: user.coach.logo_url || null,
         });
       }
@@ -1995,7 +2000,9 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           Activate Your Coach Account
                         </h3>
                         <p className="text-gray-700 mb-4">
-                          Subscribe to the coaching platform to unlock all features, connect your Stripe account, and start accepting clients.
+                          Subscribe to the coaching platform to unlock all
+                          features, connect your Stripe account, and start
+                          accepting clients.
                         </p>
                         <div className="flex flex-wrap gap-3 items-center">
                           <button
@@ -2010,6 +2017,39 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     </div>
                   </div>
                 )}
+
+                {/* Test Account Banner */}
+                {coach?.platform_subscription_status === "active" &&
+                  !coach?.platform_subscription_id && (
+                    <div className="bg-blue-50 border-l-4 border-blue-400 p-4 shadow-sm rounded-r-lg">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <svg
+                            className="h-5 w-5 text-blue-400"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm text-blue-700">
+                            <span className="font-bold">
+                              Test Account Mode:
+                            </span>{" "}
+                            This account is manually activated. Real-time
+                            subscription status and billing details are not
+                            available.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                 {/* Stripe Connect Status - Only show when subscribed */}
                 {coach?.platform_subscription_status === "active" && (
@@ -2057,30 +2097,201 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                   </div>
                 )}
 
-                {/* Payment Info - Only show when subscribed */}
+                {/* Subscription Tiers - Only show when subscribed */}
                 {coach?.platform_subscription_status === "active" && (
                   <div className="bg-white rounded-lg shadow p-6">
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                      Revenue Share
+                      Subscription Tiers
                     </h2>
-                    <div className="space-y-2 text-sm text-gray-700">
-                      <p>
-                        • User subscription: <strong>$19.99/month</strong>
-                      </p>
-                      <p>
-                        • Platform fee: <strong>$7.00</strong>
-                      </p>
-                      <p>
-                        • You receive:{" "}
-                        <strong>$12.99 per subscriber/month</strong>
-                      </p>
-                      <p className="text-xs text-gray-500 mt-3">
-                        Payouts are processed automatically to your connected bank
-                        account.
+                    <p className="text-sm text-gray-600 mb-6">
+                      Manage pricing for your client subscriptions. Tier 2 has a
+                      flat $5 fee. Tier 3 has a 20% fee (minimum $5).
+                    </p>
+
+                    {/* Tier 2 - Premium (Fixed) */}
+                    <div className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-semibold text-gray-900">
+                            Tier 2 - Premium
+                          </h3>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Standard premium access
+                          </p>
+                        </div>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-800">
+                          Fixed Price
+                        </span>
+                      </div>
+                      <div className="mt-3 space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Monthly:</span>
+                          <span className="font-semibold text-gray-900">
+                            $19.99/month
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">
+                            Yearly (1 month free):
+                          </span>
+                          <span className="font-semibold text-gray-900">
+                            $219.89/year
+                          </span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t border-gray-300">
+                          <span className="text-gray-600">
+                            Your revenue (monthly):
+                          </span>
+                          <span className="font-semibold text-green-600">
+                            $14.99
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tier 3 - Premium Plus (Coach Sets Price) */}
+                    <div className="border border-amber-300 rounded-lg p-4 bg-amber-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-semibold text-gray-900">
+                            Tier 3 - Premium Plus
+                          </h3>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Premium + exclusive Resource Hub access
+                          </p>
+                        </div>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-200 text-amber-900">
+                          Custom Price
+                        </span>
+                      </div>
+
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Set Monthly Price (minimum $49.99)
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-500">$</span>
+                          <input
+                            type="number"
+                            min="49.99"
+                            step="0.01"
+                            value={
+                              (profileConfig.user_monthly_price_cents || 4999) /
+                              100
+                            }
+                            onChange={(e) => {
+                              const dollars =
+                                parseFloat(e.target.value) || 49.99;
+                              const cents = Math.round(dollars * 100);
+                              setProfileConfig((prev) => ({
+                                ...prev,
+                                user_monthly_price_cents: Math.max(cents, 4999),
+                              }));
+                            }}
+                            className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm px-3 py-2 border"
+                          />
+                          <span className="text-gray-500">/month</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Monthly price:</span>
+                          <span className="font-semibold text-gray-900">
+                            $
+                            {(
+                              (profileConfig.user_monthly_price_cents || 4999) /
+                              100
+                            ).toFixed(2)}
+                            /month
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">
+                            Yearly (1 month free):
+                          </span>
+                          <span className="font-semibold text-gray-900">
+                            $
+                            {(
+                              ((profileConfig.user_monthly_price_cents ||
+                                4999) *
+                                11) /
+                              100
+                            ).toFixed(2)}
+                            /year
+                          </span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t border-amber-300">
+                          <span className="text-gray-600">
+                            Platform fee (20% or $5 min):
+                          </span>
+                          <span className="font-semibold text-gray-900">
+                            $
+                            {(
+                              Math.max(
+                                Math.round(
+                                  (profileConfig.user_monthly_price_cents ||
+                                    4999) * 0.2,
+                                ),
+                                500,
+                              ) / 100
+                            ).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">
+                            Your revenue (monthly):
+                          </span>
+                          <span className="font-semibold text-green-600">
+                            $
+                            {(
+                              ((profileConfig.user_monthly_price_cents ||
+                                4999) -
+                                Math.max(
+                                  Math.round(
+                                    (profileConfig.user_monthly_price_cents ||
+                                      4999) * 0.2,
+                                  ),
+                                  500,
+                                )) /
+                              100
+                            ).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handleProfileSave}
+                        disabled={savingProfile}
+                        className="mt-4 w-full px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 font-semibold"
+                      >
+                        {savingProfile ? "Saving..." : "Save Tier 3 Price"}
+                      </button>
+                    </div>
+
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-xs text-blue-800">
+                        <strong>Note:</strong> Yearly billing gives clients 1
+                        month free (11 months price for 12 months of access).
+                        Tier 2 has a flat $5 platform fee. Tier 3 has a 20%
+                        platform fee (minimum $5).
                       </p>
                     </div>
                   </div>
                 )}
+
+                {/* Support Contact */}
+                <div className="text-center pt-4">
+                  <p className="text-sm text-gray-500">
+                    Need to manage or cancel your subscription? Contact{" "}
+                    <a
+                      href="mailto:support@dailycompanion.com"
+                      className="text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      support@dailycompanion.com
+                    </a>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -4484,6 +4695,119 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 </p>
                               )}
                             </div>
+
+                            {/* Intention Modal Customization */}
+                            <div className="pt-3 border-t border-gray-100">
+                              <p className="text-xs font-semibold text-gray-900 uppercase tracking-wider mb-3">
+                                Intention Popup Text
+                              </p>
+                              <div className="space-y-3">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                    Modal Title
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={focusConfig.task_2.intention_modal_title || ""}
+                                    onChange={(e) =>
+                                      setFocusConfig({
+                                        ...focusConfig,
+                                        task_2: {
+                                          ...focusConfig.task_2,
+                                          intention_modal_title: e.target.value,
+                                        },
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                    placeholder="Set Your Intention"
+                                  />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                      First Question Label
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={focusConfig.task_2.intention_obstacles_label || ""}
+                                      onChange={(e) =>
+                                        setFocusConfig({
+                                          ...focusConfig,
+                                          task_2: {
+                                            ...focusConfig.task_2,
+                                            intention_obstacles_label: e.target.value,
+                                          },
+                                        })
+                                      }
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                      placeholder="What might get in the way today?"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                      First Question Placeholder
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={focusConfig.task_2.intention_obstacles_placeholder || ""}
+                                      onChange={(e) =>
+                                        setFocusConfig({
+                                          ...focusConfig,
+                                          task_2: {
+                                            ...focusConfig.task_2,
+                                            intention_obstacles_placeholder: e.target.value,
+                                          },
+                                        })
+                                      }
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                      placeholder="Meetings, distractions, fatigue..."
+                                    />
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                      Second Question Label
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={focusConfig.task_2.intention_focus_label || ""}
+                                      onChange={(e) =>
+                                        setFocusConfig({
+                                          ...focusConfig,
+                                          task_2: {
+                                            ...focusConfig.task_2,
+                                            intention_focus_label: e.target.value,
+                                          },
+                                        })
+                                      }
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                      placeholder="One word to refocus your energy"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                      Second Question Placeholder
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={focusConfig.task_2.intention_focus_placeholder || ""}
+                                      onChange={(e) =>
+                                        setFocusConfig({
+                                          ...focusConfig,
+                                          task_2: {
+                                            ...focusConfig.task_2,
+                                            intention_focus_placeholder: e.target.value,
+                                          },
+                                        })
+                                      }
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                      placeholder="Peace, Presence, Trust, Joy..."
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </details>
                       </div>
@@ -6120,7 +6444,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           </div>
         </div>
       )}
-      
+
       {/* Country Selection Modal */}
       {showCountryModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -6152,7 +6476,9 @@ Remember: You're here to empower them to find their own answers, not to fix thei
             </select>
             <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-6">
               <p className="text-sm text-blue-900">
-                <span className="font-semibold">Important:</span> When Stripe asks for your email, use the same email address you used to sign up for Daily Companion ({user?.email}).
+                <span className="font-semibold">Important:</span> When Stripe
+                asks for your email, use the same email address you used to sign
+                up for Daily Companion ({user?.email}).
               </p>
             </div>
             <div className="flex justify-end gap-3">

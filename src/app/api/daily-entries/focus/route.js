@@ -16,6 +16,8 @@ export async function PATCH(request) {
       task_2_completed,
       task_3_completed,
       focus_notes,
+      intention_obstacles,
+      intention_focus_word,
       date,
     } = body;
 
@@ -31,6 +33,8 @@ export async function PATCH(request) {
     if (task_3_completed !== undefined)
       updates.task_3_completed = task_3_completed;
     if (focus_notes !== undefined) updates.focus_notes = focus_notes;
+    if (intention_obstacles !== undefined) updates.intention_obstacles = intention_obstacles;
+    if (intention_focus_word !== undefined) updates.intention_focus_word = intention_focus_word;
 
     // Update the entry (create if doesn't exist)
     // First check if entry exists
