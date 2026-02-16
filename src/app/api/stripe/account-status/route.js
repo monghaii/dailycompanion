@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserWithCoach } from '@/lib/auth';
-import { checkConnectAccountStatus } from '@/lib/stripe';
+import { checkConnectAccountStatus, setMinimumBalance } from '@/lib/stripe';
 import { supabase } from '@/lib/supabase';
 
 export async function GET() {
@@ -41,6 +41,11 @@ export async function GET() {
         .from('coaches')
         .update({ stripe_account_status: newStatus })
         .eq('id', user.coach.id);
+
+      // When account first becomes active, set $100 minimum balance for refund coverage
+      if (newStatus === 'active') {
+        await setMinimumBalance(stripeAccountId, accountStatus.defaultCurrency || 'usd');
+      }
     }
 
     return NextResponse.json({

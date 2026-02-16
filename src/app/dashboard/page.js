@@ -2261,7 +2261,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       </div>
 
                       <button
-                        onClick={handleProfileSave}
+                        onClick={handleSaveProfile}
                         disabled={savingProfile}
                         className="mt-4 w-full px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 font-semibold"
                       >
