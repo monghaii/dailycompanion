@@ -2262,10 +2262,10 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
                       <button
                         onClick={handleSaveProfile}
-                        disabled={savingProfile}
+                        disabled={isSavingConfig && savingSection === "profile"}
                         className="mt-4 w-full px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 font-semibold"
                       >
-                        {savingProfile ? "Saving..." : "Save Tier 3 Price"}
+                        {isSavingConfig && savingSection === "profile" ? "Saving..." : "Save Tier 3 Price"}
                       </button>
                     </div>
 

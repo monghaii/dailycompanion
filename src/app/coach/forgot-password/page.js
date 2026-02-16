@@ -177,7 +177,7 @@ export default function CoachForgotPassword() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 style={inputStyle(email)}
-                placeholder="coaching@ivjaeger.com"
+                placeholder="you@example.com"
                 required
               />
             </div>

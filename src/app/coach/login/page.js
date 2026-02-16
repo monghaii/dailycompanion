@@ -155,7 +155,7 @@ export default function CoachLogin() {
               value={formData.email}
               onChange={handleChange}
               style={inputStyle(formData.email)}
-              placeholder="coaching@ivjaeger.com"
+              placeholder="you@example.com"
               required
             />
           </div>
