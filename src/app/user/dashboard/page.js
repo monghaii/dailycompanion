@@ -317,6 +317,29 @@ function UserDashboardContent() {
     return () => window.removeEventListener("message", handleMessage);
   }, [isPreviewMode]);
 
+  // Set dynamic favicon and page title from coach branding
+  useEffect(() => {
+    if (!user?.coach?.business_name) return;
+
+    document.title = `${user.coach.business_name} | Daily Companion`;
+
+    if (user.coach.logo_url) {
+      let link = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        document.head.appendChild(link);
+      }
+      link.href = user.coach.logo_url;
+    }
+
+    return () => {
+      document.title = "Daily Companion";
+      const link = document.querySelector("link[rel~='icon']");
+      if (link) link.href = "/favicon.ico";
+    };
+  }, [user?.coach?.business_name, user?.coach?.logo_url]);
+
   useEffect(() => {
     if (user && activeTab === "focus") {
       fetchFocusEntry();
@@ -6001,7 +6024,7 @@ function UserDashboardContent() {
                       </div>
                     </div>
 
-                    {/* Premium Plus Plan (Tier 3) */}
+                    {/* Tier 3 Plan */}
                     <div
                       style={{
                         border: `1px solid ${subscriptionStatus?.tier === 3 ? primaryColor : "#e5e7eb"}`,
@@ -6020,7 +6043,7 @@ function UserDashboardContent() {
                     >
                       <div>
                         <div style={{ fontWeight: 600, color: "#1a1a1a" }}>
-                          Premium Plus
+                          {user?.coach?.tier3_name || "Premium Plus"}
                           <span
                             style={{
                               marginLeft: "8px",
@@ -6792,7 +6815,7 @@ function UserDashboardContent() {
                   marginBottom: "16px",
                 }}
               >
-                Requires Premium Plus (Tier 3) for exclusive access to community
+                Requires {user?.coach?.tier3_name || "Premium Plus"} for exclusive access to community
                 calls, programs & resources.
               </p>
             )}

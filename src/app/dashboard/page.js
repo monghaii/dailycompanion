@@ -356,6 +356,7 @@ function DashboardContent() {
     landing_subheadline: "",
     landing_cta: "",
     user_monthly_price_cents: 4999,
+    tier3_name: "Premium Plus",
     logo_url: null,
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -821,6 +822,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           landing_subheadline: user.coach.landing_subheadline || "",
           landing_cta: user.coach.landing_cta || "",
           user_monthly_price_cents: user.coach.user_monthly_price_cents || 4999,
+          tier3_name: user.coach.tier3_name || "Premium Plus",
           logo_url: user.coach.logo_url || null,
         });
       }
@@ -2149,12 +2151,12 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       </div>
                     </div>
 
-                    {/* Tier 3 - Premium Plus (Coach Sets Price) */}
+                    {/* Tier 3 - Custom Name (Coach Sets Price) */}
                     <div className="border border-amber-300 rounded-lg p-4 bg-amber-50">
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <h3 className="font-semibold text-gray-900">
-                            Tier 3 - Premium Plus
+                            Tier 3 - {profileConfig.tier3_name || "Premium Plus"}
                           </h3>
                           <p className="text-sm text-gray-600 mt-1">
                             Premium + exclusive Resource Hub access
@@ -2166,6 +2168,22 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       </div>
 
                       <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Tier Name
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={30}
+                          value={profileConfig.tier3_name || ""}
+                          onChange={(e) =>
+                            setProfileConfig((prev) => ({
+                              ...prev,
+                              tier3_name: e.target.value,
+                            }))
+                          }
+                          placeholder="Premium Plus"
+                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm px-3 py-2 border mb-4"
+                        />
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Set Monthly Price (minimum $49.99)
                         </label>
@@ -2265,7 +2283,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         disabled={isSavingConfig && savingSection === "profile"}
                         className="mt-4 w-full px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 font-semibold"
                       >
-                        {isSavingConfig && savingSection === "profile" ? "Saving..." : "Save Tier 3 Price"}
+                        {isSavingConfig && savingSection === "profile" ? "Saving..." : "Save Tier 3 Settings"}
                       </button>
                     </div>
 
@@ -2285,10 +2303,10 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                   <p className="text-sm text-gray-500">
                     Need to manage or cancel your subscription? Contact{" "}
                     <a
-                      href="mailto:support@dailycompanion.com"
+                      href="mailto:support@dailycompanion.app"
                       className="text-blue-600 hover:text-blue-800 font-medium"
                     >
-                      support@dailycompanion.com
+                      support@dailycompanion.app
                     </a>
                   </p>
                 </div>
@@ -3015,6 +3033,9 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
                           Business Logo
                         </label>
+                        <p className="text-xs text-gray-400 mb-2">
+                          This also serves as the favicon (browser tab icon) for your companion app and landing page.
+                        </p>
                         <div className="flex items-start gap-4">
                           {profileConfig.logo_url && !logoLoadError ? (
                             <div className="relative">

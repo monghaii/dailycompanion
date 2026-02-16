@@ -225,7 +225,7 @@ export async function createUserSubscriptionCheckout({
     const twentyPercentFee = Math.round(userPriceCents * 0.2);
     platformFeeCents = Math.max(twentyPercentFee, 500);
 
-    tierName = "Premium Plus";
+    tierName = coach.tier3_name || "Premium Plus";
     tierDescription = "Premium + exclusive Resource Hub access";
   } else {
     throw new Error("Invalid tier specified");

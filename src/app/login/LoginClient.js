@@ -99,10 +99,34 @@ function LoginContent({ coachSlug, initialCoachData }) {
   };
 
   const businessName = coachData?.coach?.business_name;
+  const coachLogoUrl = coachData?.coach?.logo_url || null;
   const primaryColor =
     coachData?.coach?.primary_color ||
     coachData?.branding?.primary_color ||
     "#2563eb";
+
+  // Set dynamic favicon and page title from coach branding
+  useEffect(() => {
+    if (!businessName) return;
+
+    document.title = `Log In - ${businessName} | Daily Companion`;
+
+    if (coachLogoUrl) {
+      let link = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        document.head.appendChild(link);
+      }
+      link.href = coachLogoUrl;
+    }
+
+    return () => {
+      document.title = "Daily Companion";
+      const link = document.querySelector("link[rel~='icon']");
+      if (link) link.href = "/favicon.ico";
+    };
+  }, [businessName, coachLogoUrl]);
   const logoUrl =
     coachData?.coach?.app_logo_url || coachData?.branding?.app_logo_url || null;
   const logoSize =

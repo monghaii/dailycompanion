@@ -7,7 +7,7 @@ export async function getCoachLandingData(slug) {
   const { data: coach, error: coachError } = await supabase
     .from("coaches")
     .select(
-      "id, slug, business_name, bio, tagline, landing_headline, landing_subheadline, landing_cta, logo_url, theme_color, user_monthly_price_cents, user_yearly_price_cents, is_active",
+      "id, slug, business_name, bio, tagline, landing_headline, landing_subheadline, landing_cta, logo_url, theme_color, user_monthly_price_cents, user_yearly_price_cents, tier3_name, is_active",
     )
     .eq("slug", slug)
     .single();
@@ -100,6 +100,7 @@ export async function getCoachLandingData(slug) {
       is_active: coach.is_active,
       monthly_price_cents: coach.user_monthly_price_cents,
       yearly_price_cents: coach.user_yearly_price_cents,
+      tier3_name: coach.tier3_name || "Premium Plus",
     },
     config,
     branding: brandingData,

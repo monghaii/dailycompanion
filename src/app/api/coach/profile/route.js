@@ -10,7 +10,7 @@ export async function PATCH(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { business_name, slug, bio, tagline, landing_headline, landing_subheadline, landing_cta, user_monthly_price_cents, logo_url } =
+    const { business_name, slug, bio, tagline, landing_headline, landing_subheadline, landing_cta, user_monthly_price_cents, tier3_name, logo_url } =
       await request.json();
 
     // Validate inputs
@@ -61,6 +61,7 @@ export async function PATCH(request) {
       landing_subheadline,
       landing_cta,
       user_monthly_price_cents,
+      tier3_name: tier3_name || "Premium Plus",
       updated_at: new Date().toISOString(),
     };
 

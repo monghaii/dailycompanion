@@ -118,10 +118,34 @@ function SignupContent() {
   }
 
   const businessName = coachData?.coach?.business_name || "Your Coach";
+  const coachLogoUrl = coachData?.coach?.logo_url || null;
   const primaryColor =
     coachData?.coach?.primary_color ||
     coachData?.branding?.primary_color ||
     "#6366f1";
+
+  // Set dynamic favicon and page title from coach branding
+  useEffect(() => {
+    if (!coachData?.coach?.business_name) return;
+
+    document.title = `Sign Up - ${coachData.coach.business_name} | Daily Companion`;
+
+    if (coachLogoUrl) {
+      let link = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        document.head.appendChild(link);
+      }
+      link.href = coachLogoUrl;
+    }
+
+    return () => {
+      document.title = "Daily Companion";
+      const link = document.querySelector("link[rel~='icon']");
+      if (link) link.href = "/favicon.ico";
+    };
+  }, [coachData?.coach?.business_name, coachLogoUrl]);
   const logoUrl =
     coachData?.coach?.app_logo_url || coachData?.branding?.app_logo_url || null;
   const logoSize =
@@ -221,7 +245,7 @@ function SignupContent() {
                   margin: 0,
                 }}
               >
-                {tier === 3 ? "✨ Premium Plus (Elite)" : "🚀 Daily Companion"}
+                {tier === 3 ? `✨ ${coachData?.coach?.tier3_name || "Premium Plus"} (Elite)` : "🚀 Daily Companion"}
               </p>
             </div>
           )}
