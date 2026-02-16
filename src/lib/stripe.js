@@ -199,7 +199,7 @@ export async function createUserSubscriptionCheckout({
   interval = "monthly",
 }) {
   // Tier pricing:
-  // Tier 2: $19.99/month (fixed), platform fee $5
+  // Tier 2: $9.99/month (fixed), platform fee $5
   // Tier 3: Coach-set price (from user_monthly_price_cents, minimum $49.99)
   // Tier 3 platform fee: 20% or $5, whichever is higher
 
@@ -209,10 +209,10 @@ export async function createUserSubscriptionCheckout({
   let platformFeeCents;
 
   if (tier === 2) {
-    // Tier 2: Fixed price $19.99, fixed fee $5
-    userPriceCents = 1999;
+    // Tier 2: Fixed price $9.99, fixed fee $5
+    userPriceCents = 999;
     platformFeeCents = 500; // $5 flat
-    tierName = "Premium";
+    tierName = "Daily Companion";
     tierDescription = "Full access to all features";
   } else if (tier === 3) {
     // Tier 3: Coach-set price (minimum $49.99)

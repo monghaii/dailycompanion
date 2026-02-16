@@ -219,7 +219,7 @@ function UserDashboardContent() {
       }
     } else if (subscriptionParam === "success") {
       setToastMessage(
-        "🎉 Welcome to Premium! Your subscription is now active.",
+        "🎉 Welcome to Daily Companion! Your subscription is now active.",
       );
       setShowToast(true);
       setTimeout(() => setShowToast(false), 5000);
@@ -5880,7 +5880,7 @@ function UserDashboardContent() {
                       </div>
                     </div>
 
-                    {/* Premium Plan (Tier 2) */}
+                    {/* Daily Companion Plan (Tier 2) */}
                     <div
                       style={{
                         border: `1px solid ${subscriptionStatus?.tier === 2 ? primaryColor : "#e5e7eb"}`,
@@ -5900,7 +5900,7 @@ function UserDashboardContent() {
                     >
                       <div>
                         <div style={{ fontWeight: 600, color: "#1a1a1a" }}>
-                          Premium
+                          Daily Companion
                         </div>
                         <div style={{ fontSize: "14px", color: "#6b7280" }}>
                           Full access to all features
@@ -5937,7 +5937,7 @@ function UserDashboardContent() {
                               color: "#1a1a1a",
                             }}
                           >
-                            $19.99
+                            $9.99
                           </div>
                           <div style={{ fontSize: "12px", color: "#6b7280" }}>
                             /month

@@ -97,7 +97,7 @@ export async function GET() {
         pricePerMonth: subscription.price_cents
           ? subscription.price_cents / 100
           : tier === 2
-            ? 19.99
+            ? 9.99
             : subscription.coaches.user_monthly_price_cents / 100,
         currentPeriodEnd: subscription.current_period_end,
         canceledAt: subscription.canceled_at,

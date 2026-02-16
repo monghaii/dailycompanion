@@ -476,7 +476,7 @@ export default function CoachLandingPage() {
               </button>
             </div>
 
-            {/* Premium Plan (Tier 2) */}
+            {/* Daily Companion Plan (Tier 2) */}
             <div
               style={{
                 backgroundColor: "#fff",
@@ -512,7 +512,7 @@ export default function CoachLandingPage() {
                   textAlign: "center",
                 }}
               >
-                Premium
+                Daily Companion
               </h3>
               <div style={{ marginBottom: "26px", textAlign: "center" }}>
                 <span
@@ -522,7 +522,7 @@ export default function CoachLandingPage() {
                     color: primaryColor,
                   }}
                 >
-                  $19.99
+                  $9.99
                 </span>
                 <span style={{ fontSize: "16px", color: "#6b7280" }}>
                   /month
@@ -583,7 +583,7 @@ export default function CoachLandingPage() {
                 }
                 onMouseLeave={(e) => (e.target.style.filter = "brightness(1)")}
               >
-                Start Premium
+                Start Daily Companion
               </button>
             </div>
 
@@ -653,7 +653,7 @@ export default function CoachLandingPage() {
                 }}
               >
                 {[
-                  "Everything in Premium",
+                  "Everything in Daily Companion",
                   "Exclusive Resource Hub access",
                   "Community calls & programs",
                   "Curated learning library",

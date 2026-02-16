@@ -221,7 +221,7 @@ function SignupContent() {
                   margin: 0,
                 }}
               >
-                {tier === 3 ? "✨ Premium Plus (Elite)" : "🚀 Premium"}
+                {tier === 3 ? "✨ Premium Plus (Elite)" : "🚀 Daily Companion"}
               </p>
             </div>
           )}

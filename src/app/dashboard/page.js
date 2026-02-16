@@ -2108,15 +2108,15 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       flat $5 fee. Tier 3 has a 20% fee (minimum $5).
                     </p>
 
-                    {/* Tier 2 - Premium (Fixed) */}
+                    {/* Tier 2 - Daily Companion (Fixed) */}
                     <div className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50">
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <h3 className="font-semibold text-gray-900">
-                            Tier 2 - Premium
+                            Tier 2 - Daily Companion
                           </h3>
                           <p className="text-sm text-gray-600 mt-1">
-                            Standard premium access
+                            Standard access
                           </p>
                         </div>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-800">
@@ -2127,7 +2127,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         <div className="flex justify-between">
                           <span className="text-gray-600">Monthly:</span>
                           <span className="font-semibold text-gray-900">
-                            $19.99/month
+                            $9.99/month
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -2135,7 +2135,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             Yearly (1 month free):
                           </span>
                           <span className="font-semibold text-gray-900">
-                            $219.89/year
+                            $109.89/year
                           </span>
                         </div>
                         <div className="flex justify-between pt-2 border-t border-gray-300">
@@ -2143,7 +2143,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             Your revenue (monthly):
                           </span>
                           <span className="font-semibold text-green-600">
-                            $14.99
+                            $4.99
                           </span>
                         </div>
                       </div>
@@ -3246,7 +3246,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             </div>
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Premium Signup Link ($19.99/month)
+                                Daily Companion Signup Link ($9.99/month)
                               </label>
                               <div className="flex items-center gap-2">
                                 <input

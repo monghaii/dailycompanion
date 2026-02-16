@@ -84,7 +84,7 @@ export async function POST(request) {
               parseInt(session.metadata.price_cents) ||
               (parseInt(session.metadata.subscription_tier) === 3
                 ? 4999
-                : 1999),
+                : 999),
           };
 
           await supabase.from("user_subscriptions").upsert(subscriptionData);
