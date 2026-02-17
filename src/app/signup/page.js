@@ -30,6 +30,35 @@ function SignupContent() {
     }
   }, [coachSlug]);
 
+  // Set dynamic favicon and page title from coach branding
+  useEffect(() => {
+    const coach = coachData?.coach;
+    if (!coach?.business_name) return;
+
+    document.title = `Sign Up - ${coach.business_name} | Daily Companion`;
+
+    if (coach.logo_url) {
+      document
+        .querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')
+        .forEach((el) => el.remove());
+      const link = document.createElement("link");
+      link.rel = "icon";
+      link.href = coach.logo_url;
+      document.head.appendChild(link);
+    }
+
+    return () => {
+      document.title = "Daily Companion";
+      document
+        .querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')
+        .forEach((el) => el.remove());
+      const link = document.createElement("link");
+      link.rel = "icon";
+      link.href = "/favicon.ico";
+      document.head.appendChild(link);
+    };
+  }, [coachData]);
+
   const fetchCoachData = async () => {
     try {
       const response = await fetch(`/api/landing/${coachSlug}`);
@@ -118,34 +147,10 @@ function SignupContent() {
   }
 
   const businessName = coachData?.coach?.business_name || "Your Coach";
-  const coachLogoUrl = coachData?.coach?.logo_url || null;
   const primaryColor =
     coachData?.coach?.primary_color ||
     coachData?.branding?.primary_color ||
     "#6366f1";
-
-  // Set dynamic favicon and page title from coach branding
-  useEffect(() => {
-    if (!coachData?.coach?.business_name) return;
-
-    document.title = `Sign Up - ${coachData.coach.business_name} | Daily Companion`;
-
-    if (coachLogoUrl) {
-      let link = document.querySelector("link[rel~='icon']");
-      if (!link) {
-        link = document.createElement("link");
-        link.rel = "icon";
-        document.head.appendChild(link);
-      }
-      link.href = coachLogoUrl;
-    }
-
-    return () => {
-      document.title = "Daily Companion";
-      const link = document.querySelector("link[rel~='icon']");
-      if (link) link.href = "/favicon.ico";
-    };
-  }, [coachData?.coach?.business_name, coachLogoUrl]);
   const logoUrl =
     coachData?.coach?.app_logo_url || coachData?.branding?.app_logo_url || null;
   const logoSize =

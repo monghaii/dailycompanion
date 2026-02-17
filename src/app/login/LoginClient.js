@@ -112,19 +112,24 @@ function LoginContent({ coachSlug, initialCoachData }) {
     document.title = `Log In - ${businessName} | Daily Companion`;
 
     if (coachLogoUrl) {
-      let link = document.querySelector("link[rel~='icon']");
-      if (!link) {
-        link = document.createElement("link");
-        link.rel = "icon";
-        document.head.appendChild(link);
-      }
+      document
+        .querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')
+        .forEach((el) => el.remove());
+      const link = document.createElement("link");
+      link.rel = "icon";
       link.href = coachLogoUrl;
+      document.head.appendChild(link);
     }
 
     return () => {
       document.title = "Daily Companion";
-      const link = document.querySelector("link[rel~='icon']");
-      if (link) link.href = "/favicon.ico";
+      document
+        .querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')
+        .forEach((el) => el.remove());
+      const link = document.createElement("link");
+      link.rel = "icon";
+      link.href = "/favicon.ico";
+      document.head.appendChild(link);
     };
   }, [businessName, coachLogoUrl]);
   const logoUrl =
