@@ -747,6 +747,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       primary_color: "#7c3aed",
       background_style: "gradient",
     },
+    meta_description: "",
   });
 
   const [tokenUsage, setTokenUsage] = useState({
@@ -1937,6 +1938,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       },
       testimonials: landingConfig.testimonials,
       branding: landingConfig.branding,
+      meta_description: document.getElementById("landing-meta-description")?.value || landingConfig.meta_description || "",
     };
 
     setLandingConfig(currentConfig);
@@ -3826,6 +3828,29 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 placeholder="Brief bio about your coaching approach..."
                               />
                             </div>
+                          </div>
+                        </div>
+
+                        {/* SEO Meta Description */}
+                        <div className="mb-6">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                            SEO & Sharing
+                          </h4>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Meta Description
+                            </label>
+                            <textarea
+                              id="landing-meta-description"
+                              defaultValue={landingConfig.meta_description || ""}
+                              rows={3}
+                              maxLength={160}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              placeholder="A short description that appears in search results and when your link is shared on social media (max 160 characters)"
+                            />
+                            <p className="text-xs text-gray-400 mt-1">
+                              This text appears in Google search results and social media previews when someone shares your landing page or signup link.
+                            </p>
                           </div>
                         </div>
 

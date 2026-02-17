@@ -38,6 +38,38 @@ function SignupContent({ coachSlug: serverCoachSlug, initialCoachData }) {
 
     document.title = `Sign Up - ${coach.business_name} | Daily Companion`;
 
+    // Set meta description from landing config
+    const config = coachData?.config;
+    const description =
+      config?.meta_description ||
+      coach.tagline ||
+      `Sign up for ${coach.business_name} on Daily Companion.`;
+    let meta = document.querySelector('meta[name="description"]');
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "description";
+      document.head.appendChild(meta);
+    }
+    meta.content = description;
+
+    // Set og:description for social sharing
+    let ogDesc = document.querySelector('meta[property="og:description"]');
+    if (!ogDesc) {
+      ogDesc = document.createElement("meta");
+      ogDesc.setAttribute("property", "og:description");
+      document.head.appendChild(ogDesc);
+    }
+    ogDesc.content = description;
+
+    // Set og:title
+    let ogTitle = document.querySelector('meta[property="og:title"]');
+    if (!ogTitle) {
+      ogTitle = document.createElement("meta");
+      ogTitle.setAttribute("property", "og:title");
+      document.head.appendChild(ogTitle);
+    }
+    ogTitle.content = `Sign Up - ${coach.business_name} | Daily Companion`;
+
     if (coach.logo_url) {
       document
         .querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')
