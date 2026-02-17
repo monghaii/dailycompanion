@@ -6783,7 +6783,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                   >
                     0
                   </div>
-                  <div style={{ fontSize: "14px", color: "#6b7280" }}>of 3</div>
+                  <div style={{ fontSize: "14px", color: "#6b7280", marginTop: "4px" }}>of 3</div>
                 </div>
               </div>
               <div
@@ -6839,7 +6839,26 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         }}
                       />
                     ) : (
-                      <span style={{ fontSize: "28px" }}>🌟</span>
+                      <svg
+                        width="28"
+                        height="28"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#f59e0b"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="4" />
+                        <path d="M12 2v2" />
+                        <path d="M12 20v2" />
+                        <path d="m4.93 4.93 1.41 1.41" />
+                        <path d="m17.66 17.66 1.41 1.41" />
+                        <path d="M2 12h2" />
+                        <path d="M20 12h2" />
+                        <path d="m6.34 17.66-1.41 1.41" />
+                        <path d="m19.07 4.93-1.41 1.41" />
+                      </svg>
                     )}
                   </div>
                   <div style={{ flex: 1 }}>
@@ -6860,7 +6879,18 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       >
                         {focusConfig.task_1?.title || "Morning Practice"}
                       </h3>
-                      <span style={{ fontSize: "16px" }}>⭐</span>
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="#f59e0b"
+                        stroke="#f59e0b"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
                     </div>
                     <p style={{ fontSize: "14px", color: "#6b7280" }}>
                       {focusConfig.task_1?.subtitle ||
@@ -6933,7 +6963,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       }}
                     />
                   ) : (
-                    <span style={{ fontSize: "28px" }}>🔔</span>
+                    <svg
+                      width="28"
+                      height="28"
+                      viewBox="0 0 20 20"
+                      fill="#a855f7"
+                    >
+                      <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                    </svg>
                   )}
                 </div>
                 <div style={{ flex: 1 }}>
@@ -7002,7 +7039,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       }}
                     />
                   ) : (
-                    <span style={{ fontSize: "28px" }}>🌙</span>
+                    <svg
+                      width="28"
+                      height="28"
+                      viewBox="0 0 20 20"
+                      fill="#6366f1"
+                    >
+                      <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                    </svg>
                   )}
                 </div>
                 <div style={{ flex: 1 }}>
@@ -7075,14 +7119,11 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="#ffffff"
-                    xmlns="http://www.w3.org/2000/svg"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
+                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 )}
               </div>
