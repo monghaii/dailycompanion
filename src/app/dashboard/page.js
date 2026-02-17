@@ -417,7 +417,8 @@ function DashboardContent() {
       icon_url: null,
       intention_modal_title: "Set Your Intention",
       intention_obstacles_label: "What might get in the way today?",
-      intention_obstacles_placeholder: "Meetings, distractions, fatigue, worry about...",
+      intention_obstacles_placeholder:
+        "Meetings, distractions, fatigue, worry about...",
       intention_focus_label: "One word to refocus your energy",
       intention_focus_placeholder: "Peace, Presence, Trust, Joy...",
     },
@@ -1554,14 +1555,20 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         windowWidth: 393,
       });
       const blob = await new Promise((resolve) =>
-        canvas.toBlob(resolve, "image/png")
+        canvas.toBlob(resolve, "image/png"),
       );
       if (!blob) return;
       const formData = new FormData();
-      formData.append("file", new File([blob], "focus-screenshot.png", { type: "image/png" }));
+      formData.append(
+        "file",
+        new File([blob], "focus-screenshot.png", { type: "image/png" }),
+      );
       formData.append("type", "screenshot");
       formData.append("bucket", "public");
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
       const data = await res.json();
       if (res.ok && data.url) {
         await fetch("/api/coach/config", {
@@ -2196,11 +2203,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     </div>
 
                     {/* Tier 3 - Custom Name (Coach Sets Price) */}
-                    <div className={`border rounded-lg p-4 ${profileConfig.tier3_enabled ? "border-amber-300 bg-amber-50" : "border-gray-200 bg-gray-50"}`}>
+                    <div
+                      className={`border rounded-lg p-4 ${profileConfig.tier3_enabled ? "border-amber-300 bg-amber-50" : "border-gray-200 bg-gray-50"}`}
+                    >
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <h3 className="font-semibold text-gray-900">
-                            Tier 3 - {profileConfig.tier3_name || "Premium Plus"}
+                            Tier 3 -{" "}
+                            {profileConfig.tier3_name || "Premium Plus"}
                           </h3>
                           <p className="text-sm text-gray-600 mt-1">
                             Premium + exclusive Resource Hub access
@@ -2215,12 +2225,16 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             }))
                           }
                           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            profileConfig.tier3_enabled ? "bg-amber-500" : "bg-gray-300"
+                            profileConfig.tier3_enabled
+                              ? "bg-amber-500"
+                              : "bg-gray-300"
                           }`}
                         >
                           <span
                             className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              profileConfig.tier3_enabled ? "translate-x-6" : "translate-x-1"
+                              profileConfig.tier3_enabled
+                                ? "translate-x-6"
+                                : "translate-x-1"
                             }`}
                           />
                         </button>
@@ -2228,132 +2242,143 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
                       {!profileConfig.tier3_enabled && (
                         <p className="text-sm text-gray-500 italic">
-                          This tier is currently hidden from your landing page and user dashboard. Toggle on to enable it.
+                          This tier is currently hidden from your landing page
+                          and user dashboard. Toggle on to enable it.
                         </p>
                       )}
 
-                      {profileConfig.tier3_enabled && (<>
-                      <div className="mt-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Tier Name
-                        </label>
-                        <input
-                          type="text"
-                          maxLength={30}
-                          value={profileConfig.tier3_name || ""}
-                          onChange={(e) =>
-                            setProfileConfig((prev) => ({
-                              ...prev,
-                              tier3_name: e.target.value,
-                            }))
-                          }
-                          placeholder="Premium Plus"
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm px-3 py-2 border mb-4"
-                        />
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Set Monthly Price (minimum $19.99)
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-500">$</span>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={tier3PriceInput}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (/^\d*\.?\d{0,2}$/.test(val) || val === "") {
-                                setTier3PriceInput(val);
+                      {profileConfig.tier3_enabled && (
+                        <>
+                          <div className="mt-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Tier Name
+                            </label>
+                            <input
+                              type="text"
+                              maxLength={30}
+                              value={profileConfig.tier3_name || ""}
+                              onChange={(e) =>
+                                setProfileConfig((prev) => ({
+                                  ...prev,
+                                  tier3_name: e.target.value,
+                                }))
                               }
-                            }}
-                            onBlur={() => {
-                              const dollars = parseFloat(tier3PriceInput) || 19.99;
-                              const clamped = Math.max(dollars, 19.99);
-                              const cents = Math.round(clamped * 100);
-                              setTier3PriceInput(clamped.toFixed(2));
-                              setProfileConfig((prev) => ({
-                                ...prev,
-                                user_monthly_price_cents: cents,
-                              }));
-                            }}
-                            className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm px-3 py-2 border"
-                          />
-                          <span className="text-gray-500">/month</span>
-                        </div>
-                      </div>
+                              placeholder="Premium Plus"
+                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm px-3 py-2 border mb-4"
+                            />
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Set Monthly Price (minimum $19.99)
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-500">$</span>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                value={tier3PriceInput}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (
+                                    /^\d*\.?\d{0,2}$/.test(val) ||
+                                    val === ""
+                                  ) {
+                                    setTier3PriceInput(val);
+                                  }
+                                }}
+                                onBlur={() => {
+                                  const dollars =
+                                    parseFloat(tier3PriceInput) || 19.99;
+                                  const clamped = Math.max(dollars, 19.99);
+                                  const cents = Math.round(clamped * 100);
+                                  setTier3PriceInput(clamped.toFixed(2));
+                                  setProfileConfig((prev) => ({
+                                    ...prev,
+                                    user_monthly_price_cents: cents,
+                                  }));
+                                }}
+                                className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm px-3 py-2 border"
+                              />
+                              <span className="text-gray-500">/month</span>
+                            </div>
+                          </div>
 
-                      <div className="mt-4 space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Monthly price:</span>
-                          <span className="font-semibold text-gray-900">
-                            $
-                            {(
-                              (profileConfig.user_monthly_price_cents || 1999) /
-                              100
-                            ).toFixed(2)}
-                            /month
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">
-                            Yearly (1 month free):
-                          </span>
-                          <span className="font-semibold text-gray-900">
-                            $
-                            {(
-                              ((profileConfig.user_monthly_price_cents ||
-                                1999) *
-                                11) /
-                              100
-                            ).toFixed(2)}
-                            /year
-                          </span>
-                        </div>
-                        <div className="flex justify-between pt-2 border-t border-amber-300">
-                          <span className="text-gray-600">
-                            Platform fee (20% or $5 min):
-                          </span>
-                          <span className="font-semibold text-gray-900">
-                            $
-                            {(
-                              Math.max(
-                                Math.round(
+                          <div className="mt-4 space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">
+                                Monthly price:
+                              </span>
+                              <span className="font-semibold text-gray-900">
+                                $
+                                {(
                                   (profileConfig.user_monthly_price_cents ||
-                                    1999) * 0.2,
-                                ),
-                                500,
-                              ) / 100
-                            ).toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">
-                            Your revenue (monthly):
-                          </span>
-                          <span className="font-semibold text-green-600">
-                            $
-                            {(
-                              ((profileConfig.user_monthly_price_cents ||
-                                1999) -
-                                Math.max(
-                                  Math.round(
-                                    (profileConfig.user_monthly_price_cents ||
-                                      1999) * 0.2,
-                                  ),
-                                  500,
-                                )) /
-                              100
-                            ).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                      </>)}
+                                    1999) / 100
+                                ).toFixed(2)}
+                                /month
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">
+                                Yearly (1 month free):
+                              </span>
+                              <span className="font-semibold text-gray-900">
+                                $
+                                {(
+                                  ((profileConfig.user_monthly_price_cents ||
+                                    1999) *
+                                    11) /
+                                  100
+                                ).toFixed(2)}
+                                /year
+                              </span>
+                            </div>
+                            <div className="flex justify-between pt-2 border-t border-amber-300">
+                              <span className="text-gray-600">
+                                Platform fee (20% or $5 min):
+                              </span>
+                              <span className="font-semibold text-gray-900">
+                                $
+                                {(
+                                  Math.max(
+                                    Math.round(
+                                      (profileConfig.user_monthly_price_cents ||
+                                        1999) * 0.2,
+                                    ),
+                                    500,
+                                  ) / 100
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">
+                                Your revenue (monthly):
+                              </span>
+                              <span className="font-semibold text-green-600">
+                                $
+                                {(
+                                  ((profileConfig.user_monthly_price_cents ||
+                                    1999) -
+                                    Math.max(
+                                      Math.round(
+                                        (profileConfig.user_monthly_price_cents ||
+                                          1999) * 0.2,
+                                      ),
+                                      500,
+                                    )) /
+                                  100
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      )}
 
                       <button
                         onClick={handleSaveProfile}
                         disabled={isSavingConfig && savingSection === "profile"}
                         className="mt-4 w-full px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 font-semibold"
                       >
-                        {isSavingConfig && savingSection === "profile" ? "Saving..." : "Save Tier 3 Settings"}
+                        {isSavingConfig && savingSection === "profile"
+                          ? "Saving..."
+                          : "Save Tier 3 Settings"}
                       </button>
                     </div>
 
@@ -3104,7 +3129,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           Business Logo
                         </label>
                         <p className="text-xs text-gray-400 mb-2">
-                          This also serves as the favicon (browser tab icon) for your companion app and landing page.
+                          This also serves as the favicon (browser tab icon) for
+                          your companion app and landing page.
                         </p>
                         <div className="flex items-start gap-4">
                           {profileConfig.logo_url && !logoLoadError ? (
@@ -3648,7 +3674,9 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               setSavingSection("screenshot");
                               setIsSavingConfig(true);
                               await captureFocusScreenshot();
-                              setToastMessage("✅ Landing page screenshot updated!");
+                              setToastMessage(
+                                "✅ Landing page screenshot updated!",
+                              );
                               setShowToast(true);
                               setTimeout(() => setShowToast(false), 3000);
                               setIsSavingConfig(false);
@@ -4819,7 +4847,10 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   </label>
                                   <input
                                     type="text"
-                                    value={focusConfig.task_2.intention_modal_title || ""}
+                                    value={
+                                      focusConfig.task_2
+                                        .intention_modal_title || ""
+                                    }
                                     onChange={(e) =>
                                       setFocusConfig({
                                         ...focusConfig,
@@ -4840,13 +4871,17 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     </label>
                                     <input
                                       type="text"
-                                      value={focusConfig.task_2.intention_obstacles_label || ""}
+                                      value={
+                                        focusConfig.task_2
+                                          .intention_obstacles_label || ""
+                                      }
                                       onChange={(e) =>
                                         setFocusConfig({
                                           ...focusConfig,
                                           task_2: {
                                             ...focusConfig.task_2,
-                                            intention_obstacles_label: e.target.value,
+                                            intention_obstacles_label:
+                                              e.target.value,
                                           },
                                         })
                                       }
@@ -4860,13 +4895,17 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     </label>
                                     <input
                                       type="text"
-                                      value={focusConfig.task_2.intention_obstacles_placeholder || ""}
+                                      value={
+                                        focusConfig.task_2
+                                          .intention_obstacles_placeholder || ""
+                                      }
                                       onChange={(e) =>
                                         setFocusConfig({
                                           ...focusConfig,
                                           task_2: {
                                             ...focusConfig.task_2,
-                                            intention_obstacles_placeholder: e.target.value,
+                                            intention_obstacles_placeholder:
+                                              e.target.value,
                                           },
                                         })
                                       }
@@ -4882,13 +4921,17 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     </label>
                                     <input
                                       type="text"
-                                      value={focusConfig.task_2.intention_focus_label || ""}
+                                      value={
+                                        focusConfig.task_2
+                                          .intention_focus_label || ""
+                                      }
                                       onChange={(e) =>
                                         setFocusConfig({
                                           ...focusConfig,
                                           task_2: {
                                             ...focusConfig.task_2,
-                                            intention_focus_label: e.target.value,
+                                            intention_focus_label:
+                                              e.target.value,
                                           },
                                         })
                                       }
@@ -4902,13 +4945,17 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     </label>
                                     <input
                                       type="text"
-                                      value={focusConfig.task_2.intention_focus_placeholder || ""}
+                                      value={
+                                        focusConfig.task_2
+                                          .intention_focus_placeholder || ""
+                                      }
                                       onChange={(e) =>
                                         setFocusConfig({
                                           ...focusConfig,
                                           task_2: {
                                             ...focusConfig.task_2,
-                                            intention_focus_placeholder: e.target.value,
+                                            intention_focus_placeholder:
+                                              e.target.value,
                                           },
                                         })
                                       }
@@ -6642,7 +6689,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
               background:
                 brandingConfig.background_type === "gradient"
                   ? `linear-gradient(${brandingConfig.gradient_angle || 135}deg, ${brandingConfig.gradient_color_1 || "#ff6b9d"} 0%, ${brandingConfig.gradient_color_2 || "#ffa057"} ${brandingConfig.gradient_spread || 50}%, ${brandingConfig.gradient_color_2 || "#ffa057"} 100%)`
-                  : brandingConfig.background_color || "linear-gradient(135deg, #ff6b9d 0%, #ffa057 50%, #ffd96a 100%)",
+                  : brandingConfig.background_color ||
+                    "linear-gradient(135deg, #ff6b9d 0%, #ffa057 50%, #ffd96a 100%)",
             }}
           >
             {brandingConfig.app_logo_url ? (
@@ -6735,9 +6783,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                   >
                     0
                   </div>
-                  <div style={{ fontSize: "14px", color: "#6b7280" }}>
-                    of 3
-                  </div>
+                  <div style={{ fontSize: "14px", color: "#6b7280" }}>of 3</div>
                 </div>
               </div>
               <div
@@ -6797,7 +6843,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     )}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        marginBottom: "4px",
+                      }}
+                    >
                       <h3
                         style={{
                           fontSize: "18px",
@@ -6810,7 +6863,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       <span style={{ fontSize: "16px" }}>⭐</span>
                     </div>
                     <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                      {focusConfig.task_1?.subtitle || "Follow Your Spark • 7:00"}
+                      {focusConfig.task_1?.subtitle ||
+                        "Follow Your Spark • 7:00"}
                     </p>
                   </div>
                   <div
@@ -6827,7 +6881,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 <div
                   style={{
                     width: "100%",
-                    padding: "10px 0 22px",
+                    padding: "5px 0 22px",
                     backgroundColor: brandingConfig.primary_color || "#ef4444",
                     color: "#fff",
                     borderRadius: "8px",
@@ -7015,17 +7069,37 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     }}
                   />
                 ) : (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#ffffff"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
                   </svg>
                 )}
               </div>
               <div>
-                <h3 style={{ fontSize: "18px", fontWeight: 600, color: "#1a1a1a", marginBottom: "2px" }}>
+                <h3
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    color: "#1a1a1a",
+                    marginBottom: "2px",
+                  }}
+                >
                   {focusConfig.day_notes?.title || "Day Notes"}
                 </h3>
                 <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                  {focusConfig.day_notes?.subtitle || "Log observations to spot patterns"}
+                  {focusConfig.day_notes?.subtitle ||
+                    "Log observations to spot patterns"}
                 </p>
               </div>
             </div>
@@ -7049,33 +7123,138 @@ Remember: You're here to empower them to find their own answers, not to fix thei
             }}
           >
             {/* Focus - Compass icon */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", flex: 1 }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={brandingConfig.primary_color || "#ef4444"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill={brandingConfig.primary_color || "#ef4444"} stroke={brandingConfig.primary_color || "#ef4444"}/>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "4px",
+                flex: 1,
+              }}
+            >
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={brandingConfig.primary_color || "#ef4444"}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polygon
+                  points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"
+                  fill={brandingConfig.primary_color || "#ef4444"}
+                  stroke={brandingConfig.primary_color || "#ef4444"}
+                />
               </svg>
-              <span style={{ fontSize: "12px", color: brandingConfig.primary_color || "#ef4444", fontWeight: 600 }}>Focus</span>
+              <span
+                style={{
+                  fontSize: "12px",
+                  color: brandingConfig.primary_color || "#ef4444",
+                  fontWeight: 600,
+                }}
+              >
+                Focus
+              </span>
             </div>
             {/* Awareness - Sun icon */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", flex: 1 }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.5">
-                <circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "4px",
+                flex: 1,
+              }}
+            >
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#9ca3af"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity="0.5"
+              >
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2" />
+                <path d="M12 20v2" />
+                <path d="m4.93 4.93 1.41 1.41" />
+                <path d="m17.66 17.66 1.41 1.41" />
+                <path d="M2 12h2" />
+                <path d="M20 12h2" />
+                <path d="m6.34 17.66-1.41 1.41" />
+                <path d="m19.07 4.93-1.41 1.41" />
               </svg>
-              <span style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 400 }}>Awareness</span>
+              <span
+                style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 400 }}
+              >
+                Awareness
+              </span>
             </div>
             {/* Coach - MessageCircle icon */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", flex: 1 }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.5">
-                <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "4px",
+                flex: 1,
+              }}
+            >
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#9ca3af"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity="0.5"
+              >
+                <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" />
               </svg>
-              <span style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 400 }}>Coach</span>
+              <span
+                style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 400 }}
+              >
+                Coach
+              </span>
             </div>
             {/* More - Menu icon */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", flex: 1 }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.5">
-                <line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "4px",
+                flex: 1,
+              }}
+            >
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#9ca3af"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity="0.5"
+              >
+                <line x1="4" x2="20" y1="12" y2="12" />
+                <line x1="4" x2="20" y1="6" y2="6" />
+                <line x1="4" x2="20" y1="18" y2="18" />
               </svg>
-              <span style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 400 }}>More</span>
+              <span
+                style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 400 }}
+              >
+                More
+              </span>
             </div>
           </div>
         </div>

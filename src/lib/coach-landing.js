@@ -24,6 +24,7 @@ export async function getCoachLandingData(slug) {
     .single();
 
   const brandingData = coachConfig?.config?.branding || {};
+  const headerData = coachConfig?.config?.header || {};
   const focusScreenshotUrl = coachConfig?.config?.focus_screenshot_url || null;
 
   // Get landing config
@@ -104,6 +105,7 @@ export async function getCoachLandingData(slug) {
       tier3_name: coach.tier3_name || "Premium Plus",
       tier3_enabled: coach.tier3_enabled !== false,
       focus_screenshot_url: focusScreenshotUrl,
+      companion_name: headerData.title || null,
     },
     config,
     branding: brandingData,

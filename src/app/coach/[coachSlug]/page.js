@@ -75,6 +75,9 @@ export default function CoachLandingPage() {
       if (data.coach?.focus_screenshot_url) {
         imagesToLoad.push(data.coach.focus_screenshot_url);
       }
+      if (data.coach?.app_logo_url) {
+        imagesToLoad.push(data.coach.app_logo_url);
+      }
       if (data.coach?.logo_url) {
         imagesToLoad.push(data.coach.logo_url);
       }
@@ -90,8 +93,8 @@ export default function CoachLandingPage() {
                   img.onload = resolve;
                   img.onerror = resolve;
                   img.src = src;
-                })
-            )
+                }),
+            ),
           ),
           timeout, // Don't wait longer than 5s for images
         ]);
@@ -252,11 +255,23 @@ export default function CoachLandingPage() {
           }}
         >
           {/* Logo/Brand */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            {coach.logo_url && (
+          <div style={{ display: "flex", alignItems: "center" }}>
+            {coach.app_logo_url ? (
+              <img
+                src={coach.app_logo_url}
+                alt={coach.companion_name || coach.business_name}
+                className="nav-logo"
+                style={{
+                  height: "48px",
+                  maxWidth: "220px",
+                  width: "auto",
+                  objectFit: "contain",
+                }}
+              />
+            ) : coach.logo_url ? (
               <img
                 src={coach.logo_url}
-                alt={coach.business_name}
+                alt={coach.companion_name || coach.business_name}
                 className="nav-logo"
                 style={{
                   width: "40px",
@@ -265,17 +280,18 @@ export default function CoachLandingPage() {
                   objectFit: "cover",
                 }}
               />
+            ) : (
+              <span
+                className="nav-brand-text"
+                style={{
+                  fontSize: "20px",
+                  fontWeight: 700,
+                  color: "#1a1a1a",
+                }}
+              >
+                {coach.companion_name || coach.business_name}
+              </span>
             )}
-            <span
-              className="nav-brand-text"
-              style={{
-                fontSize: "20px",
-                fontWeight: 700,
-                color: "#1a1a1a",
-              }}
-            >
-              {coach.business_name}
-            </span>
           </div>
 
           {/* Login Button */}
@@ -477,10 +493,7 @@ export default function CoachLandingPage() {
             </div>
 
             {/* Text Content */}
-            <div
-              className="hero-mockup-text"
-              style={{ flex: 1, minWidth: 0 }}
-            >
+            <div className="hero-mockup-text" style={{ flex: 1, minWidth: 0 }}>
               <h1
                 style={{
                   fontSize: "44px",
@@ -520,20 +533,31 @@ export default function CoachLandingPage() {
                 </p>
               )}
 
-              {coach.tagline && (
+              <div style={{ marginBottom: "32px" }}>
                 <p
                   style={{
-                    fontSize: "14px",
-                    color: primaryColor,
-                    fontWeight: 600,
-                    marginBottom: "32px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
+                    fontSize: "15px",
+                    color: "#6b7280",
+                    fontWeight: 500,
+                    marginBottom: "4px",
                   }}
                 >
-                  {coach.tagline}
+                  Made by {coach.business_name}
                 </p>
-              )}
+                {coach.tagline && (
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      color: primaryColor,
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    {coach.tagline}
+                  </p>
+                )}
+              </div>
 
               <button
                 onClick={() =>
@@ -819,119 +843,123 @@ export default function CoachLandingPage() {
             </div>
 
             {/* Tier 3 Plan */}
-            {coach.tier3_enabled !== false && (<div
-              style={{
-                backgroundColor: "#fff",
-                borderRadius: "20px",
-                padding: "36px 26px",
-                boxShadow: "0 8px 36px rgba(251, 191, 36, 0.3)",
-                border: "3px solid #fbbf24",
-                position: "relative",
-              }}
-            >
+            {coach.tier3_enabled !== false && (
               <div
                 style={{
-                  position: "absolute",
-                  top: "-12px",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  backgroundColor: "#fbbf24",
-                  color: "#000",
-                  padding: "4px 14px",
+                  backgroundColor: "#fff",
                   borderRadius: "20px",
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  letterSpacing: "0.5px",
+                  padding: "36px 26px",
+                  boxShadow: "0 8px 36px rgba(251, 191, 36, 0.3)",
+                  border: "3px solid #fbbf24",
+                  position: "relative",
                 }}
               >
-                ELITE
-              </div>
-              <h3
-                style={{
-                  fontSize: "22px",
-                  fontWeight: 700,
-                  marginBottom: "10px",
-                  textAlign: "center",
-                }}
-              >
-                {coach.tier3_name || "Premium Plus"}
-              </h3>
-              <div style={{ marginBottom: "26px", textAlign: "center" }}>
-                <span
+                <div
                   style={{
-                    fontSize: "44px",
+                    position: "absolute",
+                    top: "-12px",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    backgroundColor: "#fbbf24",
+                    color: "#000",
+                    padding: "4px 14px",
+                    borderRadius: "20px",
+                    fontSize: "11px",
                     fontWeight: 700,
-                    color: "#ea580c",
+                    letterSpacing: "0.5px",
                   }}
                 >
-                  {formatPrice(
-                    landingData?.pricing?.tier3_price_cents ||
-                      coach.user_monthly_price_cents ||
-                      1999,
-                  )}
-                </span>
-                <span style={{ fontSize: "16px", color: "#6b7280" }}>
-                  /month
-                </span>
-              </div>
-
-              <ul
-                style={{
-                  listStyle: "none",
-                  padding: 0,
-                  marginBottom: "26px",
-                  minHeight: "140px",
-                }}
-              >
-                {[
-                  "Everything in Daily Companion",
-                  "Exclusive Resource Hub access",
-                  "Community calls & programs",
-                  "Curated learning library",
-                ].map((feature, idx) => (
-                  <li
-                    key={idx}
+                  ELITE
+                </div>
+                <h3
+                  style={{
+                    fontSize: "22px",
+                    fontWeight: 700,
+                    marginBottom: "10px",
+                    textAlign: "center",
+                  }}
+                >
+                  {coach.tier3_name || "Premium Plus"}
+                </h3>
+                <div style={{ marginBottom: "26px", textAlign: "center" }}>
+                  <span
                     style={{
-                      marginBottom: "10px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      fontSize: "14px",
-                      color: "#4b5563",
+                      fontSize: "44px",
+                      fontWeight: 700,
+                      color: "#ea580c",
                     }}
                   >
-                    <span style={{ color: "#ea580c", fontSize: "18px" }}>
-                      ✓
-                    </span>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
+                    {formatPrice(
+                      landingData?.pricing?.tier3_price_cents ||
+                        coach.user_monthly_price_cents ||
+                        1999,
+                    )}
+                  </span>
+                  <span style={{ fontSize: "16px", color: "#6b7280" }}>
+                    /month
+                  </span>
+                </div>
 
-              <button
-                onClick={() => {
-                  window.location.href = `/signup?coach=${params.coachSlug}&plan=premium&tier=3`;
-                }}
-                style={{
-                  width: "100%",
-                  backgroundColor: "#fbbf24",
-                  color: "#000",
-                  fontSize: "15px",
-                  fontWeight: 700,
-                  padding: "12px 18px",
-                  borderRadius: "12px",
-                  border: "none",
-                  cursor: "pointer",
-                  transition: "filter 0.2s",
-                }}
-                onMouseEnter={(e) =>
-                  (e.target.style.filter = "brightness(0.9)")
-                }
-                onMouseLeave={(e) => (e.target.style.filter = "brightness(1)")}
-              >
-                Start {coach.tier3_name || "Premium Plus"}
-              </button>
-            </div>)}
+                <ul
+                  style={{
+                    listStyle: "none",
+                    padding: 0,
+                    marginBottom: "26px",
+                    minHeight: "140px",
+                  }}
+                >
+                  {[
+                    "Everything in Daily Companion",
+                    "Exclusive Resource Hub access",
+                    "Community calls & programs",
+                    "Curated learning library",
+                  ].map((feature, idx) => (
+                    <li
+                      key={idx}
+                      style={{
+                        marginBottom: "10px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        fontSize: "14px",
+                        color: "#4b5563",
+                      }}
+                    >
+                      <span style={{ color: "#ea580c", fontSize: "18px" }}>
+                        ✓
+                      </span>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  onClick={() => {
+                    window.location.href = `/signup?coach=${params.coachSlug}&plan=premium&tier=3`;
+                  }}
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#fbbf24",
+                    color: "#000",
+                    fontSize: "15px",
+                    fontWeight: 700,
+                    padding: "12px 18px",
+                    borderRadius: "12px",
+                    border: "none",
+                    cursor: "pointer",
+                    transition: "filter 0.2s",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.target.style.filter = "brightness(0.9)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.target.style.filter = "brightness(1)")
+                  }
+                >
+                  Start {coach.tier3_name || "Premium Plus"}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Yearly Savings Note */}
