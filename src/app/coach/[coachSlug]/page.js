@@ -223,8 +223,9 @@ export default function CoachLandingPage() {
             font-size: 16px !important;
           }
           .nav-logo {
-            width: 32px !important;
-            height: 32px !important;
+            height: 36px !important;
+            width: auto !important;
+            max-width: 180px !important;
           }
           .nav-login-btn {
             font-size: 13px !important;
