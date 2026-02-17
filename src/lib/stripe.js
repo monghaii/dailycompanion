@@ -322,7 +322,7 @@ export async function checkConnectAccountStatus(accountId) {
   };
 }
 
-// Set minimum balance ($100) on a connected account to cover refunds
+// Set minimum balance ($150) on a connected account to cover refunds
 export async function setMinimumBalance(accountId, currency = "usd") {
   try {
     await stripe.balanceSettings.update(
@@ -330,7 +330,7 @@ export async function setMinimumBalance(accountId, currency = "usd") {
         payments: {
           payouts: {
             minimum_balance_by_currency: {
-              [currency]: 10000, // $100 equivalent in minor units
+              [currency]: 15000, // $150 equivalent in minor units
             },
           },
         },
@@ -338,7 +338,7 @@ export async function setMinimumBalance(accountId, currency = "usd") {
       { stripeAccount: accountId },
     );
     console.log(
-      `Minimum balance set to 100 ${currency.toUpperCase()} for ${accountId}`,
+      `Minimum balance set to 150 ${currency.toUpperCase()} for ${accountId}`,
     );
     return true;
   } catch (error) {
