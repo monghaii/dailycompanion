@@ -215,11 +215,11 @@ export async function createUserSubscriptionCheckout({
     tierName = "Daily Companion";
     tierDescription = "Full access to all features";
   } else if (tier === 3) {
-    // Tier 3: Coach-set price (minimum $49.99)
-    userPriceCents = coach.user_monthly_price_cents || 4999;
+    // Tier 3: Coach-set price (minimum $19.99)
+    userPriceCents = coach.user_monthly_price_cents || 1999;
     // Ensure minimum price
-    if (userPriceCents < 4999) {
-      userPriceCents = 4999;
+    if (userPriceCents < 1999) {
+      userPriceCents = 1999;
     }
     // Platform fee: 20% or $5, whichever is higher
     const twentyPercentFee = Math.round(userPriceCents * 0.2);

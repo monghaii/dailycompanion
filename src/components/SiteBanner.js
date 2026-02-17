@@ -98,16 +98,17 @@ export default function SiteBanner() {
 
   if (!banner || dismissed) return null;
 
-  const style = BANNER_STYLES[banner.banner_type] || BANNER_STYLES.error;
+  const bannerStyle = BANNER_STYLES[banner.banner_type] || BANNER_STYLES.error;
+  const BannerIcon = bannerStyle.Icon;
 
   return (
     <div
       style={{
         position: "relative",
         zIndex: 99999,
-        backgroundColor: style.bg,
-        borderBottom: `1px solid ${style.border}`,
-        color: style.text,
+        backgroundColor: bannerStyle.bg,
+        borderBottom: `1px solid ${bannerStyle.border}`,
+        color: bannerStyle.text,
         padding: "10px 16px",
         fontSize: "14px",
         display: "flex",
@@ -116,7 +117,7 @@ export default function SiteBanner() {
         gap: "8px",
       }}
     >
-      <style.Icon color={style.text} />
+      <BannerIcon color={bannerStyle.text} />
       <span style={{ textAlign: "center", flex: 1 }}>{banner.message}</span>
       <button
         onClick={() => {
@@ -126,7 +127,7 @@ export default function SiteBanner() {
         style={{
           background: "none",
           border: "none",
-          color: style.text,
+          color: bannerStyle.text,
           cursor: "pointer",
           fontSize: "18px",
           lineHeight: 1,
@@ -136,7 +137,7 @@ export default function SiteBanner() {
         }}
         aria-label="Dismiss banner"
       >
-        <CloseIcon color={style.text} />
+        <CloseIcon color={bannerStyle.text} />
       </button>
     </div>
   );

@@ -83,7 +83,7 @@ export async function POST(request) {
             price_cents:
               parseInt(session.metadata.price_cents) ||
               (parseInt(session.metadata.subscription_tier) === 3
-                ? 4999
+                ? 1999
                 : 999),
           };
 

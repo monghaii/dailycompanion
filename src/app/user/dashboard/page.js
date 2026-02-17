@@ -6095,7 +6095,7 @@ function UserDashboardContent() {
                           >
                             $
                             {(
-                              (user?.coach?.user_monthly_price_cents || 4999) /
+                              (user?.coach?.user_monthly_price_cents || 1999) /
                               100
                             ).toFixed(2)}
                           </div>

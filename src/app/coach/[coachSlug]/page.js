@@ -9,6 +9,43 @@ export default function CoachLandingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Set dynamic favicon, page title, and meta description based on coach data
+  useEffect(() => {
+    const coach = landingData?.coach;
+    if (!coach?.business_name) return;
+
+    document.title = `${coach.business_name} | Daily Companion`;
+
+    // Set meta description
+    const description =
+      coach.tagline ||
+      `Daily practices and awareness tools designed to quiet internal noise and build habits that support calm, focus, and steady growth.`;
+    let meta = document.querySelector('meta[name="description"]');
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "description";
+      document.head.appendChild(meta);
+    }
+    meta.content = description;
+
+    // Set favicon to coach's business logo
+    if (coach.logo_url) {
+      let link = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        document.head.appendChild(link);
+      }
+      link.href = coach.logo_url;
+    }
+
+    return () => {
+      document.title = "Daily Companion";
+      const link = document.querySelector("link[rel~='icon']");
+      if (link) link.href = "/favicon.ico";
+    };
+  }, [landingData]);
+
   useEffect(() => {
     fetchLandingData();
   }, [params.coachSlug]);
@@ -87,42 +124,6 @@ export default function CoachLandingPage() {
   const pricing = config.pricing || {};
   const testimonials = config.testimonials || [];
   const primaryColor = branding.primary_color || coach.theme_color || "#7c3aed";
-
-  // Set dynamic favicon, page title, and meta description based on coach data
-  useEffect(() => {
-    if (!coach.business_name) return;
-
-    document.title = `${coach.business_name} | Daily Companion`;
-
-    // Set meta description
-    const description =
-      coach.tagline ||
-      `Daily practices and awareness tools designed to quiet internal noise and build habits that support calm, focus, and steady growth.`;
-    let meta = document.querySelector('meta[name="description"]');
-    if (!meta) {
-      meta = document.createElement("meta");
-      meta.name = "description";
-      document.head.appendChild(meta);
-    }
-    meta.content = description;
-
-    // Set favicon to coach's business logo
-    if (coach.logo_url) {
-      let link = document.querySelector("link[rel~='icon']");
-      if (!link) {
-        link = document.createElement("link");
-        link.rel = "icon";
-        document.head.appendChild(link);
-      }
-      link.href = coach.logo_url;
-    }
-
-    return () => {
-      document.title = "Daily Companion";
-      const link = document.querySelector("link[rel~='icon']");
-      if (link) link.href = "/favicon.ico";
-    };
-  }, [coach.business_name, coach.logo_url, coach.tagline]);
 
   const formatPrice = (cents) => {
     return `$${(cents / 100).toFixed(2)}`;
@@ -672,7 +673,7 @@ export default function CoachLandingPage() {
                   {formatPrice(
                     landingData?.pricing?.tier3_price_cents ||
                       coach.user_monthly_price_cents ||
-                      4999,
+                      1999,
                   )}
                 </span>
                 <span style={{ fontSize: "16px", color: "#6b7280" }}>
