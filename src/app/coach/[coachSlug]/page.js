@@ -632,7 +632,7 @@ export default function CoachLandingPage() {
             </div>
 
             {/* Tier 3 Plan */}
-            <div
+            {coach.tier3_enabled !== false && (<div
               style={{
                 backgroundColor: "#fff",
                 borderRadius: "20px",
@@ -744,7 +744,7 @@ export default function CoachLandingPage() {
               >
                 Start {coach.tier3_name || "Premium Plus"}
               </button>
-            </div>
+            </div>)}
           </div>
 
           {/* Yearly Savings Note */}

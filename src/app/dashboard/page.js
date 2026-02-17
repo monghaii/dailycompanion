@@ -357,6 +357,7 @@ function DashboardContent() {
     landing_cta: "",
     user_monthly_price_cents: 1999,
     tier3_name: "Premium Plus",
+    tier3_enabled: true,
     logo_url: null,
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -824,6 +825,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           landing_cta: user.coach.landing_cta || "",
           user_monthly_price_cents: user.coach.user_monthly_price_cents || 1999,
           tier3_name: user.coach.tier3_name || "Premium Plus",
+          tier3_enabled: user.coach.tier3_enabled !== false,
           logo_url: user.coach.logo_url || null,
         });
         setTier3PriceInput(
@@ -2156,7 +2158,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     </div>
 
                     {/* Tier 3 - Custom Name (Coach Sets Price) */}
-                    <div className="border border-amber-300 rounded-lg p-4 bg-amber-50">
+                    <div className={`border rounded-lg p-4 ${profileConfig.tier3_enabled ? "border-amber-300 bg-amber-50" : "border-gray-200 bg-gray-50"}`}>
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <h3 className="font-semibold text-gray-900">
@@ -2166,11 +2168,33 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             Premium + exclusive Resource Hub access
                           </p>
                         </div>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-200 text-amber-900">
-                          Custom Price
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setProfileConfig((prev) => ({
+                              ...prev,
+                              tier3_enabled: !prev.tier3_enabled,
+                            }))
+                          }
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            profileConfig.tier3_enabled ? "bg-amber-500" : "bg-gray-300"
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              profileConfig.tier3_enabled ? "translate-x-6" : "translate-x-1"
+                            }`}
+                          />
+                        </button>
                       </div>
 
+                      {!profileConfig.tier3_enabled && (
+                        <p className="text-sm text-gray-500 italic">
+                          This tier is currently hidden from your landing page and user dashboard. Toggle on to enable it.
+                        </p>
+                      )}
+
+                      {profileConfig.tier3_enabled && (<>
                       <div className="mt-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Tier Name
@@ -2284,6 +2308,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           </span>
                         </div>
                       </div>
+                      </>)}
 
                       <button
                         onClick={handleSaveProfile}

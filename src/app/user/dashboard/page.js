@@ -4063,7 +4063,12 @@ function UserDashboardContent() {
                   id: "settings",
                   isPremium: false,
                 },
-              ].map((item, idx) => {
+              ].filter((item) => {
+                if (item.requiresTier3 && user?.coach?.tier3_enabled === false && subscriptionStatus?.tier !== 3) {
+                  return false;
+                }
+                return true;
+              }).map((item, idx) => {
                 const isLocked = item.requiresTier3
                   ? subscriptionStatus?.tier !== 3
                   : item.isPremium && !subscriptionStatus?.isPremium;
@@ -6029,8 +6034,8 @@ function UserDashboardContent() {
                       </div>
                     </div>
 
-                    {/* Tier 3 Plan */}
-                    <div
+                    {/* Tier 3 Plan - only show if enabled by coach or user is currently on tier 3 */}
+                    {(user?.coach?.tier3_enabled !== false || subscriptionStatus?.tier === 3) && (<div
                       style={{
                         border: `1px solid ${subscriptionStatus?.tier === 3 ? primaryColor : "#e5e7eb"}`,
                         borderRadius: "12px",
@@ -6148,7 +6153,7 @@ function UserDashboardContent() {
                           </button>
                         )}
                       </div>
-                    </div>
+                    </div>)}
                   </div>
 
                   {/* Yearly Billing Info */}
