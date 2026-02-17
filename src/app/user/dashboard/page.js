@@ -484,6 +484,7 @@ function UserDashboardContent() {
   const fetchCoachConfig = async () => {
     try {
       const res = await fetch("/api/user/coach-config");
+      if (checkAuthResponse(res)) return;
       const data = await res.json();
 
       if (res.ok && data.config) {
@@ -532,6 +533,7 @@ function UserDashboardContent() {
     try {
       const todayStr = getTodayInUserTimezone();
       const res = await fetch(`/api/daily-entries/date?date=${todayStr}`);
+      if (checkAuthResponse(res)) return;
       const data = await res.json();
 
       if (res.ok && data.entry) {
@@ -699,6 +701,7 @@ function UserDashboardContent() {
   const fetchProfileSettings = async () => {
     try {
       const res = await fetch("/api/profile");
+      if (checkAuthResponse(res)) return;
       const data = await res.json();
 
       if (res.ok && data.profile) {
@@ -720,6 +723,7 @@ function UserDashboardContent() {
     setIsLoadingSubscription(true);
     try {
       const res = await fetch("/api/user/subscription-status");
+      if (checkAuthResponse(res)) return;
       const data = await res.json();
 
       if (res.ok) {
@@ -737,6 +741,7 @@ function UserDashboardContent() {
     setRhLoadingCollections(true);
     try {
       const res = await fetch("/api/user/resource-hub");
+      if (checkAuthResponse(res)) return;
       if (res.ok) {
         const data = await res.json();
         setRhCollections(data.collections || []);
@@ -750,6 +755,7 @@ function UserDashboardContent() {
     setRhActiveCollection(collectionId);
     try {
       const res = await fetch(`/api/user/resource-hub?collectionId=${collectionId}`);
+      if (checkAuthResponse(res)) return;
       if (res.ok) {
         const data = await res.json();
         setRhActiveCollection(data.collection);
@@ -824,6 +830,8 @@ function UserDashboardContent() {
         }),
       });
 
+      if (checkAuthResponse(res)) return;
+
       const data = await res.json();
 
       if (res.ok && data.url) {
@@ -859,6 +867,8 @@ function UserDashboardContent() {
         method: "POST",
       });
 
+      if (checkAuthResponse(res)) return;
+
       const data = await res.json();
 
       if (res.ok) {
@@ -891,6 +901,8 @@ function UserDashboardContent() {
         }),
       });
 
+      if (checkAuthResponse(profileRes)) return;
+
       // Save timezone
       const settingsRes = await fetch("/api/user/settings", {
         method: "PATCH",
@@ -899,6 +911,8 @@ function UserDashboardContent() {
           timezone: settingsTimezone,
         }),
       });
+
+      if (checkAuthResponse(settingsRes)) return;
 
       if (profileRes.ok && settingsRes.ok) {
         setToastMessage("Settings saved");
@@ -936,6 +950,14 @@ function UserDashboardContent() {
     }
   };
 
+  const checkAuthResponse = (res) => {
+    if (res.status === 401) {
+      router.push("/login");
+      return true;
+    }
+    return false;
+  };
+
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
@@ -970,6 +992,8 @@ function UserDashboardContent() {
           [taskMap[task]]: newValue,
         }),
       });
+
+      if (checkAuthResponse(res)) return;
 
       if (res.ok) {
         const data = await res.json();
@@ -1442,6 +1466,8 @@ function UserDashboardContent() {
           })),
         }),
       });
+
+      if (checkAuthResponse(response)) return;
 
       const data = await response.json();
 

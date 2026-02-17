@@ -19,6 +19,7 @@ function ClientsSection() {
   async function fetchClients() {
     try {
       const res = await fetch("/api/coach/clients");
+      if (res.status === 401) { router.push("/coach/login"); return; }
       const data = await res.json();
 
       if (!res.ok) {
@@ -866,6 +867,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
   const fetchCoachConfig = async () => {
     try {
       const res = await fetch("/api/coach/config");
+      if (checkAuthResponse(res)) return;
       const data = await res.json();
 
       if (res.ok && data.config) {
@@ -969,6 +971,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
       // Fetch landing page config (separate table)
       const landingRes = await fetch("/api/coach/landing-config");
+      if (checkAuthResponse(landingRes)) return;
       const landingData = await landingRes.json();
       if (landingRes.ok && landingData.config) {
         setLandingConfig((prev) => ({
@@ -984,6 +987,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
   const fetchTokenUsage = async () => {
     try {
       const res = await fetch("/api/coach/token-usage");
+      if (checkAuthResponse(res)) return;
       const data = await res.json();
 
       if (res.ok) {
@@ -1017,6 +1021,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     }
   };
 
+  const checkAuthResponse = (res) => {
+    if (res.status === 401) {
+      router.push("/coach/login");
+      return true;
+    }
+    return false;
+  };
+
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/");
@@ -1029,6 +1041,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
+      if (checkAuthResponse(res)) return;
       const data = await res.json();
       if (data.url) window.location.href = data.url;
     } catch (error) {
@@ -1042,6 +1055,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     try {
       setPayoutLoading(true);
       const res = await fetch("/api/stripe/connect", { method: "POST" });
+      if (checkAuthResponse(res)) return;
       const data = await res.json();
 
       if (!res.ok) {
@@ -1100,6 +1114,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
   const fetchRhCollections = async () => {
     try {
       const res = await fetch("/api/resource-hub/collections");
+      if (checkAuthResponse(res)) return;
       if (res.ok) {
         const data = await res.json();
         setRhCollections(data.collections || []);
@@ -1112,6 +1127,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
   const fetchRhContent = async () => {
     try {
       const res = await fetch("/api/resource-hub/content");
+      if (checkAuthResponse(res)) return;
       if (res.ok) {
         const data = await res.json();
         setRhContentItems(data.items || []);
@@ -1137,6 +1153,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     setRhEditing(collectionId);
     try {
       const res = await fetch(`/api/resource-hub/collections/${collectionId}`);
+      if (checkAuthResponse(res)) return;
       if (res.ok) {
         const data = await res.json();
         setRhEditCollection(data.collection);
@@ -1154,6 +1171,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: "New Collection" }),
       });
+      if (checkAuthResponse(res)) return;
       if (res.ok) {
         const data = await res.json();
         await fetchRhCollections();
@@ -1167,7 +1185,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
   const handleDeleteCollection = async (id) => {
     if (!confirm("Delete this collection? This cannot be undone.")) return;
     try {
-      await fetch(`/api/resource-hub/collections/${id}`, { method: "DELETE" });
+      const delRes = await fetch(`/api/resource-hub/collections/${id}`, { method: "DELETE" });
+      if (checkAuthResponse(delRes)) return;
       setRhCollections((prev) => prev.filter((c) => c.id !== id));
       if (rhEditing === id) {
         setRhEditing(null);
@@ -1188,11 +1207,13 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       const description = document.getElementById("rh-col-desc")?.value || "";
       const icon = rhEditCollection.icon || "folder";
 
-      await fetch(`/api/resource-hub/collections/${rhEditCollection.id}`, {
+      const metaRes = await fetch(`/api/resource-hub/collections/${rhEditCollection.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, description, icon, delivery_mode: rhEditCollection.delivery_mode, is_published: rhEditCollection.is_published }),
       });
+
+      if (checkAuthResponse(metaRes)) return;
 
       setRhEditCollection((prev) => ({ ...prev, title, description, icon }));
 
@@ -1208,6 +1229,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: itemsPayload }),
       });
+
+      if (checkAuthResponse(res)) return;
 
       if (res.ok) {
         const data = await res.json();
@@ -1239,6 +1262,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         uploadForm.append("type", formData.type === "pdf" ? "pdf" : formData.type === "video" ? "video" : "audio");
 
         const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadForm });
+        if (checkAuthResponse(uploadRes)) return;
         if (!uploadRes.ok) {
           const err = await uploadRes.json();
           alert("Upload failed: " + (err.error || "Unknown error"));
@@ -1264,6 +1288,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         }),
       });
 
+      if (checkAuthResponse(res)) return;
+
       if (res.ok) {
         await fetchRhContent();
         setRhShowAddContent(false);
@@ -1281,7 +1307,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
   const handleDeleteContentItem = async (id) => {
     if (!confirm("Delete this content item?")) return;
     try {
-      await fetch(`/api/resource-hub/content/${id}`, { method: "DELETE" });
+      const delRes = await fetch(`/api/resource-hub/content/${id}`, { method: "DELETE" });
+      if (checkAuthResponse(delRes)) return;
       setRhContentItems((prev) => prev.filter((c) => c.id !== id));
     } catch (e) {
       console.error("Failed to delete content:", e);
@@ -1759,6 +1786,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         body: JSON.stringify(currentProfile),
       });
 
+      if (checkAuthResponse(res)) return;
+
       const data = await res.json();
 
       if (res.ok) {
@@ -1813,6 +1842,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           value: data,
         }),
       });
+
+      if (checkAuthResponse(res)) return;
 
       const resData = await res.json();
 
@@ -1916,6 +1947,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ config: currentConfig }),
       });
+
+      if (checkAuthResponse(res)) return;
 
       const resData = await res.json();
 
@@ -7981,6 +8014,36 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {showToast && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "32px",
+            right: "32px",
+            backgroundColor: toastMessage.startsWith("❌") ? "#fef2f2" : "#f0fdf4",
+            border: `1px solid ${toastMessage.startsWith("❌") ? "#fecaca" : "#bbf7d0"}`,
+            color: toastMessage.startsWith("❌") ? "#991b1b" : "#166534",
+            padding: "12px 20px",
+            borderRadius: "12px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+            zIndex: 99999,
+            fontSize: "14px",
+            fontWeight: 500,
+            maxWidth: "400px",
+            animation: "toastSlideIn 0.3s ease-out",
+          }}
+        >
+          {toastMessage}
+        </div>
+      )}
+      <style>{`
+        @keyframes toastSlideIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
