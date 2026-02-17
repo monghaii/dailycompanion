@@ -3660,8 +3660,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {isSavingConfig && savingSection === "screenshot"
-                              ? "Capturing..."
-                              : "Refresh Screenshot"}
+                              ? "Updating..."
+                              : "Update Landing Page App Preview"}
                           </button>
                         </div>
                       </div>
@@ -6637,7 +6637,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           {/* App Header — gradient only here */}
           <div
             style={{
-              padding: "56px 24px 44px",
+              padding: "56px 24px 64px",
               textAlign: "center",
               background:
                 brandingConfig.background_type === "gradient"
@@ -6823,28 +6823,20 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     }}
                   />
                 </div>
-                {/* Listen Now button */}
+                {/* Listen Now button - plain padding, no tricks */}
                 <div
                   style={{
                     width: "100%",
-                    height: "52px",
+                    padding: "10px 0 22px",
                     backgroundColor: brandingConfig.primary_color || "#ef4444",
                     color: "#fff",
-                    border: "none",
                     borderRadius: "8px",
                     fontSize: "18px",
                     fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "10px",
-                    boxSizing: "border-box",
+                    textAlign: "center",
                   }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                  <span style={{ lineHeight: 1 }}>Listen Now</span>
+                  Listen Now
                 </div>
               </div>
             )}

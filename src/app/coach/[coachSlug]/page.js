@@ -7,6 +7,7 @@ export default function CoachLandingPage() {
   const router = useRouter();
   const [landingData, setLandingData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [imagesReady, setImagesReady] = useState(false);
   const [error, setError] = useState(null);
 
   // Set dynamic favicon, page title, and meta description based on coach data
@@ -68,14 +69,43 @@ export default function CoachLandingPage() {
 
       const data = await response.json();
       setLandingData(data);
+
+      // Preload key images before showing page
+      const imagesToLoad = [];
+      if (data.coach?.focus_screenshot_url) {
+        imagesToLoad.push(data.coach.focus_screenshot_url);
+      }
+      if (data.coach?.logo_url) {
+        imagesToLoad.push(data.coach.logo_url);
+      }
+
+      if (imagesToLoad.length > 0) {
+        const timeout = new Promise((resolve) => setTimeout(resolve, 5000));
+        await Promise.race([
+          Promise.all(
+            imagesToLoad.map(
+              (src) =>
+                new Promise((resolve) => {
+                  const img = new Image();
+                  img.onload = resolve;
+                  img.onerror = resolve;
+                  img.src = src;
+                })
+            )
+          ),
+          timeout, // Don't wait longer than 5s for images
+        ]);
+      }
+      setImagesReady(true);
     } catch (err) {
       setError(err.message);
+      setImagesReady(true); // Don't block on error
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !imagesReady) {
     return (
       <div
         style={{
