@@ -118,6 +118,19 @@ function UserDashboardContent() {
   const [showPracticeControls, setShowPracticeControls] = useState(false);
   const suggestedPracticeRef = useRef(null);
 
+  // Resource Hub state
+  const [rhCollections, setRhCollections] = useState([]);
+  const [rhActiveCollection, setRhActiveCollection] = useState(null);
+  const [rhCollectionItems, setRhCollectionItems] = useState([]);
+  const [rhLoadingCollections, setRhLoadingCollections] = useState(false);
+  const [rhLoadingItems, setRhLoadingItems] = useState(false);
+  const [rhVideoPlayer, setRhVideoPlayer] = useState(null); // { url, title } or null
+  const [rhAudioPlayer, setRhAudioPlayer] = useState(null); // { url, title } or null
+  const [rhAudioPlaying, setRhAudioPlaying] = useState(false);
+  const [rhAudioTime, setRhAudioTime] = useState(0);
+  const [rhAudioDuration, setRhAudioDuration] = useState(0);
+  const rhAudioRef = useRef(null);
+
   // Timezone utility functions
   const getTodayInUserTimezone = () => {
     const now = new Date();
@@ -368,6 +381,13 @@ function UserDashboardContent() {
       fetchAwarenessInsights(awarenessTimeframe);
     }
   }, [user, moreSubpage, insightsTab, awarenessTimeframe]);
+
+  // Fetch resource hub collections when page opens
+  useEffect(() => {
+    if (user && moreSubpage === "resources" && subscriptionStatus?.tier === 3 && rhCollections.length === 0 && !rhLoadingCollections) {
+      fetchRhCollections();
+    }
+  }, [user, moreSubpage, subscriptionStatus]);
 
   // Persist state to localStorage
   useEffect(() => {
@@ -710,6 +730,80 @@ function UserDashboardContent() {
     } finally {
       setIsLoadingSubscription(false);
     }
+  };
+
+  // Resource Hub functions
+  const fetchRhCollections = async () => {
+    setRhLoadingCollections(true);
+    try {
+      const res = await fetch("/api/user/resource-hub");
+      if (res.ok) {
+        const data = await res.json();
+        setRhCollections(data.collections || []);
+      }
+    } catch (e) { console.error("Failed to fetch resource hub:", e); }
+    setRhLoadingCollections(false);
+  };
+
+  const openRhCollection = async (collectionId) => {
+    setRhLoadingItems(true);
+    setRhActiveCollection(collectionId);
+    try {
+      const res = await fetch(`/api/user/resource-hub?collectionId=${collectionId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setRhActiveCollection(data.collection);
+        setRhCollectionItems(data.items || []);
+      }
+    } catch (e) { console.error("Failed to fetch collection:", e); }
+    setRhLoadingItems(false);
+  };
+
+  const markContentViewed = async (contentItemId, collectionId) => {
+    try {
+      await fetch("/api/user/resource-hub/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content_item_id: contentItemId, collection_id: collectionId }),
+      });
+    } catch (e) { console.error("Failed to mark viewed:", e); }
+  };
+
+  const handleContentAction = async (item, collection) => {
+    const content = item.content_item;
+    if (!content) return;
+
+    // Mark as viewed
+    await markContentViewed(content.id, collection.id);
+
+    // If link_url, open in new tab
+    if (content.link_url) {
+      window.open(content.link_url, "_blank");
+      // Refresh items to update viewed status
+      openRhCollection(collection.id);
+      return;
+    }
+
+    // Native playback based on type
+    if (content.type === "pdf") {
+      window.open(content.file_url, "_blank");
+      openRhCollection(collection.id);
+    } else if (content.type === "video") {
+      setRhVideoPlayer({ url: content.file_url, title: content.title });
+      openRhCollection(collection.id);
+    } else if (content.type === "audio") {
+      setRhAudioPlayer({ url: content.file_url, title: content.title });
+      setRhAudioPlaying(false);
+      setRhAudioTime(0);
+      setRhAudioDuration(0);
+      openRhCollection(collection.id);
+    }
+  };
+
+  const formatRhTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
   const handleChangeTier = async (tier, interval = "monthly") => {
@@ -4442,218 +4536,182 @@ function UserDashboardContent() {
           <div style={{ marginTop: "24px", position: "relative" }}>
             {/* Locked Overlay - Only Tier 3 users can access */}
             {subscriptionStatus?.tier !== 3 && (
-              <div
-                style={{
-                  position: "fixed",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: "rgba(255, 255, 255, 0.7)",
-                  backdropFilter: "blur(4px)",
-                  zIndex: 10,
-                  pointerEvents: "all",
-                  cursor: "not-allowed",
-                }}
-              />
+              <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(255, 255, 255, 0.7)", backdropFilter: "blur(4px)", zIndex: 10, pointerEvents: "all", cursor: "not-allowed" }} />
             )}
-            {/* Back Button & Title */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
-                marginBottom: "16px",
-              }}
-            >
-              <button
-                onClick={() => setMoreSubpage(null)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "24px",
-                  cursor: "pointer",
-                  padding: "0",
-                  color: "#1a1a1a",
-                }}
-              >
-                ←
-              </button>
-              <h2
-                style={{
-                  fontSize: "28px",
-                  fontWeight: 700,
-                  color: "#1a1a1a",
-                  margin: 0,
-                }}
-              >
-                Resource Hub
-              </h2>
-            </div>
 
-            <p
-              style={{
-                fontSize: "16px",
-                color: "#6b7280",
-                marginBottom: "24px",
-              }}
-            >
-              Your curated collection of tools & wisdom
-            </p>
+            {rhActiveCollection && typeof rhActiveCollection === "object" ? (
+              /* ── Collection Detail View ── */
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px" }}>
+                  <button onClick={() => { setRhActiveCollection(null); setRhCollectionItems([]); setRhAudioPlayer(null); setRhVideoPlayer(null); fetchRhCollections(); }} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", padding: "0", color: "#1a1a1a" }}>←</button>
+                  <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#1a1a1a", margin: 0 }}>{rhActiveCollection.title}</h2>
+                </div>
+                {rhActiveCollection.description && <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "20px" }}>{rhActiveCollection.description}</p>}
+                {rhActiveCollection.delivery_mode === "drip" && <div style={{ fontSize: "13px", color: primaryColor, backgroundColor: `${primaryColor}10`, border: `1px solid ${primaryColor}30`, borderRadius: "8px", padding: "8px 12px", marginBottom: "20px" }}>This is a drip collection — content unlocks progressively as you complete items.</div>}
 
-            {/* Resource Categories */}
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-            >
-              {[
-                {
-                  icon: "📚",
-                  title: "Bonus Library",
-                  subtitle: "Extra practices to explore",
-                  badge: "2",
-                  count: 4,
-                },
-                {
-                  icon: "📹",
-                  title: "Community Calls",
-                  subtitle: "Recorded sessions you can revisit",
-                  badge: "1",
-                  count: 4,
-                },
-                {
-                  icon: "✨",
-                  title: "Curated Learning",
-                  subtitle: "Wisdom from leading experts",
-                  badge: "2",
-                  count: 4,
-                },
-                {
-                  icon: "📋",
-                  title: "Assessments",
-                  subtitle: "Track your growth over time",
-                  badge: "1",
-                  count: 4,
-                },
-                {
-                  icon: "📖",
-                  title: "Other Resources",
-                  subtitle: "Reading lists, worksheets, and more",
-                  badge: "2",
-                  count: 5,
-                },
-              ].map((item, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    backgroundColor: "#fff",
-                    padding: "20px",
-                    borderRadius: "12px",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                    cursor: "pointer",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "16px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "56px",
-                        height: "56px",
-                        backgroundColor: "#f3f4f6",
-                        borderRadius: "12px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "28px",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {item.icon}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          marginBottom: "4px",
+                {rhLoadingItems ? (
+                  <div style={{ textAlign: "center", padding: "40px 0" }}><div style={{ width: "32px", height: "32px", border: `2px solid ${primaryColor}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto" }} /></div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingBottom: "100px" }}>
+                    {rhCollectionItems.map((item, idx) => {
+                      if (item.item_type === "pause") {
+                        return (
+                          <div key={item.id || idx} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 16px", backgroundColor: item.locked ? "#fef3c7" : "#f0fdf4", borderRadius: "10px", border: `1px dashed ${item.locked ? "#fbbf24" : "#86efac"}` }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={item.locked ? "#d97706" : "#16a34a"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="M12 6v6l4 2" /></svg>
+                            <span style={{ fontSize: "14px", fontWeight: 600, color: item.locked ? "#92400e" : "#166534" }}>
+                              {item.locked ? `Wait ${item.days_remaining || item.pause_days || 1} more day${(item.days_remaining || item.pause_days || 1) !== 1 ? "s" : ""}` : `${item.pause_days || 1} day pause — complete!`}
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      const content = item.content_item;
+                      if (!content) return null;
+                      const isLocked = item.locked;
+                      const isViewed = item.viewed;
+                      const actionLabel = content.link_url ? "Open" : content.type === "video" ? "Watch" : content.type === "audio" ? "Listen" : "View";
+
+                      return (
+                        <div key={item.id || idx} style={{ backgroundColor: "#fff", borderRadius: "12px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", opacity: isLocked ? 0.5 : 1, pointerEvents: isLocked ? "none" : "auto", border: isViewed ? `1px solid ${primaryColor}40` : "1px solid #e5e7eb" }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                            <div style={{ width: "36px", height: "36px", borderRadius: "8px", backgroundColor: content.type === "video" ? "#dbeafe" : content.type === "audio" ? "#fce7f3" : "#fef3c7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              {content.type === "video" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 7l-7 5 7 5V7z" /><path d="M1 5a2 2 0 012-2h11a2 2 0 012 2v14a2 2 0 01-2 2H3a2 2 0 01-2-2V5z" /></svg>}
+                              {content.type === "audio" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#be185d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0118 0v6" /><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3z" /><path d="M3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z" /></svg>}
+                              {content.type === "pdf" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><path d="M14 2v6h6" /><path d="M16 13H8" /><path d="M16 17H8" /></svg>}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                                <h4 style={{ fontSize: "16px", fontWeight: 600, color: "#1a1a1a", margin: 0 }}>{content.title}</h4>
+                                {isViewed && <span style={{ fontSize: "11px", fontWeight: 700, color: primaryColor, backgroundColor: `${primaryColor}15`, padding: "2px 8px", borderRadius: "8px" }}>Viewed</span>}
+                                {!isViewed && !isLocked && <span style={{ fontSize: "11px", fontWeight: 700, color: "#16a34a", backgroundColor: "#f0fdf4", padding: "2px 8px", borderRadius: "8px" }}>New</span>}
+                              </div>
+                              {content.description && <p style={{ fontSize: "13px", color: "#6b7280", margin: "0 0 8px 0" }}>{content.description}</p>}
+                              {content.duration && <span style={{ fontSize: "12px", color: "#9ca3af" }}>{content.duration}</span>}
+                            </div>
+                            {isLocked && <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2z" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>}
+                          </div>
+                          {!isLocked && (
+                            <button
+                              onClick={() => handleContentAction(item, rhActiveCollection)}
+                              style={{ marginTop: "12px", width: "100%", padding: "10px", backgroundColor: primaryColor, color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                              {actionLabel}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Audio Player Bar */}
+                {rhAudioPlayer && (
+                  <div style={{ position: "fixed", bottom: "80px", left: "16px", right: "16px", backgroundColor: "#fff", borderRadius: "16px", boxShadow: "0 4px 20px rgba(0,0,0,0.15)", padding: "12px 16px", zIndex: 30, border: `1px solid ${primaryColor}30` }}>
+                    <audio
+                      ref={rhAudioRef}
+                      src={rhAudioPlayer.url}
+                      onTimeUpdate={() => { if (rhAudioRef.current) setRhAudioTime(rhAudioRef.current.currentTime); }}
+                      onLoadedMetadata={() => { if (rhAudioRef.current) setRhAudioDuration(rhAudioRef.current.duration); }}
+                      onEnded={() => { setRhAudioPlaying(false); setRhAudioTime(0); }}
+                    />
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <button
+                        onClick={() => {
+                          if (rhAudioRef.current) {
+                            if (rhAudioPlaying) { rhAudioRef.current.pause(); } else { rhAudioRef.current.play(); }
+                            setRhAudioPlaying(!rhAudioPlaying);
+                          }
                         }}
+                        style={{ width: "40px", height: "40px", borderRadius: "50%", backgroundColor: primaryColor, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
                       >
-                        <h3
-                          style={{
-                            fontSize: "18px",
-                            fontWeight: 700,
-                            color: "#1a1a1a",
-                            margin: 0,
-                          }}
-                        >
-                          {item.title}
-                        </h3>
-                        <span
-                          style={{
-                            backgroundColor: "#10b981",
-                            color: "#fff",
-                            fontSize: "12px",
-                            fontWeight: 700,
-                            padding: "2px 8px",
-                            borderRadius: "12px",
-                          }}
-                        >
-                          {item.badge}
-                        </span>
-                      </div>
-                      <p
-                        style={{
-                          fontSize: "14px",
-                          color: "#6b7280",
-                          margin: 0,
-                        }}
-                      >
-                        {item.subtitle}
-                      </p>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "16px",
-                          color: "#9ca3af",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {item.count}
-                      </span>
-                      <svg
-                        style={{
-                          width: "20px",
-                          height: "20px",
-                          color: "#9ca3af",
-                        }}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
+                        {rhAudioPlaying ? (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" stroke="none"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+                        ) : (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                        )}
+                      </button>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: "13px", fontWeight: 600, color: "#1a1a1a", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rhAudioPlayer.title}</p>
+                        <input
+                          type="range"
+                          min="0"
+                          max={rhAudioDuration || 0}
+                          value={rhAudioTime}
+                          onChange={(e) => { if (rhAudioRef.current) { rhAudioRef.current.currentTime = Number(e.target.value); setRhAudioTime(Number(e.target.value)); } }}
+                          style={{ width: "100%", height: "4px", marginTop: "4px", accentColor: primaryColor }}
                         />
-                      </svg>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#9ca3af" }}>
+                          <span>{formatRhTime(rhAudioTime)}</span>
+                          <span>{formatRhTime(rhAudioDuration)}</span>
+                        </div>
+                      </div>
+                      <button onClick={() => { if (rhAudioRef.current) { rhAudioRef.current.pause(); } setRhAudioPlayer(null); setRhAudioPlaying(false); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", color: "#9ca3af" }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
                     </div>
                   </div>
+                )}
+
+                {/* Video Player Modal */}
+                {rhVideoPlayer && (
+                  <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.85)", zIndex: 50, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: "100%", maxWidth: "640px", padding: "16px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                        <h3 style={{ color: "#fff", fontSize: "16px", fontWeight: 600, margin: 0 }}>{rhVideoPlayer.title}</h3>
+                        <button onClick={() => setRhVideoPlayer(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#fff", padding: "4px" }}>
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        </button>
+                      </div>
+                      <video src={rhVideoPlayer.url} controls autoPlay style={{ width: "100%", borderRadius: "12px", backgroundColor: "#000" }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* ── Collections List View ── */
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px" }}>
+                  <button onClick={() => setMoreSubpage(null)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", padding: "0", color: "#1a1a1a" }}>←</button>
+                  <h2 style={{ fontSize: "28px", fontWeight: 700, color: "#1a1a1a", margin: 0 }}>Resource Hub</h2>
                 </div>
-              ))}
-            </div>
+                <p style={{ fontSize: "16px", color: "#6b7280", marginBottom: "24px" }}>Your curated collection of tools & wisdom</p>
+
+                {rhLoadingCollections ? (
+                  <div style={{ textAlign: "center", padding: "40px 0" }}><div style={{ width: "32px", height: "32px", border: `2px solid ${primaryColor}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto" }} /></div>
+                ) : rhCollections.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "60px 20px", color: "#9ca3af" }}>
+                    <p style={{ fontSize: "16px", fontWeight: 500 }}>No collections available yet</p>
+                    <p style={{ fontSize: "14px", marginTop: "4px" }}>Your coach hasn&apos;t published any resource collections.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingBottom: "100px" }}>
+                    {rhCollections.map((col) => (
+                      <div key={col.id} onClick={() => openRhCollection(col.id)} style={{ backgroundColor: "#fff", padding: "16px 20px", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", cursor: "pointer", display: "flex", alignItems: "center", gap: "16px" }}>
+                        <div style={{ width: "48px", height: "48px", backgroundColor: "#f3f4f6", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" /></svg>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                            <h3 style={{ fontSize: "17px", fontWeight: 700, color: "#1a1a1a", margin: 0 }}>{col.title}</h3>
+                            {col.viewed_count < col.item_count && col.item_count > 0 && (
+                              <span style={{ backgroundColor: primaryColor, color: "#fff", fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "12px", flexShrink: 0 }}>
+                                {col.item_count - col.viewed_count}
+                              </span>
+                            )}
+                          </div>
+                          {col.description && <p style={{ fontSize: "14px", color: "#6b7280", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{col.description}</p>}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                          <span style={{ fontSize: "15px", color: "#9ca3af", fontWeight: 600 }}>{col.item_count}</span>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

@@ -237,24 +237,21 @@ function SignupContent({ coachSlug: serverCoachSlug, initialCoachData }) {
                 marginTop: "12px",
                 padding: "8px 16px",
                 borderRadius: "8px",
-                backgroundColor: effectiveTier === 3 ? "#fef3c7" : "#dbeafe",
-                border:
-                  effectiveTier === 3
-                    ? "1px solid #fbbf24"
-                    : "1px solid #93c5fd",
+                backgroundColor: `${primaryColor}15`,
+                border: `1px solid ${primaryColor}40`,
               }}
             >
               <p
                 style={{
                   fontSize: "14px",
                   fontWeight: 600,
-                  color: effectiveTier === 3 ? "#92400e" : "#1e40af",
+                  color: primaryColor,
                   margin: 0,
                 }}
               >
                 {effectiveTier === 3
-                  ? `✨ ${coachData?.coach?.tier3_name || "Premium Plus"} (Elite)`
-                  : "🚀 Daily Companion"}
+                  ? `Tier: ${coachData?.coach?.tier3_name || "Premium Plus"}`
+                  : "Tier: Daily Companion"}
               </p>
             </div>
           )}

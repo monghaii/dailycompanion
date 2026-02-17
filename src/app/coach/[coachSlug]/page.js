@@ -190,8 +190,21 @@ export default function CoachLandingPage() {
             transform: translateY(0);
           }
         }
+        @keyframes phoneSlideUp {
+          from {
+            opacity: 0;
+            transform: translateY(60px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
         .fade-in {
           animation: fadeIn 0.6s ease-out;
+        }
+        .hero-mockup-phone {
+          animation: phoneSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
         }
 
         @media (max-width: 860px) {

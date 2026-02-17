@@ -33,12 +33,19 @@ export async function POST(request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Validate file size (5MB for images, 50MB for audio)
-    const maxSize = fileType === "audio" ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+    // Validate file size based on type
+    const sizeLimits = {
+      logo: 5 * 1024 * 1024,
+      screenshot: 5 * 1024 * 1024,
+      audio: 50 * 1024 * 1024,
+      video: 100 * 1024 * 1024,
+      pdf: 20 * 1024 * 1024,
+    };
+    const maxSize = sizeLimits[fileType] || 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      const sizeLimit = fileType === "audio" ? "50MB" : "5MB";
+      const sizeLabel = maxSize >= 1024 * 1024 ? `${maxSize / (1024 * 1024)}MB` : `${maxSize / 1024}KB`;
       return NextResponse.json(
-        { error: `File size exceeds ${sizeLimit} limit` },
+        { error: `File size exceeds ${sizeLabel} limit` },
         { status: 400 }
       );
     }
@@ -53,7 +60,8 @@ export async function POST(request) {
         "audio/mp4",
         "audio/x-m4a",
       ],
-      video: ["video/mp4", "video/webm"],
+      video: ["video/mp4", "video/webm", "video/quicktime"],
+      pdf: ["application/pdf"],
     };
 
     const acceptedTypes = allowedTypes[fileType] || allowedTypes.logo;
