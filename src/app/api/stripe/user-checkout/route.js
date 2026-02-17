@@ -61,6 +61,14 @@ export async function POST(request) {
       );
     }
 
+    // Block tier 3 checkout if coach has disabled it
+    if (tier === 3 && coach.tier3_enabled === false) {
+      return NextResponse.json(
+        { error: "This subscription tier is not available." },
+        { status: 400 },
+      );
+    }
+
     // Note: Coach doesn't need Stripe Connect yet - we'll hold funds until they connect
 
     const session = await createUserSubscriptionCheckout({

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import html2canvas from "html2canvas";
 import CustomDomainWizard from "./components/CustomDomainWizard";
 
 function ClientsSection() {
@@ -396,6 +397,7 @@ function DashboardContent() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const previewIframeRef = useRef(null);
+  const focusPreviewRef = useRef(null);
   const [focusConfig, setFocusConfig] = useState({
     progress_bar: {
       title: "Today's Focus",
@@ -1537,6 +1539,42 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     } finally {
       setIsSavingConfig(false);
       setSavingSection(null);
+    }
+  };
+
+  const captureFocusScreenshot = async () => {
+    if (!focusPreviewRef.current) return;
+    try {
+      const canvas = await html2canvas(focusPreviewRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: null,
+        width: 393,
+        height: 852,
+        windowWidth: 393,
+      });
+      const blob = await new Promise((resolve) =>
+        canvas.toBlob(resolve, "image/png")
+      );
+      if (!blob) return;
+      const formData = new FormData();
+      formData.append("file", new File([blob], "focus-screenshot.png", { type: "image/png" }));
+      formData.append("type", "screenshot");
+      formData.append("bucket", "public");
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        await fetch("/api/coach/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            path: ["focus_screenshot_url"],
+            value: data.url,
+          }),
+        });
+      }
+    } catch (err) {
+      console.error("Screenshot capture error:", err);
     }
   };
 
@@ -3605,6 +3643,26 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               ? "Saving..."
                               : "Save Landing Page"}
                           </button>
+                          <button
+                            onClick={async () => {
+                              setSavingSection("screenshot");
+                              setIsSavingConfig(true);
+                              await captureFocusScreenshot();
+                              setToastMessage("✅ Landing page screenshot updated!");
+                              setShowToast(true);
+                              setTimeout(() => setShowToast(false), 3000);
+                              setIsSavingConfig(false);
+                              setSavingSection(null);
+                            }}
+                            disabled={
+                              isSavingConfig && savingSection === "screenshot"
+                            }
+                            className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isSavingConfig && savingSection === "screenshot"
+                              ? "Capturing..."
+                              : "Refresh Screenshot"}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -5165,8 +5223,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       {/* Save Button */}
                       <div className="flex justify-end pt-4 border-t border-gray-100 mt-6">
                         <button
-                          onClick={() =>
-                            handleSaveConfig(
+                          onClick={async () => {
+                            await handleSaveConfig(
                               "focus_tab",
                               {
                                 ...focusConfig,
@@ -5176,8 +5234,9 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 current_day_index: currentDayIndex,
                               },
                               "✅ Focus tab config saved successfully!",
-                            )
-                          }
+                            );
+                            setTimeout(() => captureFocusScreenshot(), 300);
+                          }}
                           disabled={
                             isSavingConfig && savingSection === "focus_tab"
                           }
@@ -6551,6 +6610,484 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           </div>
         </div>
       )}
+
+      {/* Hidden Focus Preview for Screenshot Capture — iPhone 15 aspect ratio */}
+      <div
+        style={{
+          position: "fixed",
+          left: "-9999px",
+          top: 0,
+          width: "393px",
+          pointerEvents: "none",
+          zIndex: -1,
+        }}
+      >
+        <div
+          ref={focusPreviewRef}
+          style={{
+            width: "393px",
+            height: "852px",
+            overflow: "hidden",
+            position: "relative",
+            backgroundColor: "#f9fafb",
+            fontFamily:
+              '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          }}
+        >
+          {/* App Header — gradient only here */}
+          <div
+            style={{
+              padding: "56px 24px 44px",
+              textAlign: "center",
+              background:
+                brandingConfig.background_type === "gradient"
+                  ? `linear-gradient(${brandingConfig.gradient_angle || 135}deg, ${brandingConfig.gradient_color_1 || "#ff6b9d"} 0%, ${brandingConfig.gradient_color_2 || "#ffa057"} ${brandingConfig.gradient_spread || 50}%, ${brandingConfig.gradient_color_2 || "#ffa057"} 100%)`
+                  : brandingConfig.background_color || "linear-gradient(135deg, #ff6b9d 0%, #ffa057 50%, #ffd96a 100%)",
+            }}
+          >
+            {brandingConfig.app_logo_url ? (
+              <img
+                src={brandingConfig.app_logo_url}
+                alt="Logo"
+                style={{
+                  height:
+                    brandingConfig.app_logo_size === "small"
+                      ? "36px"
+                      : brandingConfig.app_logo_size === "large"
+                        ? "64px"
+                        : "48px",
+                  objectFit: "contain",
+                  margin: "0 auto 6px",
+                  display: "block",
+                }}
+              />
+            ) : (
+              <h1
+                style={{
+                  fontSize: "32px",
+                  fontWeight: 700,
+                  color: "#1a1a1a",
+                  marginBottom: "6px",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {headerConfig.title || "BrainPeace"}
+              </h1>
+            )}
+            <p
+              style={{
+                fontSize: "16px",
+                color: "#1a1a1a",
+                opacity: 0.7,
+              }}
+            >
+              {headerConfig.subtitle || "Mental Fitness for Active Minds"}
+            </p>
+          </div>
+
+          {/* Focus Content */}
+          <div style={{ padding: "0 24px" }}>
+            {/* Today's Focus — overlaps header like the real app */}
+            <div
+              style={{
+                backgroundColor: "#fffbf0",
+                padding: "24px",
+                borderRadius: "12px",
+                marginTop: "-24px",
+                marginBottom: "20px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                position: "relative",
+                zIndex: 1,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  marginBottom: "12px",
+                }}
+              >
+                <div>
+                  <h2
+                    style={{
+                      fontSize: "24px",
+                      fontWeight: 700,
+                      color: "#1a1a1a",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    {focusConfig.progress_bar?.title || "Today's Focus"}
+                  </h2>
+                  <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                    {focusConfig.progress_bar?.subtitle ||
+                      "Direct your energy intentionally"}
+                  </p>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div
+                    style={{
+                      fontSize: "40px",
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      color: brandingConfig.primary_color || "#ef4444",
+                    }}
+                  >
+                    0
+                  </div>
+                  <div style={{ fontSize: "14px", color: "#6b7280" }}>
+                    of 3
+                  </div>
+                </div>
+              </div>
+              <div
+                style={{
+                  width: "100%",
+                  height: "8px",
+                  backgroundColor: "#fef3c7",
+                  borderRadius: "4px",
+                }}
+              />
+            </div>
+
+            {/* Task 1 - Morning Practice */}
+            {focusConfig.task_1?.enabled !== false && (
+              <div
+                style={{
+                  backgroundColor: "#fff",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  marginBottom: "16px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "56px",
+                      height: "56px",
+                      backgroundColor: "#fff9e6",
+                      borderRadius: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {focusConfig.task_1?.icon_url ? (
+                      <img
+                        src={focusConfig.task_1.icon_url}
+                        alt=""
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          objectFit: "contain",
+                        }}
+                      />
+                    ) : (
+                      <span style={{ fontSize: "28px" }}>🌟</span>
+                    )}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                      <h3
+                        style={{
+                          fontSize: "18px",
+                          fontWeight: 600,
+                          color: "#1a1a1a",
+                        }}
+                      >
+                        {focusConfig.task_1?.title || "Morning Practice"}
+                      </h3>
+                      <span style={{ fontSize: "16px" }}>⭐</span>
+                    </div>
+                    <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                      {focusConfig.task_1?.subtitle || "Follow Your Spark • 7:00"}
+                    </p>
+                  </div>
+                  <div
+                    style={{
+                      width: "28px",
+                      height: "28px",
+                      borderRadius: "50%",
+                      border: "2px solid #d1d5db",
+                      flexShrink: 0,
+                    }}
+                  />
+                </div>
+                {/* Listen Now button */}
+                <div
+                  style={{
+                    width: "100%",
+                    height: "52px",
+                    backgroundColor: brandingConfig.primary_color || "#ef4444",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "10px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                  <span style={{ lineHeight: 1 }}>Listen Now</span>
+                </div>
+              </div>
+            )}
+
+            {/* Task 2 - Daily Intention */}
+            {focusConfig.task_2?.enabled !== false && (
+              <div
+                style={{
+                  backgroundColor: "#fff",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  marginBottom: "16px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    backgroundColor: "#f3e8ff",
+                    borderRadius: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    overflow: "hidden",
+                  }}
+                >
+                  {focusConfig.task_2?.icon_url ? (
+                    <img
+                      src={focusConfig.task_2.icon_url}
+                      alt=""
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        objectFit: "contain",
+                      }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: "28px" }}>🔔</span>
+                  )}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: 600,
+                      color: "#1a1a1a",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    {focusConfig.task_2?.title || "Daily Intention"}
+                  </h3>
+                  <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                    {focusConfig.task_2?.subtitle ||
+                      "Set your focus for the day"}
+                  </p>
+                </div>
+                <div
+                  style={{
+                    width: "28px",
+                    height: "28px",
+                    borderRadius: "50%",
+                    border: "2px solid #d1d5db",
+                    flexShrink: 0,
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Task 3 - Evening Review */}
+            {focusConfig.task_3?.enabled !== false && (
+              <div
+                style={{
+                  backgroundColor: "#fff",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  marginBottom: "20px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    backgroundColor: "#e0e7ff",
+                    borderRadius: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    overflow: "hidden",
+                  }}
+                >
+                  {focusConfig.task_3?.icon_url ? (
+                    <img
+                      src={focusConfig.task_3.icon_url}
+                      alt=""
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        objectFit: "contain",
+                      }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: "28px" }}>🌙</span>
+                  )}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: 600,
+                      color: "#1a1a1a",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    {focusConfig.task_3?.title || "Evening Review"}
+                  </h3>
+                  <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                    {focusConfig.task_3?.subtitle ||
+                      "Log your awareness tonight"}
+                  </p>
+                </div>
+                <div
+                  style={{
+                    width: "28px",
+                    height: "28px",
+                    borderRadius: "50%",
+                    border: "2px solid #d1d5db",
+                    flexShrink: 0,
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Day Notes preview */}
+            <div
+              style={{
+                backgroundColor: "#fff",
+                padding: "20px",
+                borderRadius: "12px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+              }}
+            >
+              <div
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  backgroundColor: "#10b981",
+                  borderRadius: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  overflow: "hidden",
+                }}
+              >
+                {focusConfig.day_notes?.icon_url ? (
+                  <img
+                    src={focusConfig.day_notes.icon_url}
+                    alt=""
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      objectFit: "contain",
+                    }}
+                  />
+                ) : (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                )}
+              </div>
+              <div>
+                <h3 style={{ fontSize: "18px", fontWeight: 600, color: "#1a1a1a", marginBottom: "2px" }}>
+                  {focusConfig.day_notes?.title || "Day Notes"}
+                </h3>
+                <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                  {focusConfig.day_notes?.subtitle || "Log observations to spot patterns"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Tab Bar */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: "#fff",
+              borderTop: "1px solid #e5e7eb",
+              borderTopLeftRadius: "16px",
+              borderTopRightRadius: "16px",
+              display: "flex",
+              justifyContent: "space-around",
+              padding: "12px 0 28px",
+              boxShadow: "0 -2px 10px rgba(0,0,0,0.05)",
+            }}
+          >
+            {/* Focus - Compass icon */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", flex: 1 }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={brandingConfig.primary_color || "#ef4444"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill={brandingConfig.primary_color || "#ef4444"} stroke={brandingConfig.primary_color || "#ef4444"}/>
+              </svg>
+              <span style={{ fontSize: "12px", color: brandingConfig.primary_color || "#ef4444", fontWeight: 600 }}>Focus</span>
+            </div>
+            {/* Awareness - Sun icon */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", flex: 1 }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.5">
+                <circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+              </svg>
+              <span style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 400 }}>Awareness</span>
+            </div>
+            {/* Coach - MessageCircle icon */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", flex: 1 }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.5">
+                <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>
+              </svg>
+              <span style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 400 }}>Coach</span>
+            </div>
+            {/* More - Menu icon */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", flex: 1 }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.5">
+                <line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>
+              </svg>
+              <span style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 400 }}>More</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

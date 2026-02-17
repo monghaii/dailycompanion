@@ -24,6 +24,7 @@ export async function getCoachLandingData(slug) {
     .single();
 
   const brandingData = coachConfig?.config?.branding || {};
+  const focusScreenshotUrl = coachConfig?.config?.focus_screenshot_url || null;
 
   // Get landing config
   const { data: landingConfig, error: configError } = await supabase
@@ -102,6 +103,7 @@ export async function getCoachLandingData(slug) {
       yearly_price_cents: coach.user_yearly_price_cents,
       tier3_name: coach.tier3_name || "Premium Plus",
       tier3_enabled: coach.tier3_enabled !== false,
+      focus_screenshot_url: focusScreenshotUrl,
     },
     config,
     branding: brandingData,

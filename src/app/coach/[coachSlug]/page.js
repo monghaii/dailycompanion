@@ -161,6 +161,27 @@ export default function CoachLandingPage() {
           animation: fadeIn 0.6s ease-out;
         }
 
+        @media (max-width: 860px) {
+          .hero-mockup-grid {
+            flex-direction: column !important;
+            text-align: center !important;
+            gap: 40px !important;
+          }
+          .hero-mockup-phone {
+            margin: 0 auto !important;
+          }
+          .hero-mockup-text {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          .hero-mockup-text h1 {
+            font-size: 32px !important;
+          }
+          .hero-mockup-text p {
+            max-width: 540px;
+          }
+        }
         @media (max-width: 640px) {
           .nav-bar {
             padding: 16px 20px !important;
@@ -175,6 +196,9 @@ export default function CoachLandingPage() {
           .nav-login-btn {
             font-size: 13px !important;
             padding: 8px 16px !important;
+          }
+          .hero-mockup-section {
+            padding: 24px 16px 40px !important;
           }
         }
       `}</style>
@@ -254,131 +278,264 @@ export default function CoachLandingPage() {
           </button>
         </nav>
 
-        {/* Hero Section */}
+        {/* Hero Section with App Mockup */}
         <section
+          className="hero-mockup-section fade-in"
           style={{
             padding: "40px 20px 60px",
-            maxWidth: "1200px",
+            maxWidth: "1100px",
             margin: "0 auto",
-            textAlign: "center",
           }}
         >
-          <div className="fade-in">
-            {coach.logo_url && (
-              <img
-                src={coach.logo_url}
-                alt={coach.business_name}
-                style={{
-                  width: "120px",
-                  height: "120px",
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  margin: "0 auto 30px",
-                  border: `4px solid ${primaryColor}`,
-                }}
-              />
-            )}
-
-            <h1
-              style={{
-                fontSize: "48px",
-                fontWeight: 700,
-                marginBottom: "20px",
-                color: "#1a1a1a",
-                lineHeight: 1.2,
-              }}
-            >
-              {coach.landing_headline || "Transform Your Life"}
-            </h1>
-
-            <p
-              style={{
-                fontSize: "20px",
-                color: "#6b7280",
-                marginBottom: "40px",
-                maxWidth: "700px",
-                margin: "0 auto 40px",
-              }}
-            >
-              {coach.landing_subheadline ||
-                "Join others on their journey to growth"}
-            </p>
-
-            <button
-              onClick={() =>
-                (window.location.href = `/signup?coach=${params.coachSlug}&plan=free`)
-              }
-              style={{
-                backgroundColor: primaryColor,
-                color: "#fff",
-                fontSize: "18px",
-                fontWeight: 600,
-                padding: "16px 48px",
-                borderRadius: "50px",
-                border: "none",
-                cursor: "pointer",
-                boxShadow: `0 4px 14px ${primaryColor}40`,
-                transition: "transform 0.2s, box-shadow 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.transform = "translateY(-2px)";
-                e.target.style.boxShadow = `0 6px 20px ${primaryColor}60`;
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = "translateY(0)";
-                e.target.style.boxShadow = `0 4px 14px ${primaryColor}40`;
-              }}
-            >
-              {coach.landing_cta || "Start Your Journey"}
-            </button>
-          </div>
-        </section>
-
-        {/* Coach Info Section */}
-        <div style={{ padding: "0 16px", marginBottom: "60px" }}>
-          <section
+          <div
+            className="hero-mockup-grid"
             style={{
-              padding: "60px 20px",
-              maxWidth: "800px",
-              margin: "0 auto",
-              backgroundColor: "#fff",
-              borderRadius: "24px",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+              display: "flex",
+              alignItems: "center",
+              gap: "60px",
             }}
           >
-            <div style={{ textAlign: "center" }}>
-              <h2
+            {/* iPhone Mockup */}
+            <div
+              className="hero-mockup-phone"
+              style={{
+                flexShrink: 0,
+                position: "relative",
+                width: "280px",
+              }}
+            >
+              {/* Outer phone body */}
+              <div
                 style={{
-                  fontSize: "32px",
-                  fontWeight: 700,
-                  marginBottom: "10px",
-                  color: "#1a1a1a",
+                  position: "relative",
+                  backgroundColor: "#1a1a1a",
+                  borderRadius: "48px",
+                  padding: "12px",
+                  boxShadow:
+                    "0 30px 60px rgba(0,0,0,0.18), 0 10px 24px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(255,255,255,0.05)",
                 }}
               >
-                {coach.business_name}
-              </h2>
+                {/* Side button - right (power) */}
+                <div
+                  style={{
+                    position: "absolute",
+                    right: "-2px",
+                    top: "120px",
+                    width: "3px",
+                    height: "56px",
+                    backgroundColor: "#2a2a2a",
+                    borderRadius: "0 2px 2px 0",
+                  }}
+                />
+                {/* Side button - left (vol up) */}
+                <div
+                  style={{
+                    position: "absolute",
+                    left: "-2px",
+                    top: "110px",
+                    width: "3px",
+                    height: "28px",
+                    backgroundColor: "#2a2a2a",
+                    borderRadius: "2px 0 0 2px",
+                  }}
+                />
+                {/* Side button - left (vol down) */}
+                <div
+                  style={{
+                    position: "absolute",
+                    left: "-2px",
+                    top: "148px",
+                    width: "3px",
+                    height: "28px",
+                    backgroundColor: "#2a2a2a",
+                    borderRadius: "2px 0 0 2px",
+                  }}
+                />
+
+                {/* Inner screen area */}
+                <div
+                  style={{
+                    position: "relative",
+                    borderRadius: "38px",
+                    overflow: "hidden",
+                    backgroundColor: "#f9fafb",
+                    aspectRatio: "393 / 852",
+                  }}
+                >
+                  {/* Dynamic Island */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "10px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: "90px",
+                      height: "25px",
+                      backgroundColor: "#1a1a1a",
+                      borderRadius: "20px",
+                      zIndex: 3,
+                    }}
+                  />
+
+                  {/* Screenshot content */}
+                  {coach.focus_screenshot_url ? (
+                    <img
+                      src={coach.focus_screenshot_url}
+                      alt={`${coach.business_name} app preview`}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        objectPosition: "top",
+                        display: "block",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: `linear-gradient(135deg, ${primaryColor}20, ${primaryColor}05)`,
+                      }}
+                    >
+                      {coach.logo_url ? (
+                        <img
+                          src={coach.logo_url}
+                          alt={coach.business_name}
+                          style={{
+                            width: "80px",
+                            height: "80px",
+                            borderRadius: "50%",
+                            objectFit: "cover",
+                            opacity: 0.6,
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            fontSize: "48px",
+                            fontWeight: 700,
+                            color: primaryColor,
+                            opacity: 0.15,
+                          }}
+                        >
+                          {coach.business_name?.charAt(0) || "C"}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Home indicator bar */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: "6px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: "100px",
+                      height: "4px",
+                      backgroundColor: "rgba(0,0,0,0.2)",
+                      borderRadius: "4px",
+                      zIndex: 3,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Text Content */}
+            <div
+              className="hero-mockup-text"
+              style={{ flex: 1, minWidth: 0 }}
+            >
+              <h1
+                style={{
+                  fontSize: "44px",
+                  fontWeight: 800,
+                  marginBottom: "24px",
+                  color: "#1a1a1a",
+                  lineHeight: 1.15,
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {coach.landing_headline ||
+                  "Your Companion for Building Mental Resilience"}
+              </h1>
+
               <p
                 style={{
                   fontSize: "18px",
-                  color: primaryColor,
-                  fontWeight: 600,
+                  color: "#4b5563",
+                  lineHeight: 1.7,
                   marginBottom: "20px",
                 }}
               >
-                {coach.tagline || "Coach"}
+                {coach.landing_subheadline ||
+                  "Join others on their journey to growth and fulfillment"}
               </p>
-              <p
+
+              {coach.bio && (
+                <p
+                  style={{
+                    fontSize: "16px",
+                    color: "#6b7280",
+                    lineHeight: 1.7,
+                    marginBottom: "32px",
+                  }}
+                >
+                  {coach.bio}
+                </p>
+              )}
+
+              {coach.tagline && (
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: primaryColor,
+                    fontWeight: 600,
+                    marginBottom: "32px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  {coach.tagline}
+                </p>
+              )}
+
+              <button
+                onClick={() =>
+                  (window.location.href = `/signup?coach=${params.coachSlug}&plan=free`)
+                }
                 style={{
+                  backgroundColor: primaryColor,
+                  color: "#fff",
                   fontSize: "16px",
-                  color: "#4b5563",
-                  lineHeight: 1.7,
+                  fontWeight: 600,
+                  padding: "16px 40px",
+                  borderRadius: "50px",
+                  border: "none",
+                  cursor: "pointer",
+                  boxShadow: `0 4px 14px ${primaryColor}40`,
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                  letterSpacing: "0.3px",
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = "translateY(-2px)";
+                  e.target.style.boxShadow = `0 6px 20px ${primaryColor}60`;
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = "translateY(0)";
+                  e.target.style.boxShadow = `0 4px 14px ${primaryColor}40`;
                 }}
               >
-                {coach.bio || "Dedicated to helping you achieve your goals."}
-              </p>
+                {coach.landing_cta || "START YOUR JOURNEY"}
+              </button>
             </div>
-          </section>
-        </div>
+          </div>
+        </section>
 
         {/* Pricing Section */}
         <section

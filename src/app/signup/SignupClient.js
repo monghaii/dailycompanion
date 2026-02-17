@@ -104,7 +104,7 @@ function SignupContent({ coachSlug: serverCoachSlug, initialCoachData }) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            tier: tier,
+            tier: effectiveTier,
             interval: "monthly",
           }),
         });
@@ -126,6 +126,9 @@ function SignupContent({ coachSlug: serverCoachSlug, initialCoachData }) {
       setIsSubmitting(false);
     }
   };
+
+  const tier3Disabled = coachData?.coach?.tier3_enabled === false;
+  const effectiveTier = tier === 3 && tier3Disabled ? 2 : tier;
 
   if (isLoading) {
     return (
@@ -234,19 +237,22 @@ function SignupContent({ coachSlug: serverCoachSlug, initialCoachData }) {
                 marginTop: "12px",
                 padding: "8px 16px",
                 borderRadius: "8px",
-                backgroundColor: tier === 3 ? "#fef3c7" : "#dbeafe",
-                border: tier === 3 ? "1px solid #fbbf24" : "1px solid #93c5fd",
+                backgroundColor: effectiveTier === 3 ? "#fef3c7" : "#dbeafe",
+                border:
+                  effectiveTier === 3
+                    ? "1px solid #fbbf24"
+                    : "1px solid #93c5fd",
               }}
             >
               <p
                 style={{
                   fontSize: "14px",
                   fontWeight: 600,
-                  color: tier === 3 ? "#92400e" : "#1e40af",
+                  color: effectiveTier === 3 ? "#92400e" : "#1e40af",
                   margin: 0,
                 }}
               >
-                {tier === 3
+                {effectiveTier === 3
                   ? `✨ ${coachData?.coach?.tier3_name || "Premium Plus"} (Elite)`
                   : "🚀 Daily Companion"}
               </p>
