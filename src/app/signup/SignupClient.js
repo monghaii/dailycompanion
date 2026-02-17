@@ -70,6 +70,18 @@ function SignupContent({ coachSlug: serverCoachSlug, initialCoachData }) {
     }
     ogTitle.content = `Sign Up - ${coach.business_name} | Daily Companion`;
 
+    // Set og:image - prefer app logo, then business logo
+    const ogImage = coach.app_logo_url || coach.logo_url;
+    if (ogImage) {
+      let ogImg = document.querySelector('meta[property="og:image"]');
+      if (!ogImg) {
+        ogImg = document.createElement("meta");
+        ogImg.setAttribute("property", "og:image");
+        document.head.appendChild(ogImg);
+      }
+      ogImg.content = ogImage;
+    }
+
     if (coach.logo_url) {
       document
         .querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')

@@ -34,12 +34,15 @@ export async function generateMetadata({ searchParams }) {
     coach?.tagline ||
     `Sign up for ${coach?.business_name || "Daily Companion"} to start your coaching journey.`;
 
+  const ogImage = coach?.app_logo_url || coach?.logo_url || null;
+
   return {
     title,
     description,
     openGraph: {
       title,
       description,
+      ...(ogImage && { images: [{ url: ogImage }] }),
     },
   };
 }

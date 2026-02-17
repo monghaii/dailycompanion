@@ -22,12 +22,15 @@ export async function generateMetadata({ params }) {
     coach?.tagline ||
     "Daily practices and awareness tools designed to quiet internal noise and build habits that support calm, focus, and steady growth.";
 
+  const ogImage = coach?.app_logo_url || coach?.logo_url || null;
+
   return {
     title,
     description,
     openGraph: {
       title,
       description,
+      ...(ogImage && { images: [{ url: ogImage }] }),
     },
   };
 }

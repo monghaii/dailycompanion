@@ -49,6 +49,18 @@ export default function CoachLandingPage() {
     }
     ogTitle.content = `${coach.business_name} | Daily Companion`;
 
+    // Set og:image - prefer app logo, then business logo
+    const ogImage = coach.app_logo_url || coach.logo_url;
+    if (ogImage) {
+      let ogImg = document.querySelector('meta[property="og:image"]');
+      if (!ogImg) {
+        ogImg = document.createElement("meta");
+        ogImg.setAttribute("property", "og:image");
+        document.head.appendChild(ogImg);
+      }
+      ogImg.content = ogImage;
+    }
+
     // Set favicon to coach's business logo
     if (coach.logo_url) {
       // Remove all existing favicon links
