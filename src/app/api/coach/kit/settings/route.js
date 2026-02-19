@@ -1,10 +1,10 @@
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
+import { getCurrentUser } from "@/lib/auth";
 import { testKitConnection } from "@/lib/kit";
 import crypto from "crypto";
 
-// Simple encryption for API keys (in production, use a proper secret management service)
 const ENCRYPTION_KEY =
-  process.env.KIT_ENCRYPTION_KEY || "your-32-character-secret-key!!!"; // Must be 32 characters
+  process.env.KIT_ENCRYPTION_KEY || "your-32-character-secret-key!!!";
 const ALGORITHM = "aes-256-cbc";
 
 function encrypt(text) {
@@ -31,41 +31,24 @@ function decrypt(text) {
 
 export async function POST(request) {
   try {
-    const { sessionToken, kitApiKey, kitEnabled, kitFormId, kitTags } =
-      await request.json();
-
-    if (!sessionToken) {
+    const user = await getCurrentUser();
+    if (!user) {
       return Response.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    // Create Supabase client inside the handler
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-    );
-
-    // Verify session and get coach
-    const { data: session } = await supabase
-      .from("sessions")
-      .select("user_id")
-      .eq("session_token", sessionToken)
-      .single();
-
-    if (!session) {
-      return Response.json({ error: "Invalid session" }, { status: 401 });
-    }
+    const { kitApiKey, kitEnabled, kitFormId, kitTags } =
+      await request.json();
 
     const { data: coach } = await supabase
       .from("coaches")
       .select("id")
-      .eq("profile_id", session.user_id)
+      .eq("profile_id", user.id)
       .single();
 
     if (!coach) {
       return Response.json({ error: "Coach not found" }, { status: 404 });
     }
 
-    // If enabling Kit, verify the API key works
     if (kitEnabled && kitApiKey) {
       const testResult = await testKitConnection(kitApiKey);
       if (!testResult.success) {
@@ -76,7 +59,6 @@ export async function POST(request) {
       }
     }
 
-    // Prepare update data
     const updateData = {
       kit_enabled: kitEnabled || false,
       kit_form_id: kitFormId || null,
@@ -84,12 +66,10 @@ export async function POST(request) {
       updated_at: new Date().toISOString(),
     };
 
-    // Only update API key if provided
     if (kitApiKey) {
       updateData.kit_api_key = encrypt(kitApiKey);
     }
 
-    // Update coach record
     const { error: updateError } = await supabase
       .from("coaches")
       .update(updateData)
@@ -116,33 +96,11 @@ export async function POST(request) {
   }
 }
 
-// GET endpoint to retrieve current Kit settings
-export async function GET(request) {
+export async function GET() {
   try {
-    const sessionToken = request.headers
-      .get("cookie")
-      ?.split("session_token=")[1]
-      ?.split(";")[0];
-
-    if (!sessionToken) {
+    const user = await getCurrentUser();
+    if (!user) {
       return Response.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    // Create Supabase client inside the handler
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-    );
-
-    // Verify session and get coach
-    const { data: session } = await supabase
-      .from("sessions")
-      .select("user_id")
-      .eq("session_token", sessionToken)
-      .single();
-
-    if (!session) {
-      return Response.json({ error: "Invalid session" }, { status: 401 });
     }
 
     const { data: coach } = await supabase
@@ -150,7 +108,7 @@ export async function GET(request) {
       .select(
         "kit_enabled, kit_form_id, kit_tags, kit_last_sync, kit_sync_status, kit_error_message",
       )
-      .eq("profile_id", session.user_id)
+      .eq("profile_id", user.id)
       .single();
 
     if (!coach) {
@@ -161,7 +119,7 @@ export async function GET(request) {
       kitEnabled: coach.kit_enabled || false,
       kitFormId: coach.kit_form_id || "",
       kitTags: coach.kit_tags || [],
-      kitHasApiKey: false, // Never expose the actual API key
+      kitHasApiKey: false,
       kitLastSync: coach.kit_last_sync,
       kitSyncStatus: coach.kit_sync_status,
       kitErrorMessage: coach.kit_error_message,
@@ -175,5 +133,4 @@ export async function GET(request) {
   }
 }
 
-// Export encryption functions for use in other parts of the app
 export { encrypt, decrypt };

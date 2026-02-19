@@ -3273,7 +3273,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       >
                         Find your API key in Kit under{" "}
                         <a
-                          href="https://app.convertkit.com/account_settings/advanced_settings"
+                          href="https://app.kit.com/developer"
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{
@@ -3281,7 +3281,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             textDecoration: "underline",
                           }}
                         >
-                          Settings → Advanced → API
+                          Settings → Developer
                         </a>
                       </p>
                       <div style={{ display: "flex", gap: "8px" }}>
@@ -3316,19 +3316,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             setKitTesting(true);
                             setKitTestResult(null);
                             try {
-                              const sessionToken = document.cookie
-                                .split("; ")
-                                .find((row) => row.startsWith("session_token="))
-                                ?.split("=")[1];
-
                               const res = await fetch("/api/coach/kit/test", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({
-                                  sessionToken,
                                   apiKey: kitSettings.apiKey,
                                 }),
                               });
+                              if (checkAuthResponse(res)) return;
                               const data = await res.json();
                               setKitTestResult(data);
                             } catch (error) {
@@ -3649,22 +3644,17 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         onClick={async () => {
                           setKitSaving(true);
                           try {
-                            const sessionToken = document.cookie
-                              .split("; ")
-                              .find((row) => row.startsWith("session_token="))
-                              ?.split("=")[1];
-
                             const res = await fetch("/api/coach/kit/settings", {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({
-                                sessionToken,
                                 kitApiKey: kitSettings.apiKey,
                                 kitEnabled: kitSettings.enabled,
                                 kitFormId: kitSettings.formId,
                                 kitTags: kitSettings.tags,
                               }),
                             });
+                            if (checkAuthResponse(res)) return;
 
                             const data = await res.json();
 
