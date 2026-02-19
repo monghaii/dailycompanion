@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser, getCoachBySlug } from "@/lib/auth";
 import { createUserSubscriptionCheckout } from "@/lib/stripe";
 import { supabase } from "@/lib/supabase";
+import { trackServerEvent } from "@/lib/posthog";
 
 export async function POST(request) {
   try {
@@ -77,6 +78,14 @@ export async function POST(request) {
       email: user.email,
       tier,
       interval,
+    });
+
+    trackServerEvent(user.id, "checkout_initiated", {
+      type: "user",
+      coach_id: coach.id,
+      tier,
+      interval,
+      stripe_country: coach.stripe_country,
     });
 
     return NextResponse.json({ url: session.url });

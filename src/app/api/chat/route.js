@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { trackServerEvent } from "@/lib/posthog";
 
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
 const CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
@@ -196,6 +197,15 @@ export async function POST(request) {
 
     const tokensRemaining = tokenLimit - (currentUsage + tokensUsed);
     const usagePercentage = ((currentUsage + tokensUsed) / tokenLimit) * 100;
+
+    trackServerEvent(user.id, "chat_message_sent", {
+      coach_id: profile.coach_id,
+      input_tokens: data.usage?.input_tokens || 0,
+      output_tokens: data.usage?.output_tokens || 0,
+      total_tokens: tokensUsed,
+      usage_percentage: parseFloat(usagePercentage.toFixed(1)),
+      model: "claude-sonnet-4-5",
+    });
 
     // Add usage warnings
     let warning = null;

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import confetti from "canvas-confetti";
+import posthog from "posthog-js";
 import {
   Compass,
   Sun,
@@ -410,11 +411,18 @@ function UserDashboardContent() {
     }
   }, [user, moreSubpage, subscriptionStatus]);
 
-  // Persist state to localStorage
+  const prevTabRef = useRef(activeTab);
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("activeTab", activeTab);
     }
+    if (prevTabRef.current !== activeTab && user) {
+      posthog.capture("tab_switched", {
+        tab_name: activeTab,
+        previous_tab: prevTabRef.current,
+      });
+    }
+    prevTabRef.current = activeTab;
   }, [activeTab]);
 
   // Load user-specific chat messages from localStorage after user is loaded
@@ -490,6 +498,17 @@ function UserDashboardContent() {
       }
 
       setUser(data.user);
+
+      // Identify user in PostHog
+      posthog.identify(data.user.id, {
+        email: data.user.email,
+        role: "user",
+        coach_id: data.user.coach_id,
+        first_name: data.user.first_name,
+        last_name: data.user.last_name,
+        subscription_tier: data.user.subscription?.subscription_tier,
+        subscription_status: data.user.subscription?.status,
+      });
 
       // Set timezone from user profile
       if (data.user.timezone) {
@@ -641,11 +660,14 @@ function UserDashboardContent() {
       });
 
       if (res.ok) {
-        // Refresh insights data
         fetchInsightsData(insightsMonth);
         setToastMessage("Day notes saved");
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
+        posthog.capture("day_notes_saved", {
+          date: selectedInsightsDate,
+          word_count: dayNotesEdit ? dayNotesEdit.split(/\s+/).filter(Boolean).length : 0,
+        });
       }
     } catch (error) {
       console.error("Failed to save day notes:", error);
@@ -781,6 +803,10 @@ function UserDashboardContent() {
         const data = await res.json();
         setRhActiveCollection(data.collection);
         setRhCollectionItems(data.items || []);
+        posthog.capture("resource_hub_collection_opened", {
+          collection_id: data.collection?.id || collectionId,
+          collection_name: data.collection?.name,
+        });
       }
     } catch (e) { console.error("Failed to fetch collection:", e); }
     setRhLoadingItems(false);
@@ -800,18 +826,20 @@ function UserDashboardContent() {
     const content = item.content_item;
     if (!content) return;
 
-    // Mark as viewed
     await markContentViewed(content.id, collection.id);
 
-    // If link_url, open in new tab
+    posthog.capture("resource_hub_content_viewed", {
+      content_type: content.type,
+      collection_id: collection.id,
+      is_external_link: !!content.link_url,
+    });
+
     if (content.link_url) {
       window.open(content.link_url, "_blank");
-      // Refresh items to update viewed status
       openRhCollection(collection.id);
       return;
     }
 
-    // Native playback based on type
     if (content.type === "pdf") {
       window.open(content.file_url, "_blank");
       openRhCollection(collection.id);
@@ -1019,6 +1047,12 @@ function UserDashboardContent() {
       if (res.ok) {
         const data = await res.json();
         setFocusEntry(data.entry);
+        if (newValue) {
+          posthog.capture("focus_task_completed", {
+            task_name: task,
+            date: todayStr,
+          });
+        }
       } else {
         // Revert on error
         setCompletedTasks((prev) => ({
@@ -1058,6 +1092,11 @@ function UserDashboardContent() {
         setIntentionObstacles(obstacles);
         setIntentionFocusWord(focusWord);
         setShowIntentionModal(false);
+        posthog.capture("intention_set", {
+          has_obstacles: !!obstacles,
+          has_focus_word: !!focusWord,
+          date: getTodayInUserTimezone(),
+        });
       }
     } catch (error) {
       console.error("Failed to save intention:", error);
@@ -1070,7 +1109,6 @@ function UserDashboardContent() {
   const togglePlayPause = () => {
     if (!audioRef.current) return;
 
-    // Show controls when first clicked
     if (!showAudioControls) {
       setShowAudioControls(true);
     }
@@ -1079,6 +1117,9 @@ function UserDashboardContent() {
       audioRef.current.pause();
     } else {
       audioRef.current.play();
+      posthog.capture("morning_practice_audio_played", {
+        date: getTodayInUserTimezone(),
+      });
     }
     setIsPlaying(!isPlaying);
   };
@@ -1261,18 +1302,20 @@ function UserDashboardContent() {
       });
 
       if (res.ok) {
-        // Success - close modal and reset
         setShowModal(false);
         setModalNotes("");
         setSelectedMindfulness(null);
 
-        // Refresh entries to show the new one
         fetchAwarenessEntries(selectedAwarenessDate);
 
-        // Show success toast
         setToastMessage("Moment logged successfully");
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
+
+        posthog.capture("awareness_moment_logged", {
+          mindfulness_type: entry.label,
+          date: dateStr,
+        });
       }
     } catch (error) {
       console.error("Failed to save mindfulness moment:", error);
@@ -1409,11 +1452,9 @@ function UserDashboardContent() {
 
       if (res.ok) {
         const data = await res.json();
-        // Update local state with server data
         setEmotionalEntries(data.entry.log_2_entries || []);
         setShowEmotionalModal(false);
 
-        // Check if selected emotion has a practice audio and show it
         const category = emotions[selected.categoryId];
         const emotionObj = category?.find((e) => e.name === emotionLabel);
 
@@ -1426,6 +1467,11 @@ function UserDashboardContent() {
         }
 
         setSelectedEmotions([]);
+
+        posthog.capture("emotional_state_logged", {
+          emotion_count: formattedEmotions.length,
+          date: dateStr,
+        });
       }
     } catch (error) {
       console.error("Failed to save emotional state:", error);

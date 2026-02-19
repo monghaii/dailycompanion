@@ -12,7 +12,8 @@ export default function CoachSignup() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    fullName: "",
+    firstName: "",
+    lastName: "",
     businessName: "",
     slug: "",
   });
@@ -136,17 +137,31 @@ export default function CoachSignup() {
             </div>
           )}
 
-          <div style={{ marginBottom: "24px" }}>
-            <label style={labelStyle}>Full Name</label>
-            <input
-              type="text"
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleChange}
-              style={inputStyle(formData.fullName)}
-              placeholder="Jane Smith"
-              required
-            />
+          <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>First Name</label>
+              <input
+                type="text"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                style={inputStyle(formData.firstName)}
+                placeholder="Jane"
+                required
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Last Name</label>
+              <input
+                type="text"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                style={inputStyle(formData.lastName)}
+                placeholder="Smith"
+                required
+              />
+            </div>
           </div>
 
           <div style={{ marginBottom: "24px" }}>

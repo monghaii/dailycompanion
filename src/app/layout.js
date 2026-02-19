@@ -1,5 +1,6 @@
 import "./globals.css";
 import SiteBanner from "@/components/SiteBanner";
+import PostHogProvider from "@/components/PostHogProvider";
 
 export const metadata = {
   title: "Daily Companion — Coaching Platform",
@@ -13,8 +14,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <SiteBanner />
-        {children}
+        <PostHogProvider>
+          <SiteBanner />
+          {children}
+        </PostHogProvider>
       </body>
     </html>
   );

@@ -32,7 +32,7 @@ export function verifyToken(token) {
 }
 
 // Create a new user (coach or regular user)
-export async function createUser({ email, password, fullName, role = "user", coachId = null, tokenLimit = 1000000 }) {
+export async function createUser({ email, password, fullName, firstName, lastName, role = "user", coachId = null, tokenLimit = 1000000 }) {
   // Check if user already exists
   const { data: existingUser } = await supabase
     .from("profiles")
@@ -56,11 +56,16 @@ export async function createUser({ email, password, fullName, role = "user", coa
     throw new Error(authError.message);
   }
 
-  // Create profile with coach_id if provided
+  const resolvedFirst = firstName || "";
+  const resolvedLast = lastName || "";
+  const resolvedFull = fullName || `${resolvedFirst} ${resolvedLast}`.trim();
+
   const profileData = {
     id: authData.user.id,
     email,
-    full_name: fullName,
+    full_name: resolvedFull,
+    first_name: resolvedFirst,
+    last_name: resolvedLast,
     role,
     token_limit: tokenLimit,
   };

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { supabase } from "@/lib/supabase";
 import { syncUserToKit } from "@/lib/kit-sync";
+import { trackServerEvent, identifyUser } from "@/lib/posthog";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -68,6 +69,15 @@ export async function POST(request) {
           console.log(
             `[Webhook] Coach subscription activated: ${session.metadata.coachId}`,
           );
+
+          trackServerEvent(session.metadata.coachId, "subscription_activated", {
+            type: "coach",
+            includes_setup_fee: session.metadata.includesSetupFee === "true",
+          });
+          identifyUser(session.metadata.coachId, {
+            platform_subscription_status: "active",
+            subscription_start_date: new Date().toISOString(),
+          });
         } else if (session.metadata?.type === "user_subscription") {
           // User subscribed to coach
           const subscriptionData = {
@@ -92,6 +102,22 @@ export async function POST(request) {
           console.log(
             `[Webhook] User subscription activated: user=${session.metadata.userId}, coach=${session.metadata.coachId}, tier=${subscriptionData.subscription_tier}`,
           );
+
+          trackServerEvent(session.metadata.userId, "subscription_activated", {
+            type: "user",
+            coach_id: session.metadata.coachId,
+            tier: subscriptionData.subscription_tier,
+            interval: subscriptionData.billing_interval,
+            price_cents: subscriptionData.price_cents,
+            currency: session.metadata.currency || "usd",
+          });
+          identifyUser(session.metadata.userId, {
+            subscription_tier: subscriptionData.subscription_tier,
+            subscription_status: "active",
+            subscription_start_date: new Date().toISOString(),
+            billing_interval: subscriptionData.billing_interval,
+            price_cents: subscriptionData.price_cents,
+          });
 
           // Sync user to Kit (ConvertKit) if coach has it enabled
           try {
@@ -149,6 +175,11 @@ export async function POST(request) {
           console.log(
             `[Webhook] Coach subscription updated: ${coach.id}, status=${subscription.status}`,
           );
+
+          trackServerEvent(coach.id, "subscription_updated", {
+            type: "coach",
+            status: subscription.status,
+          });
         } else {
           // Update user subscription status
           await supabase
@@ -169,6 +200,20 @@ export async function POST(request) {
           console.log(
             `[Webhook] User subscription updated: ${subscription.id}, status=${subscription.status}`,
           );
+
+          const { data: updatedSub } = await supabase
+            .from("user_subscriptions")
+            .select("user_id, coach_id")
+            .eq("stripe_subscription_id", subscription.id)
+            .single();
+
+          if (updatedSub) {
+            trackServerEvent(updatedSub.user_id, "subscription_updated", {
+              type: "user",
+              status: subscription.status,
+              coach_id: updatedSub.coach_id,
+            });
+          }
         }
         break;
       }
@@ -193,7 +238,21 @@ export async function POST(request) {
             .eq("id", coach.id);
 
           console.log(`[Webhook] Coach subscription canceled: ${coach.id}`);
+
+          trackServerEvent(coach.id, "subscription_canceled", {
+            type: "coach",
+          });
+          identifyUser(coach.id, {
+            platform_subscription_status: "canceled",
+            churned_at: new Date().toISOString(),
+          });
         } else {
+          const { data: canceledSub } = await supabase
+            .from("user_subscriptions")
+            .select("user_id, coach_id, subscription_tier")
+            .eq("stripe_subscription_id", subscription.id)
+            .single();
+
           await supabase
             .from("user_subscriptions")
             .update({
@@ -205,6 +264,18 @@ export async function POST(request) {
           console.log(
             `[Webhook] User subscription canceled: ${subscription.id}`,
           );
+
+          if (canceledSub) {
+            trackServerEvent(canceledSub.user_id, "subscription_canceled", {
+              type: "user",
+              coach_id: canceledSub.coach_id,
+              tier: canceledSub.subscription_tier,
+            });
+            identifyUser(canceledSub.user_id, {
+              subscription_status: "canceled",
+              churned_at: new Date().toISOString(),
+            });
+          }
         }
         break;
       }

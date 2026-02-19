@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import posthog from "posthog-js";
 
 function SignupContent({ coachSlug: serverCoachSlug, initialCoachData }) {
   const router = useRouter();
@@ -141,6 +142,21 @@ function SignupContent({ coachSlug: serverCoachSlug, initialCoachData }) {
         alert(data.error);
         setIsSubmitting(false);
         return;
+      }
+
+      if (data.userId) {
+        posthog.identify(data.userId, {
+          email: signupForm.email,
+          role: "user",
+          first_name: signupForm.firstName,
+          last_name: signupForm.lastName,
+          coach_slug: coachSlug,
+        });
+        posthog.capture("user_signed_up", {
+          plan: plan === "premium" ? "premium" : "free",
+          tier: plan === "premium" ? effectiveTier : 1,
+          coach_slug: coachSlug,
+        });
       }
 
       if (plan === "premium") {

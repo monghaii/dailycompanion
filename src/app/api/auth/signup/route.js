@@ -2,16 +2,20 @@ import { NextResponse } from 'next/server';
 import { createUser, createCoach, generateToken } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
+import { trackServerEvent, identifyUser } from '@/lib/posthog';
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { email, password, fullName, role, slug, businessName, coachSlug } = body;
+    const { email, password, fullName, firstName, lastName, role, slug, businessName, coachSlug } = body;
 
-    // Validate required fields
-    if (!email || !password || !fullName) {
+    const resolvedFirst = firstName || "";
+    const resolvedLast = lastName || "";
+    const resolvedFull = fullName || `${resolvedFirst} ${resolvedLast}`.trim();
+
+    if (!email || !password || (!resolvedFull && !resolvedFirst)) {
       return NextResponse.json(
-        { error: 'Email, password, and full name are required' },
+        { error: 'Email, password, and name are required' },
         { status: 400 }
       );
     }
@@ -42,7 +46,9 @@ export async function POST(request) {
     const profile = await createUser({
       email,
       password,
-      fullName,
+      fullName: resolvedFull,
+      firstName: resolvedFirst,
+      lastName: resolvedLast,
       role: role || 'user',
       coachId,
     });
@@ -77,6 +83,21 @@ export async function POST(request) {
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: '/',
+    });
+
+    // Track signup in PostHog
+    const eventName = role === 'coach' ? 'coach_signed_up' : 'user_signed_up';
+    identifyUser(profile.id, {
+      email,
+      role: role || 'user',
+      first_name: resolvedFirst,
+      last_name: resolvedLast,
+      coach_id: coachId || undefined,
+    });
+    trackServerEvent(profile.id, eventName, {
+      coach_id: coachId || undefined,
+      coach_slug: role === 'coach' ? slug : coachSlug,
+      plan: 'free',
     });
 
     return NextResponse.json({

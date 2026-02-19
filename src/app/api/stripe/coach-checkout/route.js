@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserWithCoach } from '@/lib/auth';
 import { createCoachCheckoutSession } from '@/lib/stripe';
+import { trackServerEvent } from '@/lib/posthog';
 
 export async function POST(request) {
   try {
@@ -25,6 +26,11 @@ export async function POST(request) {
       coachId: user.coach?.id,
       profileId: user.id,
       email: user.email,
+    });
+
+    trackServerEvent(user.id, "checkout_initiated", {
+      type: "coach",
+      coach_id: user.coach?.id,
     });
 
     return NextResponse.json({ url: session.url });

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import html2canvas from "html2canvas";
+import posthog from "posthog-js";
 import CustomDomainWizard from "./components/CustomDomainWizard";
 
 function ClientsSection() {
@@ -255,7 +256,7 @@ function ClientsSection() {
                         Joined
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Subscription Period
+                        Status
                       </th>
                     </tr>
                   </thead>
@@ -280,14 +281,23 @@ function ClientsSection() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatDate(client.userCreatedAt)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {client.currentPeriodEnd
-                            ? formatDate(client.currentPeriodEnd)
-                            : "-"}
-                          {client.canceledAt && (
-                            <div className="text-xs text-red-600 mt-1">
-                              Canceled: {formatDate(client.canceledAt)}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {client.canceledAt ? (
+                            <div>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Canceled</span>
+                              <div className="text-xs text-gray-400 mt-1">
+                                {formatDate(client.canceledAt)}
+                              </div>
                             </div>
+                          ) : client.currentPeriodEnd ? (
+                            <div>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Active</span>
+                              <div className="text-xs text-gray-400 mt-1">
+                                Renews {formatDate(client.currentPeriodEnd)}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Free</span>
                           )}
                         </td>
                       </tr>
@@ -1018,6 +1028,18 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       }
 
       setUser(data.user);
+
+      // Identify coach in PostHog
+      if (data.user.coach) {
+        posthog.identify(data.user.id, {
+          email: data.user.email,
+          role: "coach",
+          business_name: data.user.coach.business_name,
+          coach_slug: data.user.coach.slug,
+          stripe_country: data.user.coach.stripe_country,
+          platform_subscription_status: data.user.coach.platform_subscription_status,
+        });
+      }
     } catch (error) {
       router.push("/coach/login");
     } finally {
@@ -1268,6 +1290,10 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       setToastMessage("Collection saved!");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
+      posthog.capture("coach_collection_saved", {
+        collection_id: rhEditCollection.id,
+        item_count: rhEditItems.length,
+      });
     } catch (e) {
       console.error("Failed to save collection:", e);
     }
@@ -1333,6 +1359,10 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         setToastMessage("Content added!");
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
+        posthog.capture("coach_content_added", {
+          content_type: formData.type,
+          is_external_link: !!formData.link_url,
+        });
       }
     } catch (e) {
       console.error("Failed to add content:", e);
@@ -2160,6 +2190,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
         setTimeout(() => sendConfigToPreview(), 100);
+        posthog.capture("coach_config_saved", { section });
       } else {
         setToastMessage(
           "❌ Failed to save config: " + (resData.error || "Unknown error"),
@@ -2823,33 +2854,13 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 {/* Test Account Banner */}
                 {coach?.platform_subscription_status === "active" &&
                   !coach?.platform_subscription_id && (
-                    <div className="bg-blue-50 border-l-4 border-blue-400 p-4 shadow-sm rounded-r-lg">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
-                          <svg
-                            className="h-5 w-5 text-blue-400"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm text-blue-700">
-                            <span className="font-bold">
-                              Test Account Mode:
-                            </span>{" "}
-                            This account is manually activated. Real-time
-                            subscription status and billing details are not
-                            available.
-                          </p>
-                        </div>
-                      </div>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-start gap-3">
+                      <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <p className="text-sm text-blue-800">
+                        <span className="font-semibold">Test Account Mode:</span> This account is manually activated. Real-time subscription status and billing details are not available.
+                      </p>
                     </div>
                   )}
 
@@ -7800,6 +7811,17 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       </svg>
                       Add Collection
                     </button>
+                  </div>
+                </div>
+
+                <div className="px-8 pt-4">
+                  <div className="max-w-4xl mx-auto bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-start gap-3">
+                    <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm text-blue-800">
+                      Content here is exclusive to your <span className="font-semibold">Tier 3 subscribers</span> only — your highest-paying members. Use this to deliver premium videos, audio, and PDFs.
+                    </p>
                   </div>
                 </div>
 

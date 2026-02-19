@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createUser, getCoachBySlug, generateToken } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
+import { trackServerEvent, identifyUser } from '@/lib/posthog';
 
 export async function POST(request) {
   try {
@@ -94,6 +95,21 @@ export async function POST(request) {
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: '/',
+    });
+
+    // Track signup in PostHog
+    identifyUser(user.id, {
+      email,
+      role: 'user',
+      first_name: firstName,
+      last_name: lastName,
+      coach_id: coach.id,
+      coach_slug: coachSlug,
+    });
+    trackServerEvent(user.id, 'user_signed_up', {
+      coach_id: coach.id,
+      coach_slug: coachSlug,
+      plan: 'free',
     });
 
     // User created as FREE - they can upgrade later from Settings
