@@ -2396,7 +2396,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 style={{ width: "40px", height: "40px" }}
               />
               <h2 className="text-xl font-bold text-gray-900 whitespace-nowrap overflow-hidden">
-                Knowledge Base
+                Coach Hub
               </h2>
             </div>
           ) : (
@@ -2675,7 +2675,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
             </svg>
             {isSidebarOpen && (
               <span className="flex items-center gap-1.5">
-                Coach Hub
+                Knowledge Base
                 <svg
                   className="w-3.5 h-3.5 opacity-60"
                   fill="none"
