@@ -197,8 +197,15 @@ export default function CoachLandingPage() {
   const testimonials = config.testimonials || [];
   const primaryColor = branding.primary_color || coach.theme_color || "#7c3aed";
 
+  const COUNTRY_CURRENCY_SYMBOL = {
+    US: "$", DE: "€", FR: "€", ES: "€", IT: "€", NL: "€",
+    IE: "€", BE: "€", AT: "€", GB: "£", CA: "CA$",
+    AU: "A$", NZ: "NZ$", CH: "CHF ", SG: "S$",
+  };
+  const cs = COUNTRY_CURRENCY_SYMBOL[coach.stripe_country] || "$";
+
   const formatPrice = (cents) => {
-    return `$${(cents / 100).toFixed(2)}`;
+    return `${cs}${(cents / 100).toFixed(2)}`;
   };
 
   return (
@@ -694,7 +701,7 @@ export default function CoachLandingPage() {
                     color: "#6b7280",
                   }}
                 >
-                  $0
+                  {cs}0
                 </span>
                 <span style={{ fontSize: "16px", color: "#6b7280" }}>
                   /month
@@ -823,7 +830,7 @@ export default function CoachLandingPage() {
                     color: primaryColor,
                   }}
                 >
-                  $9.99
+                  {cs}9.99
                 </span>
                 <span style={{ fontSize: "16px", color: "#6b7280" }}>
                   /month

@@ -158,10 +158,13 @@ export async function createConnectAccount({ coachId, email, country }) {
   const account = await stripe.accounts.create(accountData);
   console.log("✅ Account created:", account.id, "Country:", account.country);
 
-  // Update coach with Stripe account ID
+  // Update coach with Stripe account ID and country
   await supabase
     .from("coaches")
-    .update({ stripe_account_id: account.id })
+    .update({
+      stripe_account_id: account.id,
+      stripe_country: account.country,
+    })
     .eq("id", coachId);
 
   return account;
@@ -190,6 +193,29 @@ export async function createConnectDashboardLink(accountId) {
   return loginLink;
 }
 
+// Map coach Stripe country to checkout currency
+const COUNTRY_CURRENCY_MAP = {
+  US: "usd",
+  DE: "eur",
+  FR: "eur",
+  ES: "eur",
+  IT: "eur",
+  NL: "eur",
+  IE: "eur",
+  BE: "eur",
+  AT: "eur",
+  GB: "gbp",
+  CA: "cad",
+  AU: "aud",
+  NZ: "nzd",
+  CH: "chf",
+  SG: "sgd",
+};
+
+function getCurrencyForCoach(coach) {
+  return COUNTRY_CURRENCY_MAP[coach.stripe_country] || "usd";
+}
+
 // Create checkout session for user subscribing to a coach
 export async function createUserSubscriptionCheckout({
   userId,
@@ -198,32 +224,31 @@ export async function createUserSubscriptionCheckout({
   tier = 2,
   interval = "monthly",
 }) {
-  // Tier pricing:
-  // Tier 2: $9.99/month (fixed), platform fee $5
-  // Tier 3: Coach-set price (from user_monthly_price_cents, minimum $49.99)
-  // Tier 3 platform fee: 20% or $5, whichever is higher
+  // Determine currency from coach's Stripe country (1:1 price mapping across currencies)
+  const currency = getCurrencyForCoach(coach);
 
-  let userPriceCents;
+  // Tier pricing (amounts in minor units, same numeric value across all currencies):
+  // Tier 2: 9.99/month (fixed), platform fee 5
+  // Tier 3: Coach-set price (from user_monthly_price_cents, minimum 19.99)
+  // Tier 3 platform fee: 20% or 5, whichever is higher
+
+  let userPriceMinor;
   let tierName;
   let tierDescription;
-  let platformFeeCents;
+  let platformFeeMinor;
 
   if (tier === 2) {
-    // Tier 2: Fixed price $9.99, fixed fee $5
-    userPriceCents = 999;
-    platformFeeCents = 500; // $5 flat
+    userPriceMinor = 999;
+    platformFeeMinor = 500;
     tierName = "Daily Companion";
     tierDescription = "Full access to all features";
   } else if (tier === 3) {
-    // Tier 3: Coach-set price (minimum $19.99)
-    userPriceCents = coach.user_monthly_price_cents || 1999;
-    // Ensure minimum price
-    if (userPriceCents < 1999) {
-      userPriceCents = 1999;
+    userPriceMinor = coach.user_monthly_price_cents || 1999;
+    if (userPriceMinor < 1999) {
+      userPriceMinor = 1999;
     }
-    // Platform fee: 20% or $5, whichever is higher
-    const twentyPercentFee = Math.round(userPriceCents * 0.2);
-    platformFeeCents = Math.max(twentyPercentFee, 500);
+    const twentyPercentFee = Math.round(userPriceMinor * 0.2);
+    platformFeeMinor = Math.max(twentyPercentFee, 500);
 
     tierName = coach.tier3_name || "Premium Plus";
     tierDescription = "Premium + exclusive Resource Hub access";
@@ -231,23 +256,20 @@ export async function createUserSubscriptionCheckout({
     throw new Error("Invalid tier specified");
   }
 
-  // Apply yearly discount: 1 month free (11 months for price of 12)
   let finalPrice;
   let intervalForStripe;
   if (interval === "yearly") {
-    finalPrice = userPriceCents * 11; // 11 months price for 12 months
+    finalPrice = userPriceMinor * 11;
     intervalForStripe = "year";
   } else {
-    finalPrice = userPriceCents;
+    finalPrice = userPriceMinor;
     intervalForStripe = "month";
   }
 
-  const coachReceivesCents = userPriceCents - platformFeeCents;
+  const coachReceivesMinor = userPriceMinor - platformFeeMinor;
 
-  // Calculate what percentage $5 fee represents (for Stripe's application_fee_percent)
-  // Use toFixed(2) and parseFloat to ensure exactly 2 decimal places
   const effectiveFeePercentage = parseFloat(
-    ((platformFeeCents / userPriceCents) * 100).toFixed(2),
+    ((platformFeeMinor / userPriceMinor) * 100).toFixed(2),
   );
 
   const sessionConfig = {
@@ -257,7 +279,7 @@ export async function createUserSubscriptionCheckout({
     line_items: [
       {
         price_data: {
-          currency: "usd",
+          currency,
           product_data: {
             name: `${coach.business_name} - ${tierName}`,
             description: tierDescription,
@@ -273,24 +295,26 @@ export async function createUserSubscriptionCheckout({
     subscription_data: {
       application_fee_percent: effectiveFeePercentage,
       metadata: {
-        platform_fee_cents: platformFeeCents.toString(),
-        coach_receives_cents: coachReceivesCents.toString(),
+        currency,
+        platform_fee_minor: platformFeeMinor.toString(),
+        coach_receives_minor: coachReceivesMinor.toString(),
         subscription_tier: tier.toString(),
         billing_interval: interval,
-        price_cents: userPriceCents.toString(),
+        price_minor: userPriceMinor.toString(),
       },
     },
     metadata: {
       userId,
       coachId: coach.id,
       type: "user_subscription",
-      platform_fee_cents: platformFeeCents.toString(),
+      currency,
+      platform_fee_minor: platformFeeMinor.toString(),
       subscription_tier: tier.toString(),
       billing_interval: interval,
-      price_cents: userPriceCents.toString(),
-      price_per_month: (userPriceCents / 100).toFixed(2),
+      price_minor: userPriceMinor.toString(),
+      price_per_month: (userPriceMinor / 100).toFixed(2),
     },
-    allow_promotion_codes: true, // Allow coupon codes
+    allow_promotion_codes: true,
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/user/dashboard?subscription=success`,
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/user/dashboard?subscription=canceled`,
   };

@@ -99,6 +99,27 @@ function UserDashboardContent() {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [coachConfig, setCoachConfig] = useState(null);
   const primaryColor = coachConfig?.branding?.primary_color || "#6366f1";
+
+  // Currency helper based on coach's Stripe country
+  const COUNTRY_CURRENCY = {
+    US: { code: "usd", symbol: "$" },
+    DE: { code: "eur", symbol: "€" },
+    FR: { code: "eur", symbol: "€" },
+    ES: { code: "eur", symbol: "€" },
+    IT: { code: "eur", symbol: "€" },
+    NL: { code: "eur", symbol: "€" },
+    IE: { code: "eur", symbol: "€" },
+    BE: { code: "eur", symbol: "€" },
+    AT: { code: "eur", symbol: "€" },
+    GB: { code: "gbp", symbol: "£" },
+    CA: { code: "cad", symbol: "CA$" },
+    AU: { code: "aud", symbol: "A$" },
+    NZ: { code: "nzd", symbol: "NZ$" },
+    CH: { code: "chf", symbol: "CHF " },
+    SG: { code: "sgd", symbol: "S$" },
+  };
+  const coachCurrency = COUNTRY_CURRENCY[user?.coach?.stripe_country] || { code: "usd", symbol: "$" };
+  const cs = coachCurrency.symbol;
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -5954,7 +5975,7 @@ function UserDashboardContent() {
                               color: "#1a1a1a",
                             }}
                           >
-                            $0
+                            {cs}0
                           </div>
                           <div style={{ fontSize: "12px", color: "#6b7280" }}>
                             /month
@@ -6054,7 +6075,7 @@ function UserDashboardContent() {
                               color: "#1a1a1a",
                             }}
                           >
-                            $9.99
+                            {cs}9.99
                           </div>
                           <div style={{ fontSize: "12px", color: "#6b7280" }}>
                             /month
@@ -6187,7 +6208,7 @@ function UserDashboardContent() {
                               color: "#1a1a1a",
                             }}
                           >
-                            $
+                            {cs}
                             {(
                               (user?.coach?.user_monthly_price_cents || 1999) /
                               100

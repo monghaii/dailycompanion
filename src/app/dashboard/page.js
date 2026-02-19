@@ -2374,6 +2374,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
   const coach = user?.coach;
 
+  // Currency symbol based on coach's Stripe country
+  const COUNTRY_CURRENCY_SYMBOL = {
+    US: "$", DE: "€", FR: "€", ES: "€", IT: "€", NL: "€",
+    IE: "€", BE: "€", AT: "€", GB: "£", CA: "CA$",
+    AU: "A$", NZ: "NZ$", CH: "CHF ", SG: "S$",
+  };
+  const cs = COUNTRY_CURRENCY_SYMBOL[coach?.stripe_country] || "$";
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
@@ -2847,6 +2855,30 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             Connected and active
                           </span>
                         </div>
+                        {coach?.stripe_country && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <span className="font-medium text-gray-700">Account Region:</span>
+                            <span>
+                              {{
+                                US: "United States (USD)",
+                                DE: "Germany (EUR)",
+                                GB: "United Kingdom (GBP)",
+                                CA: "Canada (CAD)",
+                                FR: "France (EUR)",
+                                ES: "Spain (EUR)",
+                                IT: "Italy (EUR)",
+                                NL: "Netherlands (EUR)",
+                                IE: "Ireland (EUR)",
+                                BE: "Belgium (EUR)",
+                                AT: "Austria (EUR)",
+                                AU: "Australia (AUD)",
+                                NZ: "New Zealand (NZD)",
+                                CH: "Switzerland (CHF)",
+                                SG: "Singapore (SGD)",
+                              }[coach.stripe_country] || coach.stripe_country}
+                            </span>
+                          </div>
+                        )}
                         <button
                           onClick={handleOpenStripeDashboard}
                           disabled={isStripeLoading}
@@ -2887,7 +2919,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     </h2>
                     <p className="text-sm text-gray-600 mb-6">
                       Manage pricing for your client subscriptions. Tier 2 has a
-                      flat $5 fee. Tier 3 has a 20% fee (minimum $5).
+                      flat {cs}5 fee. Tier 3 has a 20% fee (minimum {cs}5).
                     </p>
 
                     {/* Tier 2 - Daily Companion (Fixed) */}
@@ -2909,7 +2941,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         <div className="flex justify-between">
                           <span className="text-gray-600">Monthly:</span>
                           <span className="font-semibold text-gray-900">
-                            $9.99/month
+                            {cs}9.99/month
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -2917,7 +2949,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             Yearly (1 month free):
                           </span>
                           <span className="font-semibold text-gray-900">
-                            $109.89/year
+                            {cs}109.89/year
                           </span>
                         </div>
                         <div className="flex justify-between pt-2 border-t border-gray-300">
@@ -2925,7 +2957,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             Your revenue (monthly):
                           </span>
                           <span className="font-semibold text-green-600">
-                            $4.99
+                            {cs}4.99
                           </span>
                         </div>
                       </div>
@@ -2996,10 +3028,10 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm px-3 py-2 border mb-4"
                             />
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Set Monthly Price (minimum $19.99)
+                              Set Monthly Price (minimum {cs}19.99)
                             </label>
                             <div className="flex items-center gap-2">
-                              <span className="text-gray-500">$</span>
+                              <span className="text-gray-500">{cs}</span>
                               <input
                                 type="text"
                                 inputMode="decimal"
@@ -3036,7 +3068,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 Monthly price:
                               </span>
                               <span className="font-semibold text-gray-900">
-                                $
+                                {cs}
                                 {(
                                   (profileConfig.user_monthly_price_cents ||
                                     1999) / 100
@@ -3049,7 +3081,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 Yearly (1 month free):
                               </span>
                               <span className="font-semibold text-gray-900">
-                                $
+                                {cs}
                                 {(
                                   ((profileConfig.user_monthly_price_cents ||
                                     1999) *
@@ -3061,10 +3093,10 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             </div>
                             <div className="flex justify-between pt-2 border-t border-amber-300">
                               <span className="text-gray-600">
-                                Platform fee (20% or $5 min):
+                                Platform fee (20% or {cs}5 min):
                               </span>
                               <span className="font-semibold text-gray-900">
-                                $
+                                {cs}
                                 {(
                                   Math.max(
                                     Math.round(
@@ -3081,7 +3113,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 Your revenue (monthly):
                               </span>
                               <span className="font-semibold text-green-600">
-                                $
+                                {cs}
                                 {(
                                   ((profileConfig.user_monthly_price_cents ||
                                     1999) -
@@ -3115,8 +3147,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       <p className="text-xs text-blue-800">
                         <strong>Note:</strong> Yearly billing gives clients 1
                         month free (11 months price for 12 months of access).
-                        Tier 2 has a flat $5 platform fee. Tier 3 has a 20%
-                        platform fee (minimum $5).
+                        Tier 2 has a flat {cs}5 platform fee. Tier 3 has a 20%
+                        platform fee (minimum {cs}5).
                       </p>
                     </div>
                   </div>
@@ -4057,7 +4089,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             </div>
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Daily Companion Signup Link ($9.99/month)
+                                Daily Companion Signup Link ({cs}9.99/month)
                               </label>
                               <div className="flex items-center gap-2">
                                 <input
