@@ -2376,9 +2376,21 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
   // Currency symbol based on coach's Stripe country
   const COUNTRY_CURRENCY_SYMBOL = {
-    US: "$", DE: "€", FR: "€", ES: "€", IT: "€", NL: "€",
-    IE: "€", BE: "€", AT: "€", GB: "£", CA: "CA$",
-    AU: "A$", NZ: "NZ$", CH: "CHF ", SG: "S$",
+    US: "$",
+    DE: "€",
+    FR: "€",
+    ES: "€",
+    IT: "€",
+    NL: "€",
+    IE: "€",
+    BE: "€",
+    AT: "€",
+    GB: "£",
+    CA: "CA$",
+    AU: "A$",
+    NZ: "NZ$",
+    CH: "CHF ",
+    SG: "S$",
   };
   const cs = COUNTRY_CURRENCY_SYMBOL[coach?.stripe_country] || "$";
 
@@ -2857,7 +2869,9 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         </div>
                         {coach?.stripe_country && (
                           <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <span className="font-medium text-gray-700">Account Region:</span>
+                            <span className="font-medium text-gray-700">
+                              Account Region:
+                            </span>
                             <span>
                               {{
                                 US: "United States (USD)",
@@ -8178,29 +8192,37 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
             <h3 className="text-lg font-semibold mb-2">Select Your Country</h3>
             <p className="text-sm text-gray-600 mb-4">
-              Please select the country where your bank account is located.
+              Choose the country where your bank account is located. This
+              determines the currency your clients will be charged in.
             </p>
             <select
-              className="w-full p-2 border rounded-md mb-4 bg-white text-gray-900"
+              className="w-full p-2 border rounded-md mb-3 bg-white text-gray-900"
               value={selectedCountry}
               onChange={(e) => setSelectedCountry(e.target.value)}
             >
-              <option value="US">United States</option>
-              <option value="DE">Germany</option>
-              <option value="GB">United Kingdom</option>
-              <option value="CA">Canada</option>
-              <option value="FR">France</option>
-              <option value="ES">Spain</option>
-              <option value="IT">Italy</option>
-              <option value="NL">Netherlands</option>
-              <option value="IE">Ireland</option>
-              <option value="BE">Belgium</option>
-              <option value="AT">Austria</option>
-              <option value="AU">Australia</option>
-              <option value="NZ">New Zealand</option>
-              <option value="CH">Switzerland</option>
-              <option value="SG">Singapore</option>
+              <option value="US">United States (USD)</option>
+              <option value="DE">Germany (EUR)</option>
+              <option value="GB">United Kingdom (GBP)</option>
+              <option value="CA">Canada (CAD)</option>
+              <option value="FR">France (EUR)</option>
+              <option value="ES">Spain (EUR)</option>
+              <option value="IT">Italy (EUR)</option>
+              <option value="NL">Netherlands (EUR)</option>
+              <option value="IE">Ireland (EUR)</option>
+              <option value="BE">Belgium (EUR)</option>
+              <option value="AT">Austria (EUR)</option>
+              <option value="AU">Australia (AUD)</option>
+              <option value="NZ">New Zealand (NZD)</option>
+              <option value="CH">Switzerland (CHF)</option>
+              <option value="SG">Singapore (SGD)</option>
             </select>
+            <div className="bg-amber-50 border border-amber-300 rounded-md p-3 mb-3">
+              <p className="text-sm text-amber-900">
+                <span className="font-semibold">Choose carefully:</span> This
+                selection is difficult to change later. All client subscriptions
+                and payouts will use the currency associated with this country.
+              </p>
+            </div>
             <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-6">
               <p className="text-sm text-blue-900">
                 <span className="font-semibold">Important:</span> When Stripe
