@@ -14,12 +14,20 @@ export default function CoachResetPassword() {
   const [accessToken, setAccessToken] = useState("");
 
   useEffect(() => {
-    // Extract access token from URL hash (Supabase puts it there)
+    // Check for error from /auth/confirm redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("error")) {
+      setError("Invalid or expired reset link. Please request a new one.");
+      return;
+    }
+
+    // Extract access token from URL hash (Supabase puts it there after /auth/confirm)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const token = hashParams.get("access_token");
 
     if (token) {
       setAccessToken(token);
+      window.history.replaceState(null, "", window.location.pathname);
     } else {
       setError("Invalid or expired reset link. Please request a new one.");
     }

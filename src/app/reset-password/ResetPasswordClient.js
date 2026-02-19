@@ -39,16 +39,22 @@ export default function ResetPasswordClient({ coachSlug, initialCoachData }) {
   }, [coachSlug, initialCoachData]);
 
   useEffect(() => {
-    // Extract access token from URL hash (Supabase puts it there)
+    // Check for error from /auth/confirm redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("error")) {
+      setError("Invalid or expired reset link. Please request a new one.");
+      return;
+    }
+
+    // Extract access token from URL hash (Supabase puts it there after /auth/confirm)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const token = hashParams.get("access_token");
 
     if (token) {
       setAccessToken(token);
+      // Clean the URL hash for security
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
     } else {
-      // Don't set error immediately on server render, but client side check is fine
-      // If no token in hash, check if it's not a recovery flow or just loading
-      // For now, let's keep it simple as the original code did
       setError("Invalid or expired reset link. Please request a new one.");
     }
   }, []);

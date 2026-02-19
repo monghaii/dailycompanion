@@ -18,9 +18,10 @@ export async function POST(request) {
       redirectPath += `?coach=${coachSlug}`;
     }
 
-    const redirectUrl = `${
-      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-    }${redirectPath}`;
+    // Always redirect through the platform domain so Supabase's allowlist accepts it.
+    // Custom coach domains can't all be registered in Supabase's redirect URLs.
+    const platformOrigin = `https://${process.env.NEXT_PUBLIC_PLATFORM_DOMAIN || "dailycompanion.app"}`;
+    const redirectUrl = `${platformOrigin}${redirectPath}`;
 
     // Create a regular Supabase client (not admin) to send password reset email
     // This will trigger Supabase's built-in email sending
