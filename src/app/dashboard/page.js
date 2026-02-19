@@ -2396,7 +2396,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 style={{ width: "40px", height: "40px" }}
               />
               <h2 className="text-xl font-bold text-gray-900 whitespace-nowrap overflow-hidden">
-                Coach Hub
+                Knowledge Base
               </h2>
             </div>
           ) : (
