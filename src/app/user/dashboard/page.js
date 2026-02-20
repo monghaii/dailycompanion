@@ -22,9 +22,6 @@ function UserDashboardContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isConfigLoading, setIsConfigLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("activeTab") || "focus";
-    }
     return "focus";
   });
   const [dayNotes, setDayNotes] = useState("");

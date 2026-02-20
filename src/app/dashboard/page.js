@@ -317,38 +317,27 @@ function ClientsSection() {
 function DashboardContent() {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("coachSidebarOpen");
-      return saved !== null ? saved === "true" : true;
-    }
-    return true;
-  });
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("coachDashboardActiveSection") || "finance";
-    }
-    return "finance";
-  });
+  const [activeSection, setActiveSection] = useState("config");
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-  // Save activeSection to localStorage whenever it changes
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("coachDashboardActiveSection", activeSection);
-    }
-  }, [activeSection]);
+    const saved = localStorage.getItem("coachSidebarOpen");
+    if (saved !== null) setIsSidebarOpen(saved === "true");
+  }, []);
 
-  // Force finance tab if not subscribed
+  // Once user data loads, decide the landing section
   useEffect(() => {
-    if (
-      user?.coach &&
-      user.coach.platform_subscription_status !== "active" &&
-      activeSection !== "finance"
-    ) {
+    if (!user?.coach) return;
+    if (user.coach.platform_subscription_status !== "active") {
       setActiveSection("finance");
+    } else if (user.coach.stripe_account_status !== "active") {
+      setActiveSection("finance");
+    } else {
+      setActiveSection("config");
     }
-  }, [user, activeSection]);
+  }, [user]);
 
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [payoutLoading, setPayoutLoading] = useState(false);
@@ -403,12 +392,10 @@ function DashboardContent() {
   );
   const [currentDayIndex, setCurrentDayIndex] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
-  const [previewPosition, setPreviewPosition] = useState(() => {
-    if (typeof window !== "undefined") {
-      return { x: window.innerWidth - 420, y: 100 };
-    }
-    return { x: 800, y: 100 };
-  });
+  const [previewPosition, setPreviewPosition] = useState({ x: 800, y: 100 });
+  useEffect(() => {
+    setPreviewPosition({ x: window.innerWidth - 420, y: 100 });
+  }, []);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const previewIframeRef = useRef(null);
@@ -871,13 +858,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       fetchTokenUsage();
     }
   }, [user]);
-
-  // Save active section to localStorage
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("coachDashboardActiveSection", activeSection);
-    }
-  }, [activeSection]);
 
   const fetchCoachConfig = async () => {
     try {
@@ -2094,10 +2074,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
   };
 
   const handleSaveProfile = async () => {
-    setIsSavingConfig(true);
-    setSavingSection("profile");
-
-    // Read current values from DOM
     const currentProfile = {
       ...profileConfig,
       bio: document.getElementById("profile-bio")?.value ?? profileConfig.bio,
@@ -2117,42 +2093,25 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
     setProfileConfig(currentProfile);
 
-    try {
-      const res = await fetch("/api/coach/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(currentProfile),
-      });
+    const res = await fetch("/api/coach/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(currentProfile),
+    });
 
-      if (checkAuthResponse(res)) return;
+    if (checkAuthResponse(res)) return;
+    const data = await res.json();
 
-      const data = await res.json();
-
-      if (res.ok) {
-        setToastMessage("✅ Profile updated successfully!");
-        setShowToast(true);
-        // Update local user state
-        setUser((prev) => ({
-          ...prev,
-          coach: {
-            ...prev.coach,
-            ...data.coach,
-          },
-        }));
-        setTimeout(() => setShowToast(false), 3000);
-      } else {
-        setToastMessage("❌ " + (data.error || "Failed to update profile"));
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
-      }
-    } catch (error) {
-      console.error("Save profile error:", error);
-      setToastMessage("❌ Failed to save profile");
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-    } finally {
-      setIsSavingConfig(false);
-      setSavingSection(null);
+    if (res.ok) {
+      setUser((prev) => ({
+        ...prev,
+        coach: {
+          ...prev.coach,
+          ...data.coach,
+        },
+      }));
+    } else {
+      throw new Error(data.error || "Failed to update profile");
     }
   };
 
@@ -2252,22 +2211,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
   };
 
   const handleSaveLandingConfig = async () => {
-    setIsSavingConfig(true);
-    setSavingSection("landing");
-
-    // Read current values from DOM inputs
     const currentConfig = {
-      hero: {
-        headline:
-          document.getElementById("landing-hero-headline")?.value ||
-          landingConfig.hero.headline,
-        subheadline:
-          document.getElementById("landing-hero-subheadline")?.value ||
-          landingConfig.hero.subheadline,
-        cta_button_text:
-          document.getElementById("landing-hero-cta")?.value ||
-          landingConfig.hero.cta_button_text,
-      },
+      hero: landingConfig.hero,
       coach_info: {
         ...landingConfig.coach_info,
         name:
@@ -2304,32 +2249,30 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
     setLandingConfig(currentConfig);
 
+    const res = await fetch("/api/coach/landing-config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ config: currentConfig }),
+    });
+
+    if (checkAuthResponse(res)) return;
+    const resData = await res.json();
+    if (!res.ok) throw new Error(resData.error || "Failed to save landing config");
+  };
+
+  const handleSaveAll = async () => {
+    setIsSavingConfig(true);
+    setSavingSection("all");
     try {
-      const res = await fetch("/api/coach/landing-config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ config: currentConfig }),
-      });
-
-      if (checkAuthResponse(res)) return;
-
-      const resData = await res.json();
-
-      if (res.ok) {
-        setToastMessage("✅ Landing page saved successfully!");
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
-      } else {
-        setToastMessage(
-          "❌ Failed to save landing page: " +
-            (resData.error || "Unknown error"),
-        );
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
-      }
+      await handleSaveProfile();
+      await handleSaveLandingConfig();
+      await captureFocusScreenshot();
+      setToastMessage("✅ Landing page saved successfully!");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
     } catch (error) {
-      console.error("Save landing config error:", error);
-      setToastMessage("❌ Failed to save landing page");
+      console.error("Save error:", error);
+      setToastMessage("❌ Failed to save: " + (error.message || "Unknown error"));
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } finally {
@@ -2435,7 +2378,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       >
         {/* Logo & Toggle */}
         <div
-          className={`p-4 border-b border-gray-200 ${isSidebarOpen ? "flex items-center justify-between" : "flex flex-col items-center gap-2"}`}
+          className={`border-b border-gray-200 ${isSidebarOpen ? "p-4 flex items-center justify-between" : "py-3.5 px-4 flex flex-col items-center gap-2"}`}
         >
           {isSidebarOpen ? (
             <div className="flex items-center gap-3">
@@ -2499,6 +2442,41 @@ Remember: You're here to empower them to find their own answers, not to fix thei
               </svg>
             )}
           </button>
+        </div>
+
+        {/* Profile */}
+        <div className="px-3 pt-3 relative">
+          <button
+            onClick={() => setShowProfileMenu((v) => !v)}
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${isSidebarOpen ? "" : "justify-center"}`}
+          >
+            <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-xs shrink-0">
+              {user?.full_name?.charAt(0)}
+            </div>
+            {isSidebarOpen && (
+              <span className="text-sm font-medium text-gray-900 truncate">{user?.full_name}</span>
+            )}
+          </button>
+          {showProfileMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)} />
+              <div
+                className="absolute z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1"
+                style={{ top: "8px", left: isSidebarOpen ? "256px" : "80px" }}
+              >
+                <div className="px-4 py-2 border-b border-gray-100">
+                  <p className="text-sm font-medium text-gray-900 whitespace-nowrap">{user?.full_name}</p>
+                  <p className="text-xs text-gray-500 whitespace-nowrap">{coach?.slug}</p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
+                >
+                  Sign out
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Navigation */}
@@ -2745,27 +2723,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           </a>
         </nav>
 
-        {/* User info at bottom */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center gap-3 justify-center">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-sm shrink-0">
-              {user?.full_name?.charAt(0)}
-            </div>
-            {isSidebarOpen && (
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-gray-900 truncate">
-                  {user?.full_name}
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="text-xs text-gray-500 hover:text-gray-700"
-                >
-                  Sign out
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
       </aside>
 
       {/* Main Content */}
@@ -3158,11 +3115,27 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       )}
 
                       <button
-                        onClick={handleSaveProfile}
-                        disabled={isSavingConfig && savingSection === "profile"}
+                        onClick={async () => {
+                          setIsSavingConfig(true);
+                          setSavingSection("tier3");
+                          try {
+                            await handleSaveProfile();
+                            setToastMessage("✅ Tier 3 settings saved!");
+                            setShowToast(true);
+                            setTimeout(() => setShowToast(false), 3000);
+                          } catch (err) {
+                            setToastMessage("❌ " + (err.message || "Failed to save"));
+                            setShowToast(true);
+                            setTimeout(() => setShowToast(false), 3000);
+                          } finally {
+                            setIsSavingConfig(false);
+                            setSavingSection(null);
+                          }
+                        }}
+                        disabled={isSavingConfig}
                         className="mt-4 w-full px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 font-semibold"
                       >
-                        {isSavingConfig && savingSection === "profile"
+                        {isSavingConfig && savingSection === "tier3"
                           ? "Saving..."
                           : "Save Tier 3 Settings"}
                       </button>
@@ -3812,16 +3785,140 @@ Remember: You're here to empower them to find their own answers, not to fix thei
             {/* Config Content */}
             <div className="flex-1 overflow-y-auto p-8">
               <div className="max-w-4xl mx-auto space-y-8">
-                {/* Profile Settings and Landing Page Configuration */}
+                {/* Direct Signup Links */}
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <svg
+                      className="w-5 h-5 text-purple-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                      />
+                    </svg>
+                    Direct Signup Links
+                  </h3>
+                  <p className="text-xs text-gray-600 mb-4">
+                    Share these links to allow users to sign up directly for
+                    free or premium
+                  </p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                        Free Signup Link
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={`${window.location.origin}/signup?coach=${coach?.slug}&plan=free`}
+                          className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-lg bg-white font-mono"
+                          onClick={(e) => e.target.select()}
+                        />
+                        <button
+                          onClick={(e) => {
+                            navigator.clipboard.writeText(
+                              `${window.location.origin}/signup?coach=${coach?.slug}&plan=free`,
+                            );
+                            const btn = e.currentTarget;
+                            const originalText = btn.textContent;
+                            btn.textContent = "✓";
+                            btn.classList.add("bg-green-600");
+                            setTimeout(() => {
+                              btn.textContent = originalText;
+                              btn.classList.remove("bg-green-600");
+                            }, 2000);
+                          }}
+                          className="px-3 py-2 bg-[#fbbf24] text-black text-xs font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors whitespace-nowrap"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                        Daily Companion Signup Link ({cs}9.99/month)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={`${window.location.origin}/signup?coach=${coach?.slug}&plan=premium`}
+                          className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-lg bg-white font-mono"
+                          onClick={(e) => e.target.select()}
+                        />
+                        <button
+                          onClick={(e) => {
+                            navigator.clipboard.writeText(
+                              `${window.location.origin}/signup?coach=${coach?.slug}&plan=premium`,
+                            );
+                            const btn = e.currentTarget;
+                            const originalText = btn.textContent;
+                            btn.textContent = "✓";
+                            btn.classList.add("bg-green-600");
+                            setTimeout(() => {
+                              btn.textContent = originalText;
+                              btn.classList.remove("bg-green-600");
+                            }, 2000);
+                          }}
+                          className="px-3 py-2 bg-[#fbbf24] text-black text-xs font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors whitespace-nowrap"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                    {profileConfig.tier3_enabled && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                          {profileConfig.tier3_name || "Premium Plus"} Signup Link ({cs}{tier3PriceInput}/month)
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            readOnly
+                            value={`${window.location.origin}/signup?coach=${coach?.slug}&plan=premium&tier=3`}
+                            className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-lg bg-white font-mono"
+                            onClick={(e) => e.target.select()}
+                          />
+                          <button
+                            onClick={(e) => {
+                              navigator.clipboard.writeText(
+                                `${window.location.origin}/signup?coach=${coach?.slug}&plan=premium&tier=3`,
+                              );
+                              const btn = e.currentTarget;
+                              const originalText = btn.textContent;
+                              btn.textContent = "✓";
+                              btn.classList.add("bg-green-600");
+                              setTimeout(() => {
+                                btn.textContent = originalText;
+                                btn.classList.remove("bg-green-600");
+                              }, 2000);
+                            }}
+                            className="px-3 py-2 bg-[#fbbf24] text-black text-xs font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors whitespace-nowrap"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Branding */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                   <details className="group">
-                    <summary className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center cursor-pointer list-none">
+                    <summary className="p-6 border-b border-gray-100 bg-gray-50/50 cursor-pointer list-none flex justify-between items-center">
                       <div>
                         <h2 className="text-lg font-semibold text-gray-900">
-                          Profile Settings and Landing Page Configuration
+                          Branding
                         </h2>
                         <p className="text-sm text-gray-500 mt-1">
-                          Manage your public profile and landing page
+                          Business identity, colors, and visual styling
                         </p>
                       </div>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
@@ -3829,77 +3926,26 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       </span>
                     </summary>
                     <div className="p-6 space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                            Business Name
-                          </label>
-                          <input
-                            type="text"
-                            value={profileConfig.business_name}
-                            onChange={(e) =>
-                              setProfileConfig({
-                                ...profileConfig,
-                                business_name: e.target.value,
-                              })
-                            }
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                            placeholder="Your Coaching Business"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                            Landing Page URL Slug
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500 shrink-0">
-                              /coach/
-                            </span>
-                            <input
-                              type="text"
-                              value={profileConfig.slug}
-                              onChange={(e) => {
-                                // Auto-format slug: lowercase, replace spaces with hyphens, remove special chars
-                                const formattedSlug = e.target.value
-                                  .toLowerCase()
-                                  .replace(/\s+/g, "-")
-                                  .replace(/[^a-z0-9-]/g, "");
-                                setProfileConfig({
-                                  ...profileConfig,
-                                  slug: formattedSlug,
-                                });
-                              }}
-                              className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                              placeholder="your-name"
-                            />
-                            <a
-                              href={`/coach/${
-                                profileConfig.slug || "your-slug"
-                              }`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-4 py-2 text-sm bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors flex items-center gap-2 shrink-0"
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                                />
-                              </svg>
-                              View Page
-                            </a>
-                          </div>
-                        </div>
+                      {/* Business Name */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                          Business Name
+                        </label>
+                        <input
+                          type="text"
+                          value={profileConfig.business_name}
+                          onChange={(e) =>
+                            setProfileConfig({
+                              ...profileConfig,
+                              business_name: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                          placeholder="Your Coaching Business"
+                        />
                       </div>
 
-                      {/* Logo Upload */}
+                      {/* Business Logo */}
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
                           Business Logo
@@ -3981,698 +4027,225 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="md:col-span-2">
-                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                            Bio
-                          </label>
-                          <textarea
-                            rows={3}
-                            id="profile-bio"
-                            defaultValue={profileConfig.bio}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
-                            placeholder="Tell your clients about yourself..."
-                          />
-                        </div>
-                      </div>
-
-                      {/* Landing Page Content */}
+                      {/* Primary Color */}
                       <div className="pt-4 border-t border-gray-100">
-                        <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                          Landing Page Content
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                          Colors
                         </h3>
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                              Your Title/Role
-                            </label>
-                            <input
-                              type="text"
-                              id="profile-tagline"
-                              defaultValue={profileConfig.tagline}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                              placeholder="Life & Wellness Coach"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                              Main Headline
-                            </label>
-                            <input
-                              type="text"
-                              id="profile-landing-headline"
-                              defaultValue={profileConfig.landing_headline}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                              placeholder="Transform Your Life with Personalized Coaching"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                              Subheadline
-                            </label>
-                            <input
-                              type="text"
-                              id="profile-landing-subheadline"
-                              defaultValue={profileConfig.landing_subheadline}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                              placeholder="Join others on their journey to growth and fulfillment"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                              Call-to-Action Button Text
-                            </label>
-                            <input
-                              type="text"
-                              id="profile-landing-cta"
-                              defaultValue={profileConfig.landing_cta}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                              placeholder="Start Your Journey"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Direct Signup Links */}
-                      <div className="pt-4 border-t border-gray-100">
-                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
-                          <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                            <svg
-                              className="w-5 h-5 text-purple-600"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                              />
-                            </svg>
-                            Direct Signup Links
-                          </h3>
-                          <p className="text-xs text-gray-600 mb-4">
-                            Share these links to allow users to sign up directly
-                            for free or premium
-                          </p>
-                          <div className="space-y-3">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Free Signup Link
-                              </label>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="text"
-                                  readOnly
-                                  value={`${window.location.origin}/signup?coach=${coach?.slug}&plan=free`}
-                                  className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-lg bg-white font-mono"
-                                  onClick={(e) => e.target.select()}
-                                />
-                                <button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(
-                                      `${window.location.origin}/signup?coach=${coach?.slug}&plan=free`,
-                                    );
-                                    const btn = event.target;
-                                    const originalText = btn.textContent;
-                                    btn.textContent = "✓";
-                                    btn.classList.add("bg-green-600");
-                                    setTimeout(() => {
-                                      btn.textContent = originalText;
-                                      btn.classList.remove("bg-green-600");
-                                    }, 2000);
-                                  }}
-                                  className="px-3 py-2 bg-[#fbbf24] text-black text-xs font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors whitespace-nowrap"
-                                >
-                                  Copy
-                                </button>
-                              </div>
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Daily Companion Signup Link ({cs}9.99/month)
-                              </label>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="text"
-                                  readOnly
-                                  value={`${window.location.origin}/signup?coach=${coach?.slug}&plan=premium`}
-                                  className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-lg bg-white font-mono"
-                                  onClick={(e) => e.target.select()}
-                                />
-                                <button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(
-                                      `${window.location.origin}/signup?coach=${coach?.slug}&plan=premium`,
-                                    );
-                                    const btn = event.target;
-                                    const originalText = btn.textContent;
-                                    btn.textContent = "✓";
-                                    btn.classList.add("bg-green-600");
-                                    setTimeout(() => {
-                                      btn.textContent = originalText;
-                                      btn.classList.remove("bg-green-600");
-                                    }, 2000);
-                                  }}
-                                  className="px-3 py-2 bg-[#fbbf24] text-black text-xs font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors whitespace-nowrap"
-                                >
-                                  Copy
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Advanced Landing Page Settings */}
-                      <div className="pt-4 border-t border-gray-100">
-                        <h3 className="text-md font-semibold text-gray-900 mb-4">
-                          Advanced Landing Page Settings
-                        </h3>
-
-                        {/* Hero Section */}
-                        <div className="mb-6">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                            Hero Section
-                          </h4>
-                          <div className="space-y-4">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Headline
-                              </label>
-                              <input
-                                type="text"
-                                id="landing-hero-headline"
-                                defaultValue={landingConfig.hero.headline}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                                placeholder="Transform Your Life..."
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Subheadline
-                              </label>
-                              <input
-                                type="text"
-                                id="landing-hero-subheadline"
-                                defaultValue={landingConfig.hero.subheadline}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                                placeholder="Join others on their journey..."
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                CTA Button Text
-                              </label>
-                              <input
-                                type="text"
-                                id="landing-hero-cta"
-                                defaultValue={
-                                  landingConfig.hero.cta_button_text
-                                }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                                placeholder="Start Your Journey"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Coach Info Section */}
-                        <div className="mb-6">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                            Coach Information Display
-                          </h4>
-                          <div className="space-y-4">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Display Name
-                              </label>
-                              <input
-                                type="text"
-                                id="landing-coach-name"
-                                defaultValue={landingConfig.coach_info.name}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                                placeholder="Your Name"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Title
-                              </label>
-                              <input
-                                type="text"
-                                id="landing-coach-title"
-                                defaultValue={landingConfig.coach_info.title}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                                placeholder="Life & Wellness Coach"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Bio
-                              </label>
-                              <textarea
-                                id="landing-coach-bio"
-                                defaultValue={landingConfig.coach_info.bio}
-                                rows={3}
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                                placeholder="Brief bio about your coaching approach..."
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* SEO Meta Description */}
-                        <div className="mb-6">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                            SEO & Sharing
-                          </h4>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                              Meta Description
-                            </label>
-                            <textarea
-                              id="landing-meta-description"
-                              defaultValue={
-                                landingConfig.meta_description || ""
-                              }
-                              rows={3}
-                              maxLength={160}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                              placeholder="A short description that appears in search results and when your link is shared on social media (max 160 characters)"
-                            />
-                            <p className="text-xs text-gray-400 mt-1">
-                              This text appears in Google search results and
-                              social media previews when someone shares your
-                              landing page or signup link.
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Pricing Features */}
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                            Pricing Features
-                          </h4>
-                          <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="checkbox"
-                                id="landing-pricing-monthly"
-                                defaultChecked={
-                                  landingConfig.pricing.monthly_highlight
-                                }
-                                className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                              />
-                              <label className="text-xs font-medium text-gray-700">
-                                Highlight Monthly Plan (shows "Most Popular"
-                                badge)
-                              </label>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="checkbox"
-                                id="landing-pricing-yearly"
-                                defaultChecked={
-                                  landingConfig.pricing.show_yearly
-                                }
-                                className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                              />
-                              <label className="text-xs font-medium text-gray-700">
-                                Show Yearly Plan Option
-                              </label>
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Feature List (one per line)
-                              </label>
-                              <textarea
-                                id="landing-pricing-features"
-                                defaultValue={landingConfig.pricing.features.join(
-                                  "\n",
-                                )}
-                                rows={5}
-                                className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent font-mono"
-                                placeholder="Daily guided practices&#10;AI-powered coaching&#10;Progress tracking"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Save Button */}
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-6">
-                        <a
-                          href={`/coach/${coach?.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center gap-2"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                            />
-                          </svg>
-                          Preview Landing Page
-                        </a>
-
-                        <div className="flex flex-col gap-3">
-                          <button
-                            onClick={handleSaveProfile}
-                            disabled={
-                              isSavingConfig && savingSection === "profile"
-                            }
-                            className="w-full px-6 py-2.5 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isSavingConfig && savingSection === "profile"
-                              ? "Saving..."
-                              : "Save Profile"}
-                          </button>
-                          <button
-                            onClick={handleSaveLandingConfig}
-                            disabled={
-                              isSavingConfig && savingSection === "landing"
-                            }
-                            className="w-full px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isSavingConfig && savingSection === "landing"
-                              ? "Saving..."
-                              : "Save Landing Page"}
-                          </button>
-                          <button
-                            onClick={async () => {
-                              setSavingSection("screenshot");
-                              setIsSavingConfig(true);
-                              await captureFocusScreenshot();
-                              setToastMessage(
-                                "✅ Landing page screenshot updated!",
-                              );
-                              setShowToast(true);
-                              setTimeout(() => setShowToast(false), 3000);
-                              setIsSavingConfig(false);
-                              setSavingSection(null);
-                            }}
-                            disabled={
-                              isSavingConfig && savingSection === "screenshot"
-                            }
-                            className="w-full px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isSavingConfig && savingSection === "screenshot"
-                              ? "Updating..."
-                              : "Update Landing Page App Preview"}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </details>
-                </div>
-
-                {/* Branding */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                  <details className="group">
-                    <summary className="p-6 border-b border-gray-100 bg-gray-50/50 cursor-pointer list-none flex justify-between items-center">
-                      <div>
-                        <h2 className="text-lg font-semibold text-gray-900">
-                          Branding
-                        </h2>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Customize the look and feel of branding throughout
-                          your users' experience.
-                        </p>
-                      </div>
-                      <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
-                        ▼
-                      </span>
-                    </summary>
-                    <div className="p-6 space-y-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Primary Color
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={brandingConfig.primary_color}
-                            onChange={(e) =>
-                              setBrandingConfig({
-                                ...brandingConfig,
-                                primary_color: e.target.value,
-                              })
-                            }
-                            className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
-                          />
-                          <input
-                            type="text"
-                            value={brandingConfig.primary_color}
-                            onChange={(e) =>
-                              setBrandingConfig({
-                                ...brandingConfig,
-                                primary_color: e.target.value,
-                              })
-                            }
-                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Background Style */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Background Style
-                        </label>
-                        <div className="flex gap-2 mb-4">
-                          <button
-                            onClick={() =>
-                              setBrandingConfig({
-                                ...brandingConfig,
-                                background_type: "solid",
-                              })
-                            }
-                            className={`flex-1 px-4 py-2 rounded-lg border-2 font-medium transition-colors ${
-                              brandingConfig.background_type === "solid"
-                                ? "border-purple-600 bg-purple-50 text-purple-700"
-                                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-                            }`}
-                          >
-                            Solid Color
-                          </button>
-                          <button
-                            onClick={() =>
-                              setBrandingConfig({
-                                ...brandingConfig,
-                                background_type: "gradient",
-                              })
-                            }
-                            className={`flex-1 px-4 py-2 rounded-lg border-2 font-medium transition-colors ${
-                              brandingConfig.background_type === "gradient"
-                                ? "border-purple-600 bg-purple-50 text-purple-700"
-                                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-                            }`}
-                          >
-                            Gradient
-                          </button>
-                        </div>
-
-                        {brandingConfig.background_type === "solid" ? (
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-2">
-                              Background Color
+                              Primary Color
                             </label>
                             <div className="flex items-center gap-2">
                               <input
                                 type="color"
-                                value={brandingConfig.background_color}
+                                value={brandingConfig.primary_color}
                                 onChange={(e) =>
                                   setBrandingConfig({
                                     ...brandingConfig,
-                                    background_color: e.target.value,
+                                    primary_color: e.target.value,
                                   })
                                 }
-                                className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
+                                className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
                               />
                               <input
                                 type="text"
-                                value={brandingConfig.background_color}
+                                value={brandingConfig.primary_color}
                                 onChange={(e) =>
                                   setBrandingConfig({
                                     ...brandingConfig,
-                                    background_color: e.target.value,
+                                    primary_color: e.target.value,
                                   })
                                 }
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                className="w-28 px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent font-mono"
                               />
                             </div>
                           </div>
-                        ) : (
-                          <div className="space-y-4">
-                            {/* Gradient Color 1 */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-2">
-                                Gradient Color 1
-                              </label>
+
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Background
+                            </label>
+                            <div className="flex gap-1.5 mb-3">
+                              <button
+                                onClick={() =>
+                                  setBrandingConfig({
+                                    ...brandingConfig,
+                                    background_type: "solid",
+                                  })
+                                }
+                                className={`px-3 py-1 text-xs rounded-md border font-medium transition-colors ${
+                                  brandingConfig.background_type === "solid"
+                                    ? "border-purple-600 bg-purple-50 text-purple-700"
+                                    : "border-gray-300 bg-white text-gray-600 hover:border-gray-400"
+                                }`}
+                              >
+                                Solid
+                              </button>
+                              <button
+                                onClick={() =>
+                                  setBrandingConfig({
+                                    ...brandingConfig,
+                                    background_type: "gradient",
+                                  })
+                                }
+                                className={`px-3 py-1 text-xs rounded-md border font-medium transition-colors ${
+                                  brandingConfig.background_type === "gradient"
+                                    ? "border-purple-600 bg-purple-50 text-purple-700"
+                                    : "border-gray-300 bg-white text-gray-600 hover:border-gray-400"
+                                }`}
+                              >
+                                Gradient
+                              </button>
+                            </div>
+
+                            {brandingConfig.background_type === "solid" ? (
                               <div className="flex items-center gap-2">
                                 <input
                                   type="color"
-                                  value={brandingConfig.gradient_color_1}
+                                  value={brandingConfig.background_color}
                                   onChange={(e) =>
                                     setBrandingConfig({
                                       ...brandingConfig,
-                                      gradient_color_1: e.target.value,
+                                      background_color: e.target.value,
                                     })
                                   }
-                                  className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
+                                  className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
                                 />
                                 <input
                                   type="text"
-                                  value={brandingConfig.gradient_color_1}
+                                  value={brandingConfig.background_color}
                                   onChange={(e) =>
                                     setBrandingConfig({
                                       ...brandingConfig,
-                                      gradient_color_1: e.target.value,
+                                      background_color: e.target.value,
                                     })
                                   }
-                                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                  className="w-28 px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent font-mono"
                                 />
                               </div>
-                            </div>
-
-                            {/* Gradient Color 2 */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-2">
-                                Gradient Color 2
-                              </label>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="color"
-                                  value={brandingConfig.gradient_color_2}
-                                  onChange={(e) =>
-                                    setBrandingConfig({
-                                      ...brandingConfig,
-                                      gradient_color_2: e.target.value,
-                                    })
-                                  }
-                                  className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer"
-                                />
-                                <input
-                                  type="text"
-                                  value={brandingConfig.gradient_color_2}
-                                  onChange={(e) =>
-                                    setBrandingConfig({
-                                      ...brandingConfig,
-                                      gradient_color_2: e.target.value,
-                                    })
-                                  }
-                                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Gradient Direction */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-2">
-                                Direction: {brandingConfig.gradient_angle}°
-                              </label>
-                              <div className="flex items-center gap-3">
-                                <div className="relative w-16 h-16 rounded-full border-2 border-gray-300 bg-gray-50 flex-shrink-0">
-                                  <div
-                                    className="absolute top-1/2 left-1/2 w-1 h-6 bg-[#fbbf24] rounded-full origin-bottom"
-                                    style={{
-                                      transform: `translate(-50%, -100%) rotate(${brandingConfig.gradient_angle}deg)`,
-                                    }}
-                                  />
-                                  <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-[#fbbf24] rounded-full -translate-x-1/2 -translate-y-1/2" />
+                            ) : (
+                              <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-xs text-gray-500 mb-1">Color 1</label>
+                                    <div className="flex items-center gap-1.5">
+                                      <input
+                                        type="color"
+                                        value={brandingConfig.gradient_color_1}
+                                        onChange={(e) =>
+                                          setBrandingConfig({
+                                            ...brandingConfig,
+                                            gradient_color_1: e.target.value,
+                                          })
+                                        }
+                                        className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                                      />
+                                      <input
+                                        type="text"
+                                        value={brandingConfig.gradient_color_1}
+                                        onChange={(e) =>
+                                          setBrandingConfig({
+                                            ...brandingConfig,
+                                            gradient_color_1: e.target.value,
+                                          })
+                                        }
+                                        className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent font-mono"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs text-gray-500 mb-1">Color 2</label>
+                                    <div className="flex items-center gap-1.5">
+                                      <input
+                                        type="color"
+                                        value={brandingConfig.gradient_color_2}
+                                        onChange={(e) =>
+                                          setBrandingConfig({
+                                            ...brandingConfig,
+                                            gradient_color_2: e.target.value,
+                                          })
+                                        }
+                                        className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                                      />
+                                      <input
+                                        type="text"
+                                        value={brandingConfig.gradient_color_2}
+                                        onChange={(e) =>
+                                          setBrandingConfig({
+                                            ...brandingConfig,
+                                            gradient_color_2: e.target.value,
+                                          })
+                                        }
+                                        className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent font-mono"
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max="360"
-                                  value={brandingConfig.gradient_angle}
-                                  onChange={(e) =>
-                                    setBrandingConfig({
-                                      ...brandingConfig,
-                                      gradient_angle: parseInt(e.target.value),
-                                    })
-                                  }
-                                  className="flex-1"
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-xs text-gray-500 mb-1">
+                                      Angle: {brandingConfig.gradient_angle}°
+                                    </label>
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="360"
+                                      value={brandingConfig.gradient_angle}
+                                      onChange={(e) =>
+                                        setBrandingConfig({
+                                          ...brandingConfig,
+                                          gradient_angle: parseInt(e.target.value),
+                                        })
+                                      }
+                                      className="w-full"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs text-gray-500 mb-1">
+                                      Spread: {brandingConfig.gradient_spread}%
+                                    </label>
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="100"
+                                      value={brandingConfig.gradient_spread}
+                                      onChange={(e) =>
+                                        setBrandingConfig({
+                                          ...brandingConfig,
+                                          gradient_spread: parseInt(e.target.value),
+                                        })
+                                      }
+                                      className="w-full"
+                                    />
+                                  </div>
+                                </div>
+                                <div
+                                  className="w-full h-14 rounded-lg border border-gray-300"
+                                  style={{
+                                    background: `linear-gradient(${brandingConfig.gradient_angle}deg, ${brandingConfig.gradient_color_1} 0%, ${brandingConfig.gradient_color_2} ${brandingConfig.gradient_spread}%, ${brandingConfig.gradient_color_2} 100%)`,
+                                  }}
                                 />
                               </div>
-                            </div>
-
-                            {/* Gradient Spread */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-2">
-                                Color Spread: {brandingConfig.gradient_spread}%
-                              </label>
-                              <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                value={brandingConfig.gradient_spread}
-                                onChange={(e) =>
-                                  setBrandingConfig({
-                                    ...brandingConfig,
-                                    gradient_spread: parseInt(e.target.value),
-                                  })
-                                }
-                                className="w-full"
-                              />
-                              <p className="text-xs text-gray-500 mt-1">
-                                Adjusts where colors transition
-                              </p>
-                            </div>
-
-                            {/* Gradient Preview */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-2">
-                                Preview
-                              </label>
-                              <div
-                                className="w-full h-24 rounded-lg border border-gray-300"
-                                style={{
-                                  background: `linear-gradient(${brandingConfig.gradient_angle}deg, ${brandingConfig.gradient_color_1} 0%, ${brandingConfig.gradient_color_2} ${brandingConfig.gradient_spread}%, ${brandingConfig.gradient_color_2} 100%)`,
-                                }}
-                              />
-                            </div>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </div>
 
                       {/* App Logo */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <div className="pt-4 border-t border-gray-100">
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
                           App Logo
-                        </label>
-                        <p className="text-xs text-gray-500 mb-3">
-                          Upload a logo to replace the app title text in the
-                          header
+                        </h3>
+                        <p className="text-xs text-gray-400 mb-2">
+                          Replaces the app title text in the header
                         </p>
 
-                        {/* Header Preview */}
                         {brandingConfig.app_logo_url && (
-                          <div className="mb-4">
-                            <label className="block text-xs font-medium text-gray-700 mb-2">
-                              Header Preview
-                            </label>
+                          <div className="mb-3">
                             <div
-                              className="rounded-lg overflow-hidden border border-gray-300"
+                              className="rounded-lg overflow-hidden border border-gray-200"
                               style={{
                                 background: (() => {
                                   if (
@@ -4685,7 +4258,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     brandingConfig.background_color || "#f9fafb"
                                   );
                                 })(),
-                                padding: "32px 24px",
+                                padding: "20px 16px",
                                 textAlign: "center",
                               }}
                             >
@@ -4705,61 +4278,51 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               />
                               <p
                                 style={{
-                                  fontSize: "14px",
+                                  fontSize: "12px",
                                   color: "#1a1a1a",
                                   opacity: 0.8,
-                                  marginTop: "8px",
+                                  marginTop: "6px",
                                 }}
                               >
                                 {headerConfig.subtitle ||
                                   "Mental Fitness for Active Minds"}
                               </p>
                             </div>
-                          </div>
-                        )}
-
-                        {brandingConfig.app_logo_url && (
-                          <div className="mb-3">
-                            <label className="block text-xs font-medium text-gray-700 mb-2">
-                              Logo Size
-                            </label>
-                            <div className="flex gap-2">
-                              {["small", "medium", "large"].map((size) => (
-                                <button
-                                  key={size}
-                                  type="button"
-                                  onClick={() =>
-                                    setBrandingConfig({
-                                      ...brandingConfig,
-                                      app_logo_size: size,
-                                    })
-                                  }
-                                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
-                                    brandingConfig.app_logo_size === size
-                                      ? "bg-purple-600 text-white border-purple-600"
-                                      : "bg-white text-gray-700 border-gray-300 hover:border-purple-400"
-                                  }`}
-                                >
-                                  {size.charAt(0).toUpperCase() + size.slice(1)}
-                                </button>
-                              ))}
+                            <div className="flex items-center gap-2 mt-2">
+                              <label className="text-xs text-gray-500">Size:</label>
+                              <div className="flex gap-1">
+                                {["small", "medium", "large"].map((size) => (
+                                  <button
+                                    key={size}
+                                    type="button"
+                                    onClick={() =>
+                                      setBrandingConfig({
+                                        ...brandingConfig,
+                                        app_logo_size: size,
+                                      })
+                                    }
+                                    className={`px-2 py-0.5 text-xs rounded border transition-colors ${
+                                      brandingConfig.app_logo_size === size
+                                        ? "bg-purple-600 text-white border-purple-600"
+                                        : "bg-white text-gray-600 border-gray-300 hover:border-purple-400"
+                                    }`}
+                                  >
+                                    {size.charAt(0).toUpperCase() + size.slice(1)}
+                                  </button>
+                                ))}
+                              </div>
+                              <button
+                                onClick={() =>
+                                  setBrandingConfig({
+                                    ...brandingConfig,
+                                    app_logo_url: null,
+                                  })
+                                }
+                                className="ml-auto text-xs text-red-500 hover:text-red-600"
+                              >
+                                Remove
+                              </button>
                             </div>
-                          </div>
-                        )}
-
-                        {brandingConfig.app_logo_url && (
-                          <div className="mb-3 flex items-center gap-3">
-                            <button
-                              onClick={() =>
-                                setBrandingConfig({
-                                  ...brandingConfig,
-                                  app_logo_url: null,
-                                })
-                              }
-                              className="text-sm text-red-600 hover:text-red-700"
-                            >
-                              Remove Logo
-                            </button>
                           </div>
                         )}
 
@@ -4797,11 +4360,11 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               setUploadingAppLogo(false);
                             }
                           }}
-                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#fef3c7] file:text-black hover:file:bg-[#fbbf24] disabled:opacity-50"
+                          className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#fef3c7] file:text-black hover:file:bg-[#fbbf24] disabled:opacity-50"
                           disabled={uploadingAppLogo}
                         />
                         {uploadingAppLogo && (
-                          <p className="text-xs text-gray-500 mt-2">
+                          <p className="text-xs text-gray-500 mt-1">
                             Uploading...
                           </p>
                         )}
@@ -4825,6 +4388,281 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           {isSavingConfig && savingSection === "branding"
                             ? "Saving..."
                             : "Save Branding"}
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+
+                {/* Landing Page Configuration */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                  <details className="group">
+                    <summary className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center cursor-pointer list-none">
+                      <div>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          Landing Page Configuration
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Customize your public landing page
+                        </p>
+                      </div>
+                      <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
+                        ▼
+                      </span>
+                    </summary>
+                    <div className="p-6 space-y-6">
+                      {/* Page URL */}
+                      <div>
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                          Page URL
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500 shrink-0">
+                            /coach/
+                          </span>
+                          <input
+                            type="text"
+                            value={profileConfig.slug}
+                            onChange={(e) => {
+                              const formattedSlug = e.target.value
+                                .toLowerCase()
+                                .replace(/\s+/g, "-")
+                                .replace(/[^a-z0-9-]/g, "");
+                              setProfileConfig({
+                                ...profileConfig,
+                                slug: formattedSlug,
+                              });
+                            }}
+                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                            placeholder="your-name"
+                          />
+                          <a
+                            href={`/coach/${profileConfig.slug || "your-slug"}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 text-sm bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors flex items-center gap-2 shrink-0"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                              />
+                            </svg>
+                            View
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* Hero Section */}
+                      <div className="pt-4 border-t border-gray-100">
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                          Hero Section
+                        </h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Headline
+                            </label>
+                            <input
+                              type="text"
+                              id="profile-landing-headline"
+                              defaultValue={profileConfig.landing_headline}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              placeholder="Transform Your Life with Personalized Coaching"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Subheadline
+                            </label>
+                            <input
+                              type="text"
+                              id="profile-landing-subheadline"
+                              defaultValue={profileConfig.landing_subheadline}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              placeholder="Join others on their journey to growth and fulfillment"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Hero Bio
+                            </label>
+                            <textarea
+                              rows={3}
+                              id="profile-bio"
+                              defaultValue={profileConfig.bio}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
+                              placeholder="Tell your clients about yourself..."
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Title / Role
+                            </label>
+                            <input
+                              type="text"
+                              id="profile-tagline"
+                              defaultValue={profileConfig.tagline}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              placeholder="Life & Wellness Coach"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              CTA Button Text
+                            </label>
+                            <input
+                              type="text"
+                              id="profile-landing-cta"
+                              defaultValue={profileConfig.landing_cta}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              placeholder="Start Your Journey"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Coach Info */}
+                      <div className="pt-4 border-t border-gray-100">
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                          Coach Info
+                        </h3>
+                        <p className="text-xs text-gray-400 mb-3">
+                          Shown in the &ldquo;Made by&rdquo; section on your landing page
+                        </p>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Display Name
+                            </label>
+                            <input
+                              type="text"
+                              id="landing-coach-name"
+                              defaultValue={landingConfig.coach_info.name}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              placeholder="Your Name"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Title
+                            </label>
+                            <input
+                              type="text"
+                              id="landing-coach-title"
+                              defaultValue={landingConfig.coach_info.title}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              placeholder="Life & Wellness Coach"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Bio
+                            </label>
+                            <textarea
+                              id="landing-coach-bio"
+                              defaultValue={landingConfig.coach_info.bio}
+                              rows={3}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              placeholder="Brief bio about your coaching approach..."
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Pricing */}
+                      <div className="pt-4 border-t border-gray-100">
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                          Pricing
+                        </h3>
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              id="landing-pricing-monthly"
+                              defaultChecked={
+                                landingConfig.pricing.monthly_highlight
+                              }
+                              className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            />
+                            <label className="text-xs font-medium text-gray-700">
+                              Highlight Monthly Plan (shows &ldquo;Most Popular&rdquo;
+                              badge)
+                            </label>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              id="landing-pricing-yearly"
+                              defaultChecked={
+                                landingConfig.pricing.show_yearly
+                              }
+                              className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            />
+                            <label className="text-xs font-medium text-gray-700">
+                              Show Yearly Plan Option
+                            </label>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                              Feature List (one per line)
+                            </label>
+                            <textarea
+                              id="landing-pricing-features"
+                              defaultValue={landingConfig.pricing.features.join(
+                                "\n",
+                              )}
+                              rows={5}
+                              className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent font-mono"
+                              placeholder="Daily guided practices&#10;AI-powered coaching&#10;Progress tracking"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* SEO & Sharing */}
+                      <div className="pt-4 border-t border-gray-100">
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                          SEO & Sharing
+                        </h3>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                            Meta Description
+                          </label>
+                          <textarea
+                            id="landing-meta-description"
+                            defaultValue={
+                              landingConfig.meta_description || ""
+                            }
+                            rows={3}
+                            maxLength={160}
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                            placeholder="A short description for search results and social media previews (max 160 characters)"
+                          />
+                          <p className="text-xs text-gray-400 mt-1">
+                            Appears in Google search results and social media
+                            previews when someone shares your landing page.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Save Button */}
+                      <div className="flex justify-end pt-4 border-t border-gray-100 mt-6">
+                        <button
+                          onClick={handleSaveAll}
+                          disabled={isSavingConfig}
+                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isSavingConfig && savingSection === "all"
+                            ? "Saving..."
+                            : "Save Landing Page"}
                         </button>
                       </div>
                     </div>
