@@ -183,7 +183,53 @@ export default function CoachLandingPage() {
             Coach Not Found
           </h1>
           <p style={{ color: "#6b7280" }}>
-            The coach page you're looking for doesn't exist.
+            The coach page you&apos;re looking for doesn&apos;t exist.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (landingData?.coach && !landingData.coach.is_active) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "20px",
+          backgroundColor: "#f9fafb",
+        }}
+      >
+        <div style={{ textAlign: "center", maxWidth: "400px" }}>
+          <div
+            style={{
+              width: "56px",
+              height: "56px",
+              borderRadius: "50%",
+              backgroundColor: "#f3f4f6",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 20px",
+              fontSize: "24px",
+            }}
+          >
+            🔧
+          </div>
+          <h1
+            style={{
+              fontSize: "22px",
+              fontWeight: 600,
+              color: "#111827",
+              marginBottom: "8px",
+            }}
+          >
+            Page Under Maintenance
+          </h1>
+          <p style={{ color: "#6b7280", fontSize: "15px", lineHeight: 1.6 }}>
+            This page is currently unavailable. Please check back soon.
           </p>
         </div>
       </div>

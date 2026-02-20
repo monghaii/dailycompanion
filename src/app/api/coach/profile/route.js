@@ -10,7 +10,7 @@ export async function PATCH(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { business_name, slug, bio, tagline, landing_headline, landing_subheadline, landing_cta, user_monthly_price_cents, tier3_name, tier3_enabled, logo_url } =
+    const { business_name, slug, bio, tagline, landing_headline, landing_subheadline, landing_cta, user_monthly_price_cents, tier3_name, tier3_enabled, logo_url, is_active } =
       await request.json();
 
     // Validate inputs
@@ -66,9 +66,11 @@ export async function PATCH(request) {
       updated_at: new Date().toISOString(),
     };
 
-    // Only update logo_url if provided
     if (logo_url !== undefined) {
       updateData.logo_url = logo_url;
+    }
+    if (is_active !== undefined) {
+      updateData.is_active = is_active;
     }
 
     const { data: updatedCoach, error } = await supabase

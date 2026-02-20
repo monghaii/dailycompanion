@@ -146,7 +146,7 @@ function ClientsSection() {
           {clients.length > 0 && (
             <button
               onClick={exportToCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-[#fbbf24] text-black rounded-lg hover:bg-[#f59e0b] transition-colors font-medium"
+              className="flex items-center gap-2 px-4 py-2 bg-[#fbbf24] text-black rounded-lg hover:bg-[#f59e0b] transition-colors font-medium cursor-pointer"
             >
               <svg
                 className="w-5 h-5"
@@ -1753,7 +1753,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!validTypes.includes(file.type)) {
       setToastMessage(
-        "❌ Please upload a valid image (JPEG, PNG, GIF, or WebP)",
+        "Please upload a valid image (JPEG, PNG, GIF, or WebP)",
       );
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
@@ -1762,7 +1762,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      setToastMessage("❌ File size must be less than 5MB");
+      setToastMessage("File size must be less than 5MB");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
       return;
@@ -1784,17 +1784,17 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       if (res.ok && data.url) {
         setProfileConfig((prev) => ({ ...prev, logo_url: data.url }));
         setLogoLoadError(false);
-        setToastMessage("✅ Logo uploaded! Remember to save your profile.");
+        setToastMessage("Logo uploaded! Remember to save your profile.");
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       } else {
-        setToastMessage("❌ " + (data.error || "Failed to upload logo"));
+        setToastMessage("" + (data.error || "Failed to upload logo"));
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       }
     } catch (error) {
       console.error("Upload error:", error);
-      setToastMessage("❌ Failed to upload logo");
+      setToastMessage("Failed to upload logo");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } finally {
@@ -1815,7 +1815,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       "audio/x-m4a",
     ];
     if (!validTypes.includes(file.type)) {
-      setToastMessage("❌ Please upload a valid audio file (MP3, WAV, M4A)");
+      setToastMessage("Please upload a valid audio file (MP3, WAV, M4A)");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
       return;
@@ -1823,7 +1823,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
     // Validate file size (50MB)
     if (file.size > 50 * 1024 * 1024) {
-      setToastMessage("❌ File size must be less than 50MB");
+      setToastMessage("File size must be less than 50MB");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
       return;
@@ -1852,18 +1852,18 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           },
         }));
         setToastMessage(
-          "✅ Audio uploaded! Remember to save your configuration.",
+          "Audio uploaded! Remember to save your configuration.",
         );
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       } else {
-        setToastMessage("❌ " + (data.error || "Failed to upload audio"));
+        setToastMessage("" + (data.error || "Failed to upload audio"));
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       }
     } catch (error) {
       console.error("Upload error:", error);
-      setToastMessage("❌ Failed to upload audio");
+      setToastMessage("Failed to upload audio");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } finally {
@@ -1970,7 +1970,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       "audio/x-m4a",
     ];
     if (!validTypes.includes(file.type)) {
-      setToastMessage("❌ Please upload a valid audio file (MP3, WAV, M4A)");
+      setToastMessage("Please upload a valid audio file (MP3, WAV, M4A)");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
       return;
@@ -1978,7 +1978,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
     // Validate file size (50MB)
     if (file.size > 50 * 1024 * 1024) {
-      setToastMessage("❌ File size must be less than 50MB");
+      setToastMessage("File size must be less than 50MB");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
       return;
@@ -2032,18 +2032,18 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           categories: newCategories,
         });
         setToastMessage(
-          "✅ Audio uploaded! Remember to save your configuration.",
+          "Audio uploaded! Remember to save your configuration.",
         );
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       } else {
-        setToastMessage("❌ " + (data.error || "Failed to upload audio"));
+        setToastMessage("" + (data.error || "Failed to upload audio"));
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       }
     } catch (error) {
       console.error("Upload error:", error);
-      setToastMessage("❌ Failed to upload audio");
+      setToastMessage("Failed to upload audio");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } finally {
@@ -2089,6 +2089,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       landing_cta:
         document.getElementById("profile-landing-cta")?.value ??
         profileConfig.landing_cta,
+      is_active:
+        document.getElementById("profile-is-active")?.checked ?? true,
     };
 
     setProfileConfig(currentProfile);
@@ -2145,21 +2147,21 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       const resData = await res.json();
 
       if (res.ok) {
-        setToastMessage(successMessage || "✅ Config saved successfully!");
+        setToastMessage(successMessage || "Config saved successfully!");
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
         setTimeout(() => sendConfigToPreview(), 100);
         posthog.capture("coach_config_saved", { section });
       } else {
         setToastMessage(
-          "❌ Failed to save config: " + (resData.error || "Unknown error"),
+          "Failed to save config: " + (resData.error || "Unknown error"),
         );
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       }
     } catch (error) {
       console.error("Save config error:", error);
-      setToastMessage("❌ Failed to save config");
+      setToastMessage("Failed to save config");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } finally {
@@ -2267,12 +2269,12 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       await handleSaveProfile();
       await handleSaveLandingConfig();
       await captureFocusScreenshot();
-      setToastMessage("✅ Landing page saved successfully!");
+      setToastMessage("Landing page saved successfully!");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } catch (error) {
       console.error("Save error:", error);
-      setToastMessage("❌ Failed to save: " + (error.message || "Unknown error"));
+      setToastMessage("Failed to save: " + (error.message || "Unknown error"));
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } finally {
@@ -2299,13 +2301,13 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       if (data.url) {
         window.location.href = data.url;
       } else {
-        setToastMessage("❌ Failed to create Stripe connection");
+        setToastMessage("Failed to create Stripe connection");
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       }
     } catch (error) {
       console.error("Stripe connect error:", error);
-      setToastMessage("❌ Failed to connect Stripe");
+      setToastMessage("Failed to connect Stripe");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } finally {
@@ -2324,13 +2326,13 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       if (data.url) {
         window.open(data.url, "_blank");
       } else {
-        setToastMessage("❌ Failed to open Stripe dashboard");
+        setToastMessage("Failed to open Stripe dashboard");
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       }
     } catch (error) {
       console.error("Stripe dashboard error:", error);
-      setToastMessage("❌ Failed to open Stripe dashboard");
+      setToastMessage("Failed to open Stripe dashboard");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } finally {
@@ -2798,7 +2800,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           <button
                             onClick={handleSubscribe}
                             disabled={checkoutLoading}
-                            className="px-6 py-3 bg-[#fbbf24] text-black font-bold rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
+                            className="px-6 py-3 bg-[#fbbf24] text-black font-bold rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
                           >
                             {checkoutLoading ? "Loading..." : "Subscribe Now →"}
                           </button>
@@ -2864,7 +2866,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         <button
                           onClick={handleOpenStripeDashboard}
                           disabled={isStripeLoading}
-                          className="px-4 py-2 bg-[#fbbf24] text-black rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 font-semibold"
+                          className="px-4 py-2 bg-[#fbbf24] text-black rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
                         >
                           {isStripeLoading
                             ? "Loading..."
@@ -2881,7 +2883,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           <button
                             onClick={handleConnectStripe}
                             disabled={isStripeLoading}
-                            className="px-4 py-2 bg-[#fbbf24] text-black rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 font-semibold"
+                            className="px-4 py-2 bg-[#fbbf24] text-black rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
                           >
                             {isStripeLoading
                               ? "Loading..."
@@ -3120,11 +3122,11 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           setSavingSection("tier3");
                           try {
                             await handleSaveProfile();
-                            setToastMessage("✅ Tier 3 settings saved!");
+                            setToastMessage("Tier 3 settings saved!");
                             setShowToast(true);
                             setTimeout(() => setShowToast(false), 3000);
                           } catch (err) {
-                            setToastMessage("❌ " + (err.message || "Failed to save"));
+                            setToastMessage("" + (err.message || "Failed to save"));
                             setShowToast(true);
                             setTimeout(() => setShowToast(false), 3000);
                           } finally {
@@ -3133,7 +3135,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           }
                         }}
                         disabled={isSavingConfig}
-                        className="mt-4 w-full px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 font-semibold"
+                        className="mt-4 w-full px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
                       >
                         {isSavingConfig && savingSection === "tier3"
                           ? "Saving..."
@@ -3754,7 +3756,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 </div>
                 <button
                   onClick={() => setShowPreview(!showPreview)}
-                  className="px-4 py-2 bg-[#fbbf24] hover:bg-[#f59e0b] text-black rounded-lg text-sm font-semibold transition-colors flex items-center gap-2"
+                  className="px-4 py-2 bg-[#fbbf24] hover:bg-[#f59e0b] text-black rounded-lg text-sm font-semibold transition-colors cursor-pointer flex items-center gap-2"
                 >
                   <svg
                     width="16"
@@ -3785,6 +3787,21 @@ Remember: You're here to empower them to find their own answers, not to fix thei
             {/* Config Content */}
             <div className="flex-1 overflow-y-auto p-8">
               <div className="max-w-4xl mx-auto space-y-8">
+                {/* Page Not Viewable Warning */}
+                {!coach?.is_active && (
+                  <div className="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 flex items-start gap-3">
+                    <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <div>
+                      <p className="text-sm font-medium text-red-800">Your landing page is not publicly viewable</p>
+                      <p className="text-xs text-red-600 mt-0.5">
+                        Visitors will see a maintenance page. To make it live, enable &ldquo;Make page viewable&rdquo; in the Landing Page Configuration section below and save.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Direct Signup Links */}
                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
                   <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
@@ -3834,7 +3851,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               btn.classList.remove("bg-green-600");
                             }, 2000);
                           }}
-                          className="px-3 py-2 bg-[#fbbf24] text-black text-xs font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors whitespace-nowrap"
+                          className="px-3 py-2 bg-[#fbbf24] text-black text-xs font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer whitespace-nowrap"
                         >
                           Copy
                         </button>
@@ -3866,7 +3883,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               btn.classList.remove("bg-green-600");
                             }, 2000);
                           }}
-                          className="px-3 py-2 bg-[#fbbf24] text-black text-xs font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors whitespace-nowrap"
+                          className="px-3 py-2 bg-[#fbbf24] text-black text-xs font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer whitespace-nowrap"
                         >
                           Copy
                         </button>
@@ -3899,7 +3916,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 btn.classList.remove("bg-green-600");
                               }, 2000);
                             }}
-                            className="px-3 py-2 bg-[#fbbf24] text-black text-xs font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors whitespace-nowrap"
+                            className="px-3 py-2 bg-[#fbbf24] text-black text-xs font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer whitespace-nowrap"
                           >
                             Copy
                           </button>
@@ -3940,7 +3957,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               business_name: e.target.value,
                             })
                           }
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                           placeholder="Your Coaching Business"
                         />
                       </div>
@@ -3973,7 +3990,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               <button
                                 type="button"
                                 onClick={handleRemoveLogo}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors cursor-pointer"
                               >
                                 ✕
                               </button>
@@ -3987,7 +4004,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               <button
                                 type="button"
                                 onClick={handleRemoveLogo}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors cursor-pointer"
                               >
                                 ✕
                               </button>
@@ -4377,13 +4394,13 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             handleSaveConfig(
                               "branding",
                               brandingConfig,
-                              "✅ Branding saved successfully!",
+                              "Branding saved successfully!",
                             )
                           }
                           disabled={
                             isSavingConfig && savingSection === "branding"
                           }
-                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isSavingConfig && savingSection === "branding"
                             ? "Saving..."
@@ -4433,14 +4450,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 slug: formattedSlug,
                               });
                             }}
-                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                            className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                             placeholder="your-name"
                           />
                           <a
                             href={`/coach/${profileConfig.slug || "your-slug"}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-4 py-2 text-sm bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors flex items-center gap-2 shrink-0"
+                            className="px-4 py-2 text-sm bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer flex items-center gap-2 shrink-0"
                           >
                             <svg
                               className="w-4 h-4"
@@ -4474,7 +4491,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               type="text"
                               id="profile-landing-headline"
                               defaultValue={profileConfig.landing_headline}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                               placeholder="Transform Your Life with Personalized Coaching"
                             />
                           </div>
@@ -4486,7 +4503,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               type="text"
                               id="profile-landing-subheadline"
                               defaultValue={profileConfig.landing_subheadline}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                               placeholder="Join others on their journey to growth and fulfillment"
                             />
                           </div>
@@ -4498,7 +4515,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               rows={3}
                               id="profile-bio"
                               defaultValue={profileConfig.bio}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
+                              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
                               placeholder="Tell your clients about yourself..."
                             />
                           </div>
@@ -4510,7 +4527,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               type="text"
                               id="profile-tagline"
                               defaultValue={profileConfig.tagline}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                               placeholder="Life & Wellness Coach"
                             />
                           </div>
@@ -4522,7 +4539,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               type="text"
                               id="profile-landing-cta"
                               defaultValue={profileConfig.landing_cta}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                               placeholder="Start Your Journey"
                             />
                           </div>
@@ -4546,7 +4563,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               type="text"
                               id="landing-coach-name"
                               defaultValue={landingConfig.coach_info.name}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                               placeholder="Your Name"
                             />
                           </div>
@@ -4558,7 +4575,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               type="text"
                               id="landing-coach-title"
                               defaultValue={landingConfig.coach_info.title}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                               placeholder="Life & Wellness Coach"
                             />
                           </div>
@@ -4570,7 +4587,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               id="landing-coach-bio"
                               defaultValue={landingConfig.coach_info.bio}
                               rows={3}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                               placeholder="Brief bio about your coaching approach..."
                             />
                           </div>
@@ -4643,7 +4660,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             }
                             rows={3}
                             maxLength={160}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                             placeholder="A short description for search results and social media previews (max 160 characters)"
                           />
                           <p className="text-xs text-gray-400 mt-1">
@@ -4653,12 +4670,35 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         </div>
                       </div>
 
+                      {/* Page Visibility */}
+                      <div className="pt-4 border-t border-gray-100">
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                          Visibility
+                        </h3>
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            id="profile-is-active"
+                            defaultChecked={coach?.is_active}
+                            className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                          />
+                          <div>
+                            <div className="text-xs font-medium text-gray-700">
+                              Make page viewable
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              When off, visitors see a maintenance page instead
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+
                       {/* Save Button */}
                       <div className="flex justify-end pt-4 border-t border-gray-100 mt-6">
                         <button
                           onClick={handleSaveAll}
                           disabled={isSavingConfig}
-                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isSavingConfig && savingSection === "all"
                             ? "Saving..."
@@ -4687,7 +4727,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     </summary>
                     <div className="p-6 space-y-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
                           App Title (Replaced by App Logo under Branding
                           Section, if present)
                         </label>
@@ -4700,12 +4740,12 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               title: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                           placeholder="BrainPeace"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
                           App Subtitle
                         </label>
                         <input
@@ -4717,7 +4757,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               subtitle: e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                           placeholder="Mental Fitness for Active Minds"
                         />
                       </div>
@@ -4729,13 +4769,13 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             handleSaveConfig(
                               "header",
                               headerConfig,
-                              "✅ Header config saved!",
+                              "Header config saved!",
                             )
                           }
                           disabled={
                             isSavingConfig && savingSection === "header"
                           }
-                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isSavingConfig && savingSection === "header"
                             ? "Saving..."
@@ -4791,7 +4831,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     },
                                   })
                                 }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                 placeholder="Today's Focus"
                               />
                             </div>
@@ -4811,7 +4851,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     },
                                   })
                                 }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                 placeholder="Direct your energy intentionally"
                               />
                             </div>
@@ -4867,7 +4907,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                       },
                                     })
                                   }
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                   placeholder="Task title"
                                 />
                               </div>
@@ -4887,7 +4927,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                       },
                                     })
                                   }
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                   placeholder="Task description"
                                 />
                               </div>
@@ -5102,7 +5142,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                         ];
                                         if (!validTypes.includes(file.type)) {
                                           setToastMessage(
-                                            "❌ Please upload a valid audio file (MP3, WAV, M4A)",
+                                            "Please upload a valid audio file (MP3, WAV, M4A)",
                                           );
                                           setShowToast(true);
                                           setTimeout(
@@ -5115,7 +5155,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                         // Validate file size (50MB)
                                         if (file.size > 50 * 1024 * 1024) {
                                           setToastMessage(
-                                            "❌ File size must be less than 50MB",
+                                            "File size must be less than 50MB",
                                           );
                                           setShowToast(true);
                                           setTimeout(
@@ -5153,7 +5193,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                               newAudio,
                                             ]);
                                             setToastMessage(
-                                              "✅ Audio uploaded! Remember to save your configuration.",
+                                              "Audio uploaded! Remember to save your configuration.",
                                             );
                                             setShowToast(true);
                                             setTimeout(
@@ -5162,7 +5202,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                             );
                                           } else {
                                             setToastMessage(
-                                              "❌ " +
+                                              "" +
                                                 (data.error ||
                                                   "Failed to upload audio"),
                                             );
@@ -5175,7 +5215,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                         } catch (error) {
                                           console.error("Upload error:", error);
                                           setToastMessage(
-                                            "❌ Failed to upload audio",
+                                            "Failed to upload audio",
                                           );
                                           setShowToast(true);
                                           setTimeout(
@@ -5275,7 +5315,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                       },
                                     })
                                   }
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                   placeholder="Task title"
                                 />
                               </div>
@@ -5295,7 +5335,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                       },
                                     })
                                   }
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                   placeholder="Task description"
                                 />
                               </div>
@@ -5408,7 +5448,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                         },
                                       })
                                     }
-                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                     placeholder="Set Your Intention"
                                   />
                                 </div>
@@ -5433,7 +5473,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                           },
                                         })
                                       }
-                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                       placeholder="What might get in the way today?"
                                     />
                                   </div>
@@ -5457,7 +5497,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                           },
                                         })
                                       }
-                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                       placeholder="Meetings, distractions, fatigue..."
                                     />
                                   </div>
@@ -5483,7 +5523,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                           },
                                         })
                                       }
-                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                       placeholder="One word to refocus your energy"
                                     />
                                   </div>
@@ -5507,7 +5547,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                           },
                                         })
                                       }
-                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                       placeholder="Peace, Presence, Trust, Joy..."
                                     />
                                   </div>
@@ -5566,7 +5606,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                       },
                                     })
                                   }
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                   placeholder="Task title"
                                 />
                               </div>
@@ -5586,7 +5626,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                       },
                                     })
                                   }
-                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                   placeholder="Task description"
                                 />
                               </div>
@@ -5705,7 +5745,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     },
                                   })
                                 }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                 placeholder="Day Notes"
                               />
                             </div>
@@ -5725,7 +5765,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     },
                                   })
                                 }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                 placeholder="Description"
                               />
                             </div>
@@ -5828,14 +5868,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 ),
                                 current_day_index: currentDayIndex,
                               },
-                              "✅ Focus tab config saved successfully!",
+                              "Focus tab config saved successfully!",
                             );
                             setTimeout(() => captureFocusScreenshot(), 300);
                           }}
                           disabled={
                             isSavingConfig && savingSection === "focus_tab"
                           }
-                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isSavingConfig && savingSection === "focus_tab"
                             ? "Saving..."
@@ -5890,7 +5930,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   e.target.select();
                                 }
                               }}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                               placeholder="Nice catch!"
                             />
                             <p className="text-xs text-gray-400 mt-1">
@@ -5946,7 +5986,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                           e.target.select();
                                         }
                                       }}
-                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                       placeholder="e.g. Present moment"
                                     />
                                   </div>
@@ -5976,7 +6016,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                           e.target.select();
                                         }
                                       }}
-                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                       placeholder="Question to ask the user"
                                     />
                                   </div>
@@ -6007,7 +6047,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                           e.target.select();
                                         }
                                       }}
-                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
+                                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
                                       placeholder="Example answer text"
                                     />
                                   </div>
@@ -6047,7 +6087,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   e.target.select();
                                 }
                               }}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                               placeholder="Emotional State"
                             />
                             <p className="text-xs text-gray-400 mt-1">
@@ -6075,7 +6115,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   e.target.select();
                                 }
                               }}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                               placeholder="Select all that apply"
                             />
                             <p className="text-xs text-gray-400 mt-1">
@@ -6140,7 +6180,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                             e.target.select();
                                           }
                                         }}
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                         placeholder="e.g. CHALLENGING"
                                       />
                                     </div>
@@ -6189,7 +6229,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                               e.target.select();
                                             }
                                           }}
-                                          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent font-mono"
+                                          className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent font-mono"
                                           placeholder="#3b82f6"
                                         />
                                       </div>
@@ -6329,11 +6369,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                                   placeholder="Recommended Practice Name (e.g., Breath Reset)"
                                                   className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
                                                 />
-                                                {option.duration && (
-                                                  <p className="text-xs text-gray-500 mt-1">
-                                                    Duration: {option.duration}
-                                                  </p>
-                                                )}
                                               </div>
 
                                               {/* Audio Upload */}
@@ -6343,8 +6378,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                                     <span className="text-green-600">
                                                       🎵
                                                     </span>
-                                                    <span className="text-green-700 flex-1">
-                                                      Audio uploaded
+                                                    <span className="text-green-700 flex-1 truncate">
+                                                      {option.audio_path ? option.audio_path.split("/").pop() : "Audio uploaded"}
                                                     </span>
                                                     <button
                                                       type="button"
@@ -6444,7 +6479,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             await handleSaveConfig(
                               "emotional_state_tab",
                               cleanedConfig,
-                              "✅ Awareness tab config saved successfully!",
+                              "Awareness tab config saved successfully!",
                             );
                           }}
                           disabled={
@@ -6452,7 +6487,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             (savingSection === "awareness_tab" ||
                               savingSection === "emotional_state_tab")
                           }
-                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isSavingConfig &&
                           (savingSection === "awareness_tab" ||
@@ -6707,7 +6742,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     },
                                   })
                                 }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                 placeholder="Book a Call"
                               />
                             </div>
@@ -6730,7 +6765,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     },
                                   })
                                 }
-                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                                 rows={2}
                                 placeholder="Responses in chat are AI-generated and not directly from {coach_name} herself."
                               />
@@ -6888,13 +6923,13 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             handleSaveConfig(
                               "coach_tab",
                               coachTabConfig,
-                              "✅ Coach Tab configuration saved successfully!",
+                              "Coach Tab configuration saved successfully!",
                             )
                           }
                           disabled={
                             isSavingConfig && savingSection === "coach_tab"
                           }
-                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isSavingConfig && savingSection === "coach_tab"
                             ? "Saving..."
@@ -6905,41 +6940,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                   </details>
                 </div>
 
-                {/* Page Visibility */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                  <details className="group">
-                    <summary className="p-6 border-b border-gray-100 bg-gray-50/50 cursor-pointer list-none flex justify-between items-center">
-                      <div>
-                        <h2 className="text-lg font-semibold text-gray-900">
-                          Page Visibility
-                        </h2>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Control who can see your page
-                        </p>
-                      </div>
-                      <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
-                        ▼
-                      </span>
-                    </summary>
-                    <div className="p-6">
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          defaultChecked={coach?.is_active}
-                          className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                        />
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            Make page public
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Allow new subscribers to find and join your page
-                          </div>
-                        </div>
-                      </label>
-                    </div>
-                  </details>
-                </div>
               </div>
             </div>
           </>
@@ -6979,7 +6979,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                   </p>
                   <button
                     onClick={() => setActiveSection("finance")}
-                    className="px-6 py-2.5 text-sm font-semibold text-black bg-[#fbbf24] rounded-lg hover:bg-[#f59e0b] transition-colors"
+                    className="px-6 py-2.5 text-sm font-semibold text-black bg-[#fbbf24] rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer"
                   >
                     Go to Finance Settings
                   </button>
@@ -7003,7 +7003,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           setRhEditCollection(null);
                           setRhEditItems([]);
                         }}
-                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
                       >
                         <svg
                           className="w-5 h-5"
@@ -7472,7 +7472,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               },
                             ]);
                           }}
-                          className="mt-4 flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+                          className="mt-4 flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors cursor-pointer"
                         >
                           <svg
                             className="w-4 h-4"
@@ -7506,7 +7506,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     <button
                       onClick={handleSaveCollection}
                       disabled={rhSaving}
-                      className="px-6 py-2 text-sm font-semibold text-black bg-[#fbbf24] rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50"
+                      className="px-6 py-2 text-sm font-semibold text-black bg-[#fbbf24] rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {rhSaving ? "Saving..." : "Save Collection"}
                     </button>
@@ -7632,7 +7632,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     </div>
                     <button
                       onClick={handleCreateCollection}
-                      className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-black bg-[#fbbf24] rounded-lg hover:bg-[#f59e0b] transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-black bg-[#fbbf24] rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer"
                     >
                       <svg
                         className="w-4 h-4"
@@ -7893,14 +7893,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       <button
                         type="button"
                         onClick={() => setRhShowAddContent(false)}
-                        className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={rhUploadingContent}
-                        className="px-4 py-2 text-sm font-semibold text-black bg-[#fbbf24] rounded-lg hover:bg-[#f59e0b] transition-colors disabled:opacity-50"
+                        className="px-4 py-2 text-sm font-semibold text-black bg-[#fbbf24] rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {rhUploadingContent ? "Uploading..." : "Add Content"}
                       </button>
