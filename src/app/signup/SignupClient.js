@@ -2,6 +2,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
+import { posthogIdentifyIfAllowed } from "@/components/PostHogProvider";
 
 function SignupContent({ coachSlug: serverCoachSlug, initialCoachData }) {
   const router = useRouter();
@@ -145,7 +146,7 @@ function SignupContent({ coachSlug: serverCoachSlug, initialCoachData }) {
       }
 
       if (data.userId) {
-        posthog.identify(data.userId, {
+        posthogIdentifyIfAllowed(data.userId, {
           email: signupForm.email,
           role: "user",
           first_name: signupForm.firstName,

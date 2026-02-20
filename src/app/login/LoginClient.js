@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
+import { posthogIdentifyIfAllowed } from "@/components/PostHogProvider";
 
 function LoginContent({ coachSlug, initialCoachData }) {
   const router = useRouter();
@@ -81,9 +82,8 @@ function LoginContent({ coachSlug, initialCoachData }) {
         throw new Error(data.error || "Failed to sign in");
       }
 
-      // Identify user in PostHog
       if (data.profile) {
-        posthog.identify(data.profile.id, {
+        posthogIdentifyIfAllowed(data.profile.id, {
           email: formData.email,
           role: data.profile.role,
           coach_id: data.profile.coach_id || undefined,

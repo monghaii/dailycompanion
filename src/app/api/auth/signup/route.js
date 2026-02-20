@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createUser, createCoach, generateToken } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
-import { trackServerEvent, identifyUser } from '@/lib/posthog';
+import { trackServerEvent, identifyUser, isBlacklistedEmail } from '@/lib/posthog';
 
 export async function POST(request) {
   try {
@@ -85,20 +85,22 @@ export async function POST(request) {
       path: '/',
     });
 
-    // Track signup in PostHog
-    const eventName = role === 'coach' ? 'coach_signed_up' : 'user_signed_up';
-    identifyUser(profile.id, {
-      email,
-      role: role || 'user',
-      first_name: resolvedFirst,
-      last_name: resolvedLast,
-      coach_id: coachId || undefined,
-    });
-    trackServerEvent(profile.id, eventName, {
-      coach_id: coachId || undefined,
-      coach_slug: role === 'coach' ? slug : coachSlug,
-      plan: 'free',
-    });
+    // Track signup in PostHog (skip blacklisted test accounts)
+    if (!isBlacklistedEmail(email)) {
+      const eventName = role === 'coach' ? 'coach_signed_up' : 'user_signed_up';
+      identifyUser(profile.id, {
+        email,
+        role: role || 'user',
+        first_name: resolvedFirst,
+        last_name: resolvedLast,
+        coach_id: coachId || undefined,
+      });
+      trackServerEvent(profile.id, eventName, {
+        coach_id: coachId || undefined,
+        coach_slug: role === 'coach' ? slug : coachSlug,
+        plan: 'free',
+      });
+    }
 
     return NextResponse.json({
       success: true,

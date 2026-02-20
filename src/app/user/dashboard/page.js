@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import confetti from "canvas-confetti";
 import posthog from "posthog-js";
+import { posthogIdentifyIfAllowed } from "@/components/PostHogProvider";
 import {
   Compass,
   Sun,
@@ -499,8 +500,7 @@ function UserDashboardContent() {
 
       setUser(data.user);
 
-      // Identify user in PostHog
-      posthog.identify(data.user.id, {
+      posthogIdentifyIfAllowed(data.user.id, {
         email: data.user.email,
         role: "user",
         coach_id: data.user.coach_id,

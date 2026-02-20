@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import html2canvas from "html2canvas";
 import posthog from "posthog-js";
+import { posthogIdentifyIfAllowed } from "@/components/PostHogProvider";
 import CustomDomainWizard from "./components/CustomDomainWizard";
 
 function ClientsSection() {
@@ -1029,9 +1030,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
       setUser(data.user);
 
-      // Identify coach in PostHog
       if (data.user.coach) {
-        posthog.identify(data.user.id, {
+        posthogIdentifyIfAllowed(data.user.id, {
           email: data.user.email,
           role: "coach",
           business_name: data.user.coach.business_name,
