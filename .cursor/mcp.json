@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "dailycompanion-supabase": {
+      "url": "https://mcp.supabase.com/mcp?project_ref=llnejzanjsagygodnmbq",
+      "headers": {}
+    },
+    "dailycompanion-posthog": {
+      "url": "https://mcp.posthog.com/mcp"
+    }
+  }
+}

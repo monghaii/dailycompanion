@@ -138,6 +138,15 @@ function UserDashboardContent() {
   const [showPracticeControls, setShowPracticeControls] = useState(false);
   const suggestedPracticeRef = useRef(null);
 
+  // Library / Favorites state
+  const [userFavorites, setUserFavorites] = useState(new Set());
+  const [libraryFilter, setLibraryFilter] = useState("all"); // "all" | "favorites"
+  const [libraryPlayingPath, setLibraryPlayingPath] = useState(null);
+  const [libIsPlaying, setLibIsPlaying] = useState(false);
+  const [libCurrentTime, setLibCurrentTime] = useState(0);
+  const [libDuration, setLibDuration] = useState(0);
+  const libraryAudioRef = useRef(null);
+
   // Resource Hub state
   const [rhCollections, setRhCollections] = useState([]);
   const [rhActiveCollection, setRhActiveCollection] = useState(null);
@@ -198,6 +207,68 @@ function UserDashboardContent() {
     // Use current_day_index as the starting point, then cycle through
     const index = (currentDayIndex + daysSinceStart) % filledAudios.length;
     return filledAudios[index]?.audio_url || null;
+  };
+
+  const getTodaysAudioPath = () => {
+    const audioLibrary = coachConfig?.focus_tab?.audio_library;
+    const currentDayIndex = coachConfig?.focus_tab?.current_day_index || 0;
+    if (!audioLibrary || !Array.isArray(audioLibrary)) return null;
+    const filledAudios = audioLibrary.filter((a) => a && a.audio_url);
+    if (filledAudios.length === 0) return null;
+    const daysSinceStart = Math.floor(
+      (new Date().getTime() -
+        new Date(
+          coachConfig?.focus_tab?.library_start_date || new Date(),
+        ).getTime()) /
+        (1000 * 60 * 60 * 24),
+    );
+    const index = (currentDayIndex + daysSinceStart) % filledAudios.length;
+    return filledAudios[index]?.audio_path || null;
+  };
+
+  const fetchFavorites = async () => {
+    try {
+      const res = await fetch(
+        "/api/user/favorites?item_type=daily_practice_audio",
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      setUserFavorites(
+        new Set((data.favorites || []).map((f) => f.item_identifier)),
+      );
+    } catch (err) {
+      console.error("Failed to fetch favorites:", err);
+    }
+  };
+
+  const toggleFavorite = async (audioPath) => {
+    let snapshot;
+    setUserFavorites((current) => {
+      snapshot = current;
+      const next = new Set(current);
+      if (next.has(audioPath)) {
+        next.delete(audioPath);
+      } else {
+        next.add(audioPath);
+      }
+      return next;
+    });
+
+    try {
+      const res = await fetch("/api/user/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          item_type: "daily_practice_audio",
+          item_identifier: audioPath,
+        }),
+      });
+      if (!res.ok) {
+        setUserFavorites(snapshot);
+      }
+    } catch {
+      setUserFavorites(snapshot);
+    }
   };
 
   useEffect(() => {
@@ -329,6 +400,7 @@ function UserDashboardContent() {
         setIsConfigLoading(false);
       } else {
         fetchCoachConfig();
+        fetchFavorites();
       }
     }
   }, [user, isPreviewMode]);
@@ -1918,12 +1990,33 @@ function UserDashboardContent() {
                         {coachConfig?.focus_tab?.task_1?.title ||
                           "Morning Practice"}
                       </h3>
-                      <Star
-                        size={20}
-                        fill="#f59e0b"
-                        color="#f59e0b"
-                        strokeWidth={2}
-                      />
+                      {getTodaysAudioPath() && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(getTodaysAudioPath());
+                          }}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "0",
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Star
+                            size={20}
+                            fill={
+                              userFavorites.has(getTodaysAudioPath())
+                                ? "#f59e0b"
+                                : "none"
+                            }
+                            color="#f59e0b"
+                            strokeWidth={2}
+                          />
+                        </button>
+                      )}
                     </div>
                     <p style={{ fontSize: "14px", color: "#6b7280" }}>
                       {coachConfig?.focus_tab?.task_1?.subtitle ||
@@ -5472,7 +5565,16 @@ function UserDashboardContent() {
         )}
 
         {/* Library Page */}
-        {activeTab === "more" && moreSubpage === "library" && (
+        {activeTab === "more" && moreSubpage === "library" && (() => {
+          const allAudios = (coachConfig?.focus_tab?.audio_library || []).filter(
+            (a) => a && a.audio_url,
+          );
+          const todayPath = getTodaysAudioPath();
+          const audioLibrary = libraryFilter === "favorites"
+            ? allAudios.filter((a) => userFavorites.has(a.audio_path))
+            : allAudios;
+
+          return (
           <div style={{ marginTop: "24px", position: "relative" }}>
             {/* Locked Overlay */}
             {!subscriptionStatus?.isPremium && (
@@ -5503,7 +5605,14 @@ function UserDashboardContent() {
               }}
             >
               <button
-                onClick={() => setMoreSubpage(null)}
+                onClick={() => {
+                  setMoreSubpage(null);
+                  setLibraryPlayingPath(null);
+                  setLibIsPlaying(false);
+                  if (libraryAudioRef.current) {
+                    libraryAudioRef.current.pause();
+                  }
+                }}
                 style={{
                   background: "none",
                   border: "none",
@@ -5527,34 +5636,28 @@ function UserDashboardContent() {
               </h2>
             </div>
 
-            {/* Filter Tags */}
+            {/* Filter Chips */}
             <div
               style={{
                 display: "flex",
-                flexWrap: "wrap",
                 gap: "8px",
-                marginBottom: "24px",
+                marginBottom: "20px",
               }}
             >
               {[
-                { label: "All", active: true },
-                { label: "Morning", active: false },
-                { label: "Energy", active: false },
-                { label: "Evening", active: false },
-                { label: "Reflection", active: false },
-                { label: "Gratitude", active: false },
-                { label: "Quick", active: false },
-                { label: "Stress", active: false },
-                { label: "Deep", active: false },
-              ].map((tag, idx) => (
+                { key: "all", label: "All" },
+                { key: "favorites", label: "Favorites" },
+              ].map((chip) => (
                 <button
-                  key={idx}
+                  key={chip.key}
+                  onClick={() => setLibraryFilter(chip.key)}
                   style={{
                     padding: "8px 16px",
-                    backgroundColor: tag.active
-                      ? coachConfig?.branding?.primary_color || "#ef4444"
-                      : "#f3f4f6",
-                    color: tag.active ? "#fff" : "#6b7280",
+                    backgroundColor:
+                      libraryFilter === chip.key
+                        ? coachConfig?.branding?.primary_color || "#ef4444"
+                        : "#f3f4f6",
+                    color: libraryFilter === chip.key ? "#fff" : "#6b7280",
                     border: "none",
                     borderRadius: "20px",
                     fontSize: "14px",
@@ -5562,128 +5665,268 @@ function UserDashboardContent() {
                     cursor: "pointer",
                   }}
                 >
-                  {tag.label}
+                  {chip.label}
                 </button>
               ))}
             </div>
 
-            {/* Practice Items */}
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-            >
-              {[
-                {
-                  icon: "☀️",
-                  title: "Morning Practice",
-                  subtitle: "Follow Your Spark • 7:00",
-                  favorite: true,
-                  bgColor: "#fff9e6",
-                },
-                {
-                  icon: "🌙",
-                  title: "Evening Reflection",
-                  subtitle: "Daily Review • 8:30",
-                  favorite: false,
-                  bgColor: "#e0e7ff",
-                },
-                {
-                  icon: "✨",
-                  title: "Gratitude Pause",
-                  subtitle: "Notice the Good • 5:00",
-                  favorite: false,
-                  bgColor: "#fef3c7",
-                },
-                {
-                  icon: "🫁",
-                  title: "Breath Reset",
-                  subtitle: "Center Yourself • 3:00",
-                  favorite: false,
-                  bgColor: "#dbeafe",
-                },
-                {
-                  icon: "🧘",
-                  title: "Body Scan",
-                  subtitle: "Release Tension • 12:00",
-                  favorite: false,
-                  bgColor: "#e0e7ff",
-                },
-              ].map((item, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    backgroundColor: "#fff",
-                    padding: "16px",
-                    borderRadius: "12px",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "16px",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "56px",
-                      height: "56px",
-                      backgroundColor: item.bgColor,
-                      borderRadius: "12px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "28px",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {item.icon}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h3
-                      style={{
-                        fontSize: "16px",
-                        fontWeight: 700,
-                        color: "#1a1a1a",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      {item.title}
-                    </h3>
-                    <p
-                      style={{ fontSize: "14px", color: "#6b7280", margin: 0 }}
-                    >
-                      {item.subtitle}
+            {/* Hidden audio element for library playback */}
+            <audio
+              ref={libraryAudioRef}
+              onTimeUpdate={() => {
+                if (libraryAudioRef.current) setLibCurrentTime(libraryAudioRef.current.currentTime);
+              }}
+              onLoadedMetadata={() => {
+                if (libraryAudioRef.current) setLibDuration(libraryAudioRef.current.duration);
+              }}
+              onEnded={() => {
+                setLibIsPlaying(false);
+                setLibCurrentTime(0);
+              }}
+              style={{ display: "none" }}
+            />
+
+            {audioLibrary.length === 0 ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "48px 24px",
+                  color: "#9ca3af",
+                }}
+              >
+                {libraryFilter === "favorites" ? (
+                  <>
+                    <Star size={48} color="#d1d5db" style={{ marginBottom: "16px" }} />
+                    <p style={{ fontSize: "16px", fontWeight: 500 }}>
+                      No favorites yet
                     </p>
-                  </div>
-                  <button
-                    style={{
-                      padding: "10px 20px",
-                      backgroundColor:
-                        coachConfig?.branding?.primary_color || "#ef4444",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "20px",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Play
-                  </button>
-                  <button
-                    style={{
-                      background: "none",
-                      border: "none",
-                      fontSize: "24px",
-                      color: item.favorite ? "#fbbf24" : "#d1d5db",
-                      cursor: "pointer",
-                      padding: "0",
-                    }}
-                  >
-                    ⭐
-                  </button>
-                </div>
-              ))}
-            </div>
+                    <p style={{ fontSize: "14px" }}>
+                      Tap the star on any practice to save it here.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Sun size={48} color="#d1d5db" style={{ marginBottom: "16px" }} />
+                    <p style={{ fontSize: "16px", fontWeight: 500 }}>
+                      No practices available yet
+                    </p>
+                    <p style={{ fontSize: "14px" }}>
+                      Your coach hasn&apos;t uploaded any audio practices yet.
+                    </p>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+              >
+                {audioLibrary.map((audio) => {
+                  const isToday = audio.audio_path === todayPath;
+                  const isActive = libraryPlayingPath === audio.audio_path;
+                  const isFav = userFavorites.has(audio.audio_path);
+
+                  return (
+                    <div key={audio.audio_path || audio.id}>
+                      <div
+                        style={{
+                          backgroundColor: "#fff",
+                          padding: "16px",
+                          borderRadius: isActive ? "12px 12px 0 0" : "12px",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "16px",
+                          border: isToday
+                            ? `2px solid ${coachConfig?.branding?.primary_color || "#ef4444"}`
+                            : "none",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "56px",
+                            height: "56px",
+                            backgroundColor: isToday ? "#fff9e6" : "#f3f4f6",
+                            borderRadius: "12px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                            overflow: "hidden",
+                          }}
+                        >
+                          {coachConfig?.focus_tab?.task_1?.icon_url ? (
+                            <img
+                              src={coachConfig.focus_tab.task_1.icon_url}
+                              alt=""
+                              style={{
+                                width: "36px",
+                                height: "36px",
+                                objectFit: "contain",
+                              }}
+                            />
+                          ) : (
+                            <Sun
+                              size={28}
+                              color={isToday ? "#f59e0b" : "#9ca3af"}
+                              strokeWidth={2}
+                            />
+                          )}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                            <h3
+                              style={{
+                                fontSize: "16px",
+                                fontWeight: 700,
+                                color: "#1a1a1a",
+                                margin: 0,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {audio.name || `Day ${audio.id + 1}`}
+                            </h3>
+                            {isToday && (
+                              <span
+                                style={{
+                                  fontSize: "11px",
+                                  fontWeight: 600,
+                                  color: coachConfig?.branding?.primary_color || "#ef4444",
+                                  backgroundColor: `${coachConfig?.branding?.primary_color || "#ef4444"}15`,
+                                  padding: "2px 8px",
+                                  borderRadius: "10px",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                Today
+                              </span>
+                            )}
+                          </div>
+                          <p
+                            style={{ fontSize: "14px", color: "#6b7280", margin: 0 }}
+                          >
+                            {coachConfig?.focus_tab?.task_1?.title || "Morning Practice"}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (isActive) {
+                              if (libIsPlaying) {
+                                libraryAudioRef.current?.pause();
+                                setLibIsPlaying(false);
+                              } else {
+                                libraryAudioRef.current?.play();
+                                setLibIsPlaying(true);
+                              }
+                            } else {
+                              if (libraryAudioRef.current) {
+                                libraryAudioRef.current.pause();
+                              }
+                              setLibraryPlayingPath(audio.audio_path);
+                              setLibCurrentTime(0);
+                              setLibDuration(0);
+                              setLibIsPlaying(true);
+                              setTimeout(() => {
+                                if (libraryAudioRef.current) {
+                                  libraryAudioRef.current.src = audio.audio_url;
+                                  libraryAudioRef.current.load();
+                                  libraryAudioRef.current.play();
+                                }
+                              }, 50);
+                            }
+                          }}
+                          style={{
+                            padding: "10px 20px",
+                            backgroundColor:
+                              coachConfig?.branding?.primary_color || "#ef4444",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "20px",
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {isActive && libIsPlaying ? "Pause" : "Play"}
+                        </button>
+                        <button
+                          onClick={() => toggleFavorite(audio.audio_path)}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "0",
+                            display: "flex",
+                            alignItems: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Star
+                            size={22}
+                            fill={isFav ? "#f59e0b" : "none"}
+                            color={isFav ? "#f59e0b" : "#d1d5db"}
+                            strokeWidth={2}
+                          />
+                        </button>
+                      </div>
+
+                      {/* Inline Audio Player */}
+                      {isActive && (
+                        <div
+                          style={{
+                            backgroundColor: "#fff",
+                            padding: "12px 16px 16px",
+                            borderRadius: "0 0 12px 12px",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                            borderTop: "1px solid #f3f4f6",
+                          }}
+                        >
+                          <input
+                            type="range"
+                            min="0"
+                            max={libDuration || 0}
+                            value={libCurrentTime}
+                            onChange={(e) => {
+                              const t = parseFloat(e.target.value);
+                              if (libraryAudioRef.current) {
+                                libraryAudioRef.current.currentTime = t;
+                              }
+                              setLibCurrentTime(t);
+                            }}
+                            style={{
+                              width: "100%",
+                              height: "6px",
+                              borderRadius: "3px",
+                              outline: "none",
+                              cursor: "pointer",
+                              accentColor:
+                                coachConfig?.branding?.primary_color || "#ef4444",
+                            }}
+                          />
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              fontSize: "12px",
+                              color: "#6b7280",
+                              marginTop: "4px",
+                            }}
+                          >
+                            <span>{formatTime(libCurrentTime)}</span>
+                            <span>{formatTime(libDuration)}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
+          );
+        })()}
 
         {/* Settings Page */}
         {activeTab === "more" && moreSubpage === "settings" && (

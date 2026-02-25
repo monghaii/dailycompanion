@@ -161,6 +161,24 @@ CREATE INDEX IF NOT EXISTS idx_daily_user_entries_date ON daily_user_entries(dat
 CREATE INDEX IF NOT EXISTS idx_daily_user_entries_user_date ON daily_user_entries(user_id, date);
 
 -- ============================================
+-- USER FAVORITES TABLE
+-- Supports favoriting different content types (audio, resources, etc.)
+-- ============================================
+CREATE TABLE IF NOT EXISTS user_favorites (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  coach_id UUID NOT NULL REFERENCES coaches(id) ON DELETE CASCADE,
+  item_type TEXT NOT NULL CHECK (item_type IN ('daily_practice_audio')),
+  item_identifier TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+
+  UNIQUE(user_id, item_type, item_identifier)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON user_favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_favorites_user_type ON user_favorites(user_id, item_type);
+
+-- ============================================
 -- SESSIONS TABLE (for auth tokens)
 -- ============================================
 CREATE TABLE IF NOT EXISTS sessions (
@@ -184,6 +202,7 @@ ALTER TABLE coaches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE coach_configs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE daily_user_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_favorites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
