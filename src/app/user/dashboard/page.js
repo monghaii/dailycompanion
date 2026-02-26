@@ -149,6 +149,10 @@ function UserDashboardContent() {
   const [libDuration, setLibDuration] = useState(0);
   const libraryAudioRef = useRef(null);
 
+  // Announcements state
+  const [userAnnouncements, setUserAnnouncements] = useState([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(false);
+
   // Resource Hub state
   const [rhCollections, setRhCollections] = useState([]);
   const [rhActiveCollection, setRhActiveCollection] = useState(null);
@@ -504,6 +508,17 @@ function UserDashboardContent() {
       fetchRhCollections();
     }
   }, [user, moreSubpage, subscriptionStatus]);
+
+  useEffect(() => {
+    if (user && moreSubpage === "announcements") {
+      setAnnouncementsLoading(true);
+      fetch("/api/user/announcements")
+        .then((r) => r.json())
+        .then((d) => setUserAnnouncements(d.announcements || []))
+        .catch(() => setUserAnnouncements([]))
+        .finally(() => setAnnouncementsLoading(false));
+    }
+  }, [user, moreSubpage]);
 
   const prevTabRef = useRef(activeTab);
   useEffect(() => {
@@ -2139,9 +2154,6 @@ function UserDashboardContent() {
                         e.target.style.filter = "brightness(1)";
                       }}
                     >
-                      <span style={{ fontSize: "20px" }}>
-                        {showAudioControls ? (isPlaying ? "⏸" : "▶") : "▶"}
-                      </span>
                       {showAudioControls
                         ? isPlaying
                           ? "Pause"
@@ -3322,13 +3334,6 @@ function UserDashboardContent() {
                             }
                             onMouseLeave={(e) => (e.target.style.opacity = "1")}
                           >
-                            <span style={{ fontSize: "20px" }}>
-                              {showPracticeControls
-                                ? isPracticePlaying
-                                  ? "⏸"
-                                  : "▶"
-                                : "▶"}
-                            </span>
                             {showPracticeControls
                               ? isPracticePlaying
                                 ? "Pause"
@@ -4117,7 +4122,18 @@ function UserDashboardContent() {
                         height: "48px",
                         borderRadius: "50%",
                         background:
-                          "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
+                          coachConfig?.coach_tab?.bot_profile_picture_url ||
+                          user?.coach?.logo_url
+                            ? "transparent"
+                            : "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
+                        border:
+                          coachConfig?.coach_tab?.bot_profile_picture_url ||
+                          user?.coach?.logo_url
+                            ? `2px solid ${
+                                coachConfig?.branding?.primary_color ||
+                                "#ef4444"
+                              }`
+                            : "none",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -4125,9 +4141,31 @@ function UserDashboardContent() {
                         fontSize: "20px",
                         fontWeight: 700,
                         flexShrink: 0,
+                        overflow: "hidden",
                       }}
                     >
-                      IJ
+                      {coachConfig?.coach_tab?.bot_profile_picture_url ? (
+                        <img
+                          src={coachConfig.coach_tab.bot_profile_picture_url}
+                          alt="AI Coach"
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      ) : user?.coach?.logo_url ? (
+                        <img
+                          src={user.coach.logo_url}
+                          alt={user.coach.business_name}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      ) : user?.coach?.business_name ? (
+                        user.coach.business_name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2)
+                      ) : (
+                        "AI"
+                      )}
                     </div>
                     <div
                       style={{
@@ -4161,7 +4199,6 @@ function UserDashboardContent() {
                             animation: "spin 1s linear infinite",
                           }}
                         />
-                        Thinking...
                       </p>
                     </div>
                   </div>
@@ -4505,255 +4542,132 @@ function UserDashboardContent() {
         )}
 
         {/* Announcements Page */}
-        {activeTab === "more" && moreSubpage === "announcements" && (
+        {activeTab === "more" && moreSubpage === "announcements" && (() => {
+          const ICON_PATHS = {
+            megaphone: "M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z",
+            bell: "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9",
+            star: "M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z",
+            info: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+            calendar: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
+            gift: "M12 8v13m0-13V6a4 4 0 00-4-4c-1.38 0-2.5.82-2.5 2S6.62 6 8 6h4zm0 0V6a4 4 0 014-4c1.38 0 2.5.82 2.5 2S17.38 6 16 6h-4zm-8 2h16v2H4v-2zm2 2v7a2 2 0 002 2h8a2 2 0 002-2v-7",
+            sparkles: "M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z",
+            heart: "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z",
+            lightning: "M13 10V3L4 14h7v7l9-11h-7z",
+            book: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253",
+            check: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+            flag: "M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2z",
+            link: "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1",
+            rocket: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z",
+            users: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z",
+          };
+          const getIconPath = (key) => ICON_PATHS[key] || ICON_PATHS.megaphone;
+          const formatTimeAgo = (dateStr) => {
+            const diff = Date.now() - new Date(dateStr).getTime();
+            const mins = Math.floor(diff / 60000);
+            if (mins < 60) return `${mins}m ago`;
+            const hours = Math.floor(mins / 60);
+            if (hours < 24) return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
+            if (days < 7) return `${days}d ago`;
+            return new Date(dateStr).toLocaleDateString();
+          };
+
+          return (
           <div style={{ marginTop: "24px", paddingBottom: "100px", position: "relative" }}>
-            {/* Locked Overlay */}
             {!subscriptionStatus?.isPremium && (
-              <div
-                style={{
-                  position: "fixed",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: "rgba(255, 255, 255, 0.7)",
-                  backdropFilter: "blur(4px)",
-                  zIndex: 10,
-                  pointerEvents: "all",
-                  cursor: "not-allowed",
-                }}
-              />
+              <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(255, 255, 255, 0.7)", backdropFilter: "blur(4px)", zIndex: 10, pointerEvents: "all", cursor: "not-allowed" }} />
             )}
-            {/* Back Button & Title */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
-                marginBottom: "24px",
-                position: "relative",
-                zIndex: 20,
-              }}
-            >
-              <button
-                onClick={() => setMoreSubpage(null)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "24px",
-                  cursor: "pointer",
-                  padding: "0",
-                  color: "#1a1a1a",
-                }}
-              >
-                ←
-              </button>
-              <h2
-                style={{
-                  fontSize: "28px",
-                  fontWeight: 700,
-                  color: "#1a1a1a",
-                  margin: 0,
-                }}
-              >
-                Announcements
-              </h2>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px", position: "relative", zIndex: 20 }}>
+              <button onClick={() => setMoreSubpage(null)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", padding: "0", color: "#1a1a1a" }}>←</button>
+              <h2 style={{ fontSize: "28px", fontWeight: 700, color: "#1a1a1a", margin: 0 }}>Announcements</h2>
             </div>
 
-            {/* Announcements List */}
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-            >
-              {/* Highlighted Announcement */}
-              <div
-                style={{
-                  backgroundColor: "#dbeafe",
-                  padding: "20px",
-                  borderRadius: "12px",
-                  borderLeft: "4px solid #3b82f6",
-                }}
-              >
-                <div style={{ display: "flex", gap: "16px" }}>
-                  <div
-                    style={{
-                      width: "48px",
-                      height: "48px",
-                      backgroundColor: "#3b82f6",
-                      borderRadius: "12px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "24px",
-                      flexShrink: 0,
-                    }}
-                  >
-                    🔔
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "flex-start",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      <h3
-                        style={{
-                          fontSize: "18px",
-                          fontWeight: 700,
-                          color: "#1e40af",
-                          margin: 0,
-                        }}
-                      >
-                        New Community Call Tomorrow
-                      </h3>
-                      <span style={{ fontSize: "13px", color: "#6b7280" }}>
-                        2 hours ago
-                      </span>
-                    </div>
-                    <p
-                      style={{
-                        fontSize: "15px",
-                        color: "#374151",
-                        lineHeight: "1.5",
-                        margin: 0,
-                      }}
-                    >
-                      Join us tomorrow at 12pm ET for our monthly community
-                      call. Topic: Shifting Patterns in Real-Time.
-                    </p>
-                  </div>
-                </div>
+            {announcementsLoading ? (
+              <div style={{ textAlign: "center", padding: "60px 0" }}>
+                <div style={{ width: "32px", height: "32px", border: `2px solid ${primaryColor}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto" }} />
               </div>
-
-              {/* Regular Announcements */}
-              <div
-                style={{
-                  backgroundColor: "#fff",
-                  padding: "20px",
-                  borderRadius: "12px",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                }}
-              >
-                <div style={{ display: "flex", gap: "16px" }}>
-                  <div
-                    style={{
-                      width: "48px",
-                      height: "48px",
-                      backgroundColor: "#e9d5ff",
-                      borderRadius: "12px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "24px",
-                      flexShrink: 0,
-                    }}
-                  >
-                    📹
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "flex-start",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      <h3
-                        style={{
-                          fontSize: "18px",
-                          fontWeight: 600,
-                          color: "#1a1a1a",
-                          margin: 0,
-                        }}
-                      >
-                        New Program Released
-                      </h3>
-                      <span style={{ fontSize: "13px", color: "#9ca3af" }}>
-                        Yesterday
-                      </span>
-                    </div>
-                    <p
-                      style={{
-                        fontSize: "15px",
-                        color: "#6b7280",
-                        lineHeight: "1.5",
-                        margin: 0,
-                      }}
-                    >
-                      "Working With Your Inner Critic" is now available in the
-                      Learning Hub. 4 modules, actionable practices.
-                    </p>
-                  </div>
+            ) : userAnnouncements.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                <div style={{ width: "64px", height: "64px", borderRadius: "50%", backgroundColor: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                  <svg width="28" height="28" fill="none" stroke="#9ca3af" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d={ICON_PATHS.megaphone} />
+                  </svg>
                 </div>
+                <h3 style={{ fontSize: "18px", fontWeight: 600, color: "#1a1a1a", margin: "0 0 4px" }}>No announcements yet</h3>
+                <p style={{ fontSize: "14px", color: "#9ca3af", margin: 0 }}>Your coach hasn&apos;t posted any updates yet. Check back later.</p>
               </div>
-
-              <div
-                style={{
-                  backgroundColor: "#fff",
-                  padding: "20px",
-                  borderRadius: "12px",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                }}
-              >
-                <div style={{ display: "flex", gap: "16px" }}>
-                  <div
-                    style={{
-                      width: "48px",
-                      height: "48px",
-                      backgroundColor: "#f3f4f6",
-                      borderRadius: "12px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "24px",
-                      flexShrink: 0,
-                    }}
-                  >
-                    ℹ️
-                  </div>
-                  <div style={{ flex: 1 }}>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {userAnnouncements.map((a) => {
+                  const isPinned = a.is_pinned;
+                  return (
                     <div
+                      key={a.id}
                       style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "flex-start",
-                        marginBottom: "8px",
+                        backgroundColor: isPinned ? `${primaryColor}10` : "#fff",
+                        padding: "20px",
+                        borderRadius: "12px",
+                        borderLeft: isPinned ? `4px solid ${primaryColor}` : "none",
+                        boxShadow: isPinned ? "none" : "0 1px 3px rgba(0,0,0,0.08)",
                       }}
                     >
-                      <h3
-                        style={{
-                          fontSize: "18px",
-                          fontWeight: 600,
-                          color: "#1a1a1a",
-                          margin: 0,
-                        }}
-                      >
-                        App Update
-                      </h3>
-                      <span style={{ fontSize: "13px", color: "#9ca3af" }}>
-                        3 days ago
-                      </span>
+                      <div style={{ display: "flex", gap: "16px" }}>
+                        <div
+                          style={{
+                            width: "48px",
+                            height: "48px",
+                            backgroundColor: isPinned ? primaryColor : "#f3f4f6",
+                            borderRadius: "12px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <svg width="24" height="24" fill="none" stroke={isPinned ? "#fff" : "#6b7280"} viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <path d={getIconPath(a.icon)} />
+                          </svg>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                            <h3 style={{ fontSize: "18px", fontWeight: isPinned ? 700 : 600, color: isPinned ? primaryColor : "#1a1a1a", margin: 0 }}>{a.title}</h3>
+                            <span style={{ fontSize: "13px", color: "#9ca3af", whiteSpace: "nowrap", marginLeft: "12px" }}>{formatTimeAgo(a.created_at)}</span>
+                          </div>
+                          <p style={{ fontSize: "15px", color: isPinned ? "#374151" : "#6b7280", lineHeight: "1.5", margin: 0 }}>{a.body}</p>
+                          {a.link && (
+                            <a
+                              href={a.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                marginTop: "10px",
+                                fontSize: "14px",
+                                fontWeight: 500,
+                                color: primaryColor,
+                                textDecoration: "none",
+                              }}
+                            >
+                              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+                                <polyline points="15 3 21 3 21 9" />
+                                <line x1="10" y1="14" x2="21" y2="3" />
+                              </svg>
+                              Open link
+                            </a>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <p
-                      style={{
-                        fontSize: "15px",
-                        color: "#6b7280",
-                        lineHeight: "1.5",
-                        margin: 0,
-                      }}
-                    >
-                      We've improved the Awareness Log with better filtering and
-                      time-based insights.
-                    </p>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
-            </div>
+            )}
           </div>
-        )}
+          );
+        })()}
 
         {/* Resource Hub Page */}
         {activeTab === "more" && moreSubpage === "resources" && (
@@ -5780,129 +5694,119 @@ function UserDashboardContent() {
                       <div
                         style={{
                           backgroundColor: "#fff",
-                          padding: "16px",
+                          padding: "14px",
                           borderRadius: isActive ? "12px 12px 0 0" : "12px",
                           boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "16px",
                           border: isToday
                             ? `2px solid ${coachConfig?.branding?.primary_color || "#ef4444"}`
                             : "none",
                         }}
                       >
-                        <div
-                          style={{
-                            width: "56px",
-                            height: "56px",
-                            backgroundColor: isToday ? "#fff9e6" : "#f3f4f6",
-                            borderRadius: "12px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
-                            overflow: "hidden",
-                          }}
-                        >
-                          {coachConfig?.focus_tab?.task_1?.icon_url ? (
-                            <img
-                              src={coachConfig.focus_tab.task_1.icon_url}
-                              alt=""
-                              style={{
-                                width: "36px",
-                                height: "36px",
-                                objectFit: "contain",
-                              }}
-                            />
-                          ) : (
-                            <Sun
-                              size={28}
-                              color={isToday ? "#f59e0b" : "#9ca3af"}
-                              strokeWidth={2}
-                            />
-                          )}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                            <h3
-                              style={{
-                                fontSize: "16px",
-                                fontWeight: 700,
-                                color: "#1a1a1a",
-                                margin: 0,
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {audio.name || `Day ${audio.id + 1}`}
-                            </h3>
-                            {isToday && (
-                              <span
-                                style={{
-                                  fontSize: "11px",
-                                  fontWeight: 600,
-                                  color: coachConfig?.branding?.primary_color || "#ef4444",
-                                  backgroundColor: `${coachConfig?.branding?.primary_color || "#ef4444"}15`,
-                                  padding: "2px 8px",
-                                  borderRadius: "10px",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                Today
-                              </span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <div
+                            style={{
+                              width: "44px",
+                              height: "44px",
+                              backgroundColor: isToday ? "#fff9e6" : "#f3f4f6",
+                              borderRadius: "10px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                              overflow: "hidden",
+                            }}
+                          >
+                            {coachConfig?.focus_tab?.task_1?.icon_url ? (
+                              <img
+                                src={coachConfig.focus_tab.task_1.icon_url}
+                                alt=""
+                                style={{ width: "28px", height: "28px", objectFit: "contain" }}
+                              />
+                            ) : (
+                              <Sun
+                                size={22}
+                                color={isToday ? "#f59e0b" : "#9ca3af"}
+                                strokeWidth={2}
+                              />
                             )}
                           </div>
-                          <p
-                            style={{ fontSize: "14px", color: "#6b7280", margin: 0 }}
-                          >
-                            {coachConfig?.focus_tab?.task_1?.title || "Morning Practice"}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            if (isActive) {
-                              if (libIsPlaying) {
-                                libraryAudioRef.current?.pause();
-                                setLibIsPlaying(false);
-                              } else {
-                                libraryAudioRef.current?.play();
-                                setLibIsPlaying(true);
-                              }
-                            } else {
-                              if (libraryAudioRef.current) {
-                                libraryAudioRef.current.pause();
-                              }
-                              setLibraryPlayingPath(audio.audio_path);
-                              setLibCurrentTime(0);
-                              setLibDuration(0);
-                              setLibIsPlaying(true);
-                              setTimeout(() => {
-                                if (libraryAudioRef.current) {
-                                  libraryAudioRef.current.src = audio.audio_url;
-                                  libraryAudioRef.current.load();
-                                  libraryAudioRef.current.play();
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <h3
+                                style={{
+                                  fontSize: "15px",
+                                  fontWeight: 700,
+                                  color: "#1a1a1a",
+                                  margin: 0,
+                                }}
+                              >
+                                {(audio.name || `Day ${audio.id + 1}`).replace(/\.[^.]+$/, "")}
+                              </h3>
+                              {isToday && (
+                                <span
+                                  style={{
+                                    fontSize: "11px",
+                                    fontWeight: 600,
+                                    color: coachConfig?.branding?.primary_color || "#ef4444",
+                                    backgroundColor: `${coachConfig?.branding?.primary_color || "#ef4444"}15`,
+                                    padding: "2px 8px",
+                                    borderRadius: "10px",
+                                    whiteSpace: "nowrap",
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  Today
+                                </span>
+                              )}
+                            </div>
+                            <p style={{ fontSize: "13px", color: "#6b7280", margin: "2px 0 0" }}>
+                              {coachConfig?.focus_tab?.task_1?.title || "Morning Practice"}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (isActive) {
+                                if (libIsPlaying) {
+                                  libraryAudioRef.current?.pause();
+                                  setLibIsPlaying(false);
+                                } else {
+                                  libraryAudioRef.current?.play();
+                                  setLibIsPlaying(true);
                                 }
-                              }, 50);
-                            }
-                          }}
-                          style={{
-                            padding: "10px 20px",
-                            backgroundColor:
-                              coachConfig?.branding?.primary_color || "#ef4444",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "20px",
-                            fontSize: "14px",
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            flexShrink: 0,
-                          }}
-                        >
-                          {isActive && libIsPlaying ? "Pause" : "Play"}
-                        </button>
-                        <button
-                          onClick={() => toggleFavorite(audio.audio_path)}
+                              } else {
+                                if (libraryAudioRef.current) {
+                                  libraryAudioRef.current.pause();
+                                }
+                                setLibraryPlayingPath(audio.audio_path);
+                                setLibCurrentTime(0);
+                                setLibDuration(0);
+                                setLibIsPlaying(true);
+                                setTimeout(() => {
+                                  if (libraryAudioRef.current) {
+                                    libraryAudioRef.current.src = audio.audio_url;
+                                    libraryAudioRef.current.load();
+                                    libraryAudioRef.current.play();
+                                  }
+                                }, 50);
+                              }
+                            }}
+                            style={{
+                              padding: "8px 16px",
+                              backgroundColor:
+                                coachConfig?.branding?.primary_color || "#ef4444",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "16px",
+                              fontSize: "13px",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {isActive && libIsPlaying ? "Pause" : "Play"}
+                          </button>
+                          <button
+                            onClick={() => toggleFavorite(audio.audio_path)}
                           style={{
                             background: "none",
                             border: "none",
@@ -5920,6 +5824,7 @@ function UserDashboardContent() {
                             strokeWidth={2}
                           />
                         </button>
+                        </div>
                       </div>
 
                       {/* Inline Audio Player */}
@@ -6987,7 +6892,7 @@ function UserDashboardContent() {
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
-                gap: "16px",
+                gap: "10px",
                 marginBottom: "24px",
               }}
             >
@@ -6997,7 +6902,7 @@ function UserDashboardContent() {
                   { id: "positive", label: "POSITIVE", color: "#10b981" },
                 ]
               ).map((category) => (
-                <div key={category.id}>
+                <div key={category.id} style={{ minWidth: 0 }}>
                   <div
                     style={{
                       backgroundColor: category.color,
@@ -7030,16 +6935,19 @@ function UserDashboardContent() {
                           key={emotionId}
                           onClick={() => toggleEmotion(emotionId, category.id)}
                           style={{
-                            padding: "12px",
+                            padding: "10px 8px",
                             backgroundColor: isSelected
                               ? category.color
                               : "#fff",
                             color: isSelected ? "#fff" : "#1a1a1a",
                             border: "none",
                             borderRadius: "8px",
-                            fontSize: "14px",
+                            fontSize: "clamp(11px, 3.2vw, 14px)",
                             cursor: "pointer",
                             fontWeight: isSelected ? 600 : 400,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
                           }}
                         >
                           {emotionName}
