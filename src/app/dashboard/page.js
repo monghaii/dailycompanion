@@ -89,15 +89,15 @@ function ClientsSection() {
       "First Name",
       "Last Name",
       "Email",
-      "Status",
       "Joined Date",
+      "Subscription",
     ];
     const rows = clients.map((client) => [
       client.firstName || "",
       client.lastName || "",
       client.email || "",
-      client.subscriptionStatus || "no_subscription",
       formatDate(client.userCreatedAt),
+      client.subscriptionStatus === "canceled" || client.canceledAt ? "Canceled" : client.subscriptionStatus === "active" ? "Active" : client.subscriptionStatus === "trialing" ? "Trial" : client.subscriptionStatus === "past_due" ? "Past Due" : "Free",
     ]);
 
     // Combine headers and rows
@@ -251,13 +251,10 @@ function ClientsSection() {
                         Email
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Joined
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
+                        Subscription
                       </th>
                     </tr>
                   </thead>
@@ -276,27 +273,32 @@ function ClientsSection() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {client.email}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(client.subscriptionStatus)}
-                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatDate(client.userCreatedAt)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {client.canceledAt ? (
+                          {client.subscriptionStatus === "canceled" || client.canceledAt ? (
                             <div>
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Canceled</span>
-                              <div className="text-xs text-gray-400 mt-1">
-                                {formatDate(client.canceledAt)}
-                              </div>
+                              {client.canceledAt && (
+                                <div className="text-xs text-gray-400 mt-1">
+                                  {formatDate(client.canceledAt)}
+                                </div>
+                              )}
                             </div>
-                          ) : client.currentPeriodEnd ? (
+                          ) : client.subscriptionStatus === "active" || client.subscriptionStatus === "trialing" ? (
                             <div>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Active</span>
-                              <div className="text-xs text-gray-400 mt-1">
-                                Renews {formatDate(client.currentPeriodEnd)}
-                              </div>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${client.subscriptionStatus === "trialing" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>
+                                {client.subscriptionStatus === "trialing" ? "Trial" : "Active"}
+                              </span>
+                              {client.currentPeriodEnd && (
+                                <div className="text-xs text-gray-400 mt-1">
+                                  Renews {formatDate(client.currentPeriodEnd)}
+                                </div>
+                              )}
                             </div>
+                          ) : client.subscriptionStatus === "past_due" ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">Past Due</span>
                           ) : (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Free</span>
                           )}

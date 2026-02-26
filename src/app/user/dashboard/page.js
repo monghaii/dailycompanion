@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import confetti from "canvas-confetti";
 import posthog from "posthog-js";
@@ -13,6 +13,7 @@ import {
   Star,
   Calendar,
 } from "lucide-react";
+import HelpWidget from "@/components/HelpWidget";
 
 function UserDashboardContent() {
   const router = useRouter();
@@ -1174,6 +1175,12 @@ function UserDashboardContent() {
     }
   };
 
+  // Memoize audio URL so it doesn't re-evaluate on every render
+  const todaysAudioUrl = useMemo(
+    () => getTodaysAudio(),
+    [coachConfig?.focus_tab],
+  );
+
   // Audio player functions
   const togglePlayPause = () => {
     if (!audioRef.current) return;
@@ -1185,16 +1192,22 @@ function UserDashboardContent() {
     if (isPlaying) {
       audioRef.current.pause();
     } else {
-      audioRef.current.play();
+      audioRef.current.play().catch((err) => {
+        console.error("Audio play failed:", err);
+        setIsPlaying(false);
+      });
       posthog.capture("morning_practice_audio_played", {
         date: getTodayInUserTimezone(),
       });
     }
-    setIsPlaying(!isPlaying);
   };
 
+  const timeUpdateThrottle = useRef(0);
   const handleTimeUpdate = () => {
     if (!audioRef.current) return;
+    const now = Date.now();
+    if (now - timeUpdateThrottle.current < 250) return;
+    timeUpdateThrottle.current = now;
     setCurrentTime(audioRef.current.currentTime);
   };
 
@@ -1213,7 +1226,6 @@ function UserDashboardContent() {
   const handleAudioEnded = () => {
     setIsPlaying(false);
     setCurrentTime(0);
-    // Auto-check the morning task when audio finishes
     if (!completedTasks.morning) {
       toggleTask("morning");
     }
@@ -2048,7 +2060,7 @@ function UserDashboardContent() {
                     )}
                   </button>
                 </div>
-                {getTodaysAudio() && (
+                {todaysAudioUrl && (
                   <div
                     style={{
                       marginTop: "12px",
@@ -2056,10 +2068,16 @@ function UserDashboardContent() {
                   >
                     <audio
                       ref={audioRef}
-                      src={getTodaysAudio()}
+                      src={todaysAudioUrl}
+                      preload="auto"
                       onTimeUpdate={handleTimeUpdate}
                       onLoadedMetadata={handleLoadedMetadata}
                       onEnded={handleAudioEnded}
+                      onPlay={() => setIsPlaying(true)}
+                      onPause={() => { if (audioRef.current && !audioRef.current.ended) setIsPlaying(false); }}
+                      onError={(e) => { console.error("Audio error:", e.target.error); setIsPlaying(false); }}
+                      onStalled={() => console.warn("Audio stalled - buffering")}
+                      onWaiting={() => console.warn("Audio waiting for data")}
                       style={{ display: "none" }}
                     />
 
@@ -4238,7 +4256,7 @@ function UserDashboardContent() {
         )}
 
         {activeTab === "more" && !moreSubpage && (
-          <div style={{ marginTop: "24px" }}>
+          <div style={{ marginTop: "24px", paddingBottom: "100px" }}>
             <h2
               style={{
                 fontSize: "32px",
@@ -4465,7 +4483,7 @@ function UserDashboardContent() {
 
         {/* Announcements Page */}
         {activeTab === "more" && moreSubpage === "announcements" && (
-          <div style={{ marginTop: "24px", position: "relative" }}>
+          <div style={{ marginTop: "24px", paddingBottom: "100px", position: "relative" }}>
             {/* Locked Overlay */}
             {!subscriptionStatus?.isPremium && (
               <div
@@ -4716,7 +4734,7 @@ function UserDashboardContent() {
 
         {/* Resource Hub Page */}
         {activeTab === "more" && moreSubpage === "resources" && (
-          <div style={{ marginTop: "24px", position: "relative" }}>
+          <div style={{ marginTop: "24px", paddingBottom: "100px", position: "relative" }}>
             {/* Locked Overlay - Only Tier 3 users can access */}
             {subscriptionStatus?.tier !== 3 && (
               <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(255, 255, 255, 0.7)", backdropFilter: "blur(4px)", zIndex: 10, pointerEvents: "all", cursor: "not-allowed" }} />
@@ -4900,7 +4918,7 @@ function UserDashboardContent() {
 
         {/* Insights Page */}
         {activeTab === "more" && moreSubpage === "insights" && (
-          <div style={{ marginTop: "24px", position: "relative" }}>
+          <div style={{ marginTop: "24px", paddingBottom: "100px", position: "relative" }}>
             {/* Locked Overlay */}
             {!subscriptionStatus?.isPremium && (
               <div
@@ -5575,7 +5593,7 @@ function UserDashboardContent() {
             : allAudios;
 
           return (
-          <div style={{ marginTop: "24px", position: "relative" }}>
+          <div style={{ marginTop: "24px", paddingBottom: "100px", position: "relative" }}>
             {/* Locked Overlay */}
             {!subscriptionStatus?.isPremium && (
               <div
@@ -5673,16 +5691,25 @@ function UserDashboardContent() {
             {/* Hidden audio element for library playback */}
             <audio
               ref={libraryAudioRef}
+              preload="auto"
               onTimeUpdate={() => {
-                if (libraryAudioRef.current) setLibCurrentTime(libraryAudioRef.current.currentTime);
+                if (!libraryAudioRef.current) return;
+                const now = Date.now();
+                if (!libraryAudioRef.current._lastUpdate || now - libraryAudioRef.current._lastUpdate > 250) {
+                  libraryAudioRef.current._lastUpdate = now;
+                  setLibCurrentTime(libraryAudioRef.current.currentTime);
+                }
               }}
               onLoadedMetadata={() => {
                 if (libraryAudioRef.current) setLibDuration(libraryAudioRef.current.duration);
               }}
+              onPlay={() => setLibIsPlaying(true)}
+              onPause={() => { if (libraryAudioRef.current && !libraryAudioRef.current.ended) setLibIsPlaying(false); }}
               onEnded={() => {
                 setLibIsPlaying(false);
                 setLibCurrentTime(0);
               }}
+              onError={(e) => { console.error("Library audio error:", e.target.error); setLibIsPlaying(false); }}
               style={{ display: "none" }}
             />
 
@@ -5930,7 +5957,7 @@ function UserDashboardContent() {
 
         {/* Settings Page */}
         {activeTab === "more" && moreSubpage === "settings" && (
-          <div style={{ marginTop: "24px" }}>
+          <div style={{ marginTop: "24px", paddingBottom: "100px" }}>
             {/* Back Button & Title */}
             <div
               style={{
@@ -7297,6 +7324,8 @@ function UserDashboardContent() {
           ✓ {toastMessage}
         </div>
       )}
+
+      {!isPreviewMode && <HelpWidget />}
     </div>
   );
 }
