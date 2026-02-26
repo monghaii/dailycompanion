@@ -25,6 +25,7 @@ function UserDashboardContent() {
   const [activeTab, setActiveTab] = useState(() => {
     return "focus";
   });
+  const [todayKey, setTodayKey] = useState(() => new Date().toLocaleDateString("en-CA"));
   const [dayNotes, setDayNotes] = useState("");
   const [completedTasks, setCompletedTasks] = useState({
     morning: false,
@@ -177,54 +178,42 @@ function UserDashboardContent() {
     return date.toISOString().split("T")[0];
   };
 
+  const getDaysSinceLibraryStart = () => {
+    const startDate = coachConfig?.focus_tab?.library_start_date;
+    if (!startDate) {
+      // Fallback: use an absolute day number so rotation is stable.
+      // epoch = Jan 1 2025; any fixed date works as long as it's consistent.
+      const epoch = new Date("2025-01-01T00:00:00Z");
+      return Math.floor((new Date().getTime() - epoch.getTime()) / 86400000);
+    }
+    return Math.floor(
+      (new Date().getTime() - new Date(startDate).getTime()) / 86400000,
+    );
+  };
+
+  const getRotatedIndex = (filledAudios) => {
+    const currentDayIndex = coachConfig?.focus_tab?.current_day_index || 0;
+    const daysSinceStart = getDaysSinceLibraryStart();
+    return (currentDayIndex + daysSinceStart) % filledAudios.length;
+  };
+
   // Get today's audio from the audio library
   const getTodaysAudio = () => {
     const audioLibrary = coachConfig?.focus_tab?.audio_library;
-    const currentDayIndex = coachConfig?.focus_tab?.current_day_index || 0;
-
     if (!audioLibrary || !Array.isArray(audioLibrary)) {
-      // Fallback to old single audio format
       return coachConfig?.focus_tab?.task_1?.audio_url || null;
     }
-
-    // Filter out empty slots
-    const filledAudios = audioLibrary.filter(
-      (audio) => audio && audio.audio_url,
-    );
-
-    if (filledAudios.length === 0) {
-      return null;
-    }
-
-    // Calculate which audio to play based on days since start
-    const daysSinceStart = Math.floor(
-      (new Date().getTime() -
-        new Date(
-          coachConfig?.focus_tab?.library_start_date || new Date(),
-        ).getTime()) /
-        (1000 * 60 * 60 * 24),
-    );
-
-    // Use current_day_index as the starting point, then cycle through
-    const index = (currentDayIndex + daysSinceStart) % filledAudios.length;
-    return filledAudios[index]?.audio_url || null;
+    const filledAudios = audioLibrary.filter((a) => a && a.audio_url);
+    if (filledAudios.length === 0) return null;
+    return filledAudios[getRotatedIndex(filledAudios)]?.audio_url || null;
   };
 
   const getTodaysAudioPath = () => {
     const audioLibrary = coachConfig?.focus_tab?.audio_library;
-    const currentDayIndex = coachConfig?.focus_tab?.current_day_index || 0;
     if (!audioLibrary || !Array.isArray(audioLibrary)) return null;
     const filledAudios = audioLibrary.filter((a) => a && a.audio_url);
     if (filledAudios.length === 0) return null;
-    const daysSinceStart = Math.floor(
-      (new Date().getTime() -
-        new Date(
-          coachConfig?.focus_tab?.library_start_date || new Date(),
-        ).getTime()) /
-        (1000 * 60 * 60 * 24),
-    );
-    const index = (currentDayIndex + daysSinceStart) % filledAudios.length;
-    return filledAudios[index]?.audio_path || null;
+    return filledAudios[getRotatedIndex(filledAudios)]?.audio_path || null;
   };
 
   const fetchFavorites = async () => {
@@ -455,7 +444,41 @@ function UserDashboardContent() {
     if (user && activeTab === "focus") {
       fetchFocusEntry();
     }
-  }, [user, activeTab]);
+  }, [user, activeTab, todayKey]);
+
+  // Detect day changes: when the user returns to the app after midnight,
+  // reset the focus tab and rotate the audio.
+  useEffect(() => {
+    const checkDayChange = () => {
+      const now = new Date().toLocaleDateString("en-CA");
+      setTodayKey((prev) => {
+        if (prev !== now) {
+          setCompletedTasks({ morning: false, intention: false, evening: false });
+          setFocusEntry(null);
+          setDayNotes("");
+          setNotesModified(false);
+          setIntentionObstacles("");
+          setIntentionFocusWord("");
+          setShowAudioControls(false);
+          setIsPlaying(false);
+          setCurrentTime(0);
+          setDuration(0);
+          return now;
+        }
+        return prev;
+      });
+    };
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) checkDayChange();
+    });
+    const interval = setInterval(checkDayChange, 60_000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", checkDayChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     if (user && activeTab === "awareness") {
@@ -1175,10 +1198,10 @@ function UserDashboardContent() {
     }
   };
 
-  // Memoize audio URL so it doesn't re-evaluate on every render
+  // Memoize audio URL; recalculates when config changes or the day rolls over
   const todaysAudioUrl = useMemo(
     () => getTodaysAudio(),
-    [coachConfig?.focus_tab],
+    [coachConfig?.focus_tab, todayKey],
   );
 
   // Audio player functions

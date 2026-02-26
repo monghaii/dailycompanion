@@ -5861,6 +5861,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       <div className="flex justify-end pt-4 border-t border-gray-100 mt-6">
                         <button
                           onClick={async () => {
+                            const existingStartDate = coachConfig?.focus_tab?.library_start_date;
                             await handleSaveConfig(
                               "focus_tab",
                               {
@@ -5869,6 +5870,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                   (a) => a.audio_url,
                                 ),
                                 current_day_index: currentDayIndex,
+                                library_start_date: existingStartDate || new Date().toISOString(),
                               },
                               "Focus tab config saved successfully!",
                             );
