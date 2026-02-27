@@ -233,7 +233,7 @@ export default function CoachLogin() {
             Don't have an account?{" "}
             <Link
               href="/coach/signup"
-              style={{ color: "#dc2626", textDecoration: "none", fontWeight: 500 }}
+              style={{ color: "#6b7280", textDecoration: "underline", fontWeight: 500 }}
             >
               Sign up.
             </Link>

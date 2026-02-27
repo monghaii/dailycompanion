@@ -569,8 +569,36 @@ function DashboardContent() {
   const [user, setUser] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState("config");
+  const [activeSection, setActiveSectionRaw] = useState("config");
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const initialLoadDoneRef = useRef(false);
+  const [dirtyPanels, setDirtyPanels] = useState(new Set());
+  const hasUnsavedChanges = dirtyPanels.size > 0;
+
+  const markPanelDirty = (panel) => {
+    if (!initialLoadDoneRef.current) return;
+    setDirtyPanels((prev) => {
+      if (prev.has(panel)) return prev;
+      return new Set([...prev, panel]);
+    });
+  };
+  const markPanelClean = (panel) => {
+    setDirtyPanels((prev) => {
+      if (!prev.has(panel)) return prev;
+      const next = new Set(prev);
+      next.delete(panel);
+      return next;
+    });
+  };
+
+  const setActiveSection = (section) => {
+    if (hasUnsavedChanges) {
+      if (!window.confirm("You have unsaved changes. Leave without saving?")) return;
+      setDirtyPanels(new Set());
+    }
+    setActiveSectionRaw(section);
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem("coachSidebarOpen");
@@ -1227,7 +1255,28 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     } catch (error) {
       console.error("Failed to fetch config:", error);
     }
+    setTimeout(() => {
+      initialLoadDoneRef.current = true;
+    }, 300);
   };
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (dirtyPanels.size > 0) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirtyPanels]);
+
+  useEffect(() => { markPanelDirty("landing"); }, [profileConfig, landingConfig]);
+  useEffect(() => { markPanelDirty("branding"); }, [brandingConfig]);
+  useEffect(() => { markPanelDirty("header"); }, [headerConfig]);
+  useEffect(() => { markPanelDirty("focus"); }, [focusConfig, audioLibrary]);
+  useEffect(() => { markPanelDirty("awareness"); }, [awarenessConfig, emotionalStateConfig]);
+  useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
 
   const fetchTokenUsage = async () => {
     try {
@@ -2402,6 +2451,11 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         setTimeout(() => setShowToast(false), 3000);
         setTimeout(() => sendConfigToPreview(), 100);
         posthog.capture("coach_config_saved", { section });
+        if (section === "branding") markPanelClean("branding");
+        else if (section === "header") markPanelClean("header");
+        else if (section === "focus_tab") markPanelClean("focus");
+        else if (section === "awareness_tab" || section === "emotional_state_tab") markPanelClean("awareness");
+        else if (section === "coach_tab") markPanelClean("coach_tab");
       } else {
         setToastMessage(
           "Failed to save config: " + (resData.error || "Unknown error"),
@@ -2519,6 +2573,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       await handleSaveProfile();
       await handleSaveLandingConfig();
       await captureFocusScreenshot();
+      markPanelClean("landing");
       setToastMessage("Landing page saved successfully!");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
@@ -2694,41 +2749,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
               </svg>
             )}
           </button>
-        </div>
-
-        {/* Profile */}
-        <div className="px-3 pt-3 relative">
-          <button
-            onClick={() => setShowProfileMenu((v) => !v)}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${isSidebarOpen ? "" : "justify-center"}`}
-          >
-            <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-xs shrink-0">
-              {user?.full_name?.charAt(0)}
-            </div>
-            {isSidebarOpen && (
-              <span className="text-sm font-medium text-gray-900 truncate">{user?.full_name}</span>
-            )}
-          </button>
-          {showProfileMenu && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)} />
-              <div
-                className="absolute z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1"
-                style={{ top: "8px", left: isSidebarOpen ? "256px" : "80px" }}
-              >
-                <div className="px-4 py-2 border-b border-gray-100">
-                  <p className="text-sm font-medium text-gray-900 whitespace-nowrap">{user?.full_name}</p>
-                  <p className="text-xs text-gray-500 whitespace-nowrap">{coach?.slug}</p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
-                >
-                  Sign out
-                </button>
-              </div>
-            </>
-          )}
         </div>
 
         {/* Navigation */}
@@ -3013,6 +3033,41 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Bar */}
+        <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-end shrink-0 relative z-30">
+          <div className="relative">
+            <button
+              onClick={() => setShowProfileMenu((v) => !v)}
+              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+            >
+              <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-xs shrink-0">
+                {user?.full_name?.charAt(0)}
+              </div>
+              <span className="text-sm font-medium text-gray-900">{user?.full_name}</span>
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {showProfileMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)} />
+                <div className="absolute right-0 top-full mt-1 z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px]">
+                  <div className="px-4 py-2 border-b border-gray-100">
+                    <p className="text-sm font-medium text-gray-900 whitespace-nowrap">{user?.full_name}</p>
+                    <p className="text-xs text-gray-500 whitespace-nowrap">{coach?.slug}</p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
         {/* Clients Section */}
         {activeSection === "clients" && <ClientsSection />}
 
@@ -3411,6 +3466,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           setSavingSection("tier3");
                           try {
                             await handleSaveProfile();
+                            markPanelClean("landing");
                             setToastMessage("Tier 3 settings saved!");
                             setShowToast(true);
                             setTimeout(() => setShowToast(false), 3000);
@@ -4300,7 +4356,13 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             </div>
                           ) : (
                             <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400">
-                              <span className="text-2xl">🖼️</span>
+                              {uploadingLogo ? (
+                                <div className="w-6 h-6 border-2 border-gray-300 border-t-purple-500 rounded-full animate-spin" />
+                              ) : (
+                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                                </svg>
+                              )}
                             </div>
                           )}
                           <div className="flex-1">
@@ -4545,7 +4607,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           App Logo
                         </h3>
                         <p className="text-xs text-gray-400 mb-2">
-                          Replaces the app title text in the header
+                          Replaces the title text in your client&apos;s in-app header only. Does not appear on your landing page.
                         </p>
 
                         {brandingConfig.app_logo_url && (
@@ -5316,35 +5378,73 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 next audio in sequence.
                               </p>
 
-                              <div className="space-y-2 max-h-96 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                              <div className="space-y-2 max-h-[500px] overflow-y-auto border border-gray-200 rounded-lg p-3">
                                 {audioLibrary
                                   .filter((a) => a.audio_url)
-                                  .map((audio, index) => {
-                                    // Find the actual index in the full library
+                                  .map((audio, index, filteredArr) => {
                                     const actualIndex = audioLibrary.findIndex(
                                       (a) => a.id === audio.id,
                                     );
                                     return (
                                       <div
                                         key={audio.id}
-                                        className={`p-3 rounded-lg border-2 ${
+                                        draggable
+                                        onDragStart={(e) => {
+                                          e.dataTransfer.setData("text/plain", String(index));
+                                          e.currentTarget.style.opacity = "0.5";
+                                        }}
+                                        onDragEnd={(e) => {
+                                          e.currentTarget.style.opacity = "1";
+                                        }}
+                                        onDragOver={(e) => {
+                                          e.preventDefault();
+                                          e.currentTarget.style.borderTopColor = "#7c3aed";
+                                        }}
+                                        onDragLeave={(e) => {
+                                          e.currentTarget.style.borderTopColor = "";
+                                        }}
+                                        onDrop={(e) => {
+                                          e.preventDefault();
+                                          e.currentTarget.style.borderTopColor = "";
+                                          const fromIdx = parseInt(e.dataTransfer.getData("text/plain"), 10);
+                                          const toIdx = index;
+                                          if (fromIdx === toIdx) return;
+                                          const filled = audioLibrary.filter((a) => a.audio_url);
+                                          const moved = [...filled];
+                                          const [item] = moved.splice(fromIdx, 1);
+                                          moved.splice(toIdx, 0, item);
+                                          const reindexed = moved.map((a, i) => ({ ...a, id: i }));
+                                          const oldToday = filled[currentDayIndex];
+                                          const newTodayIdx = oldToday ? reindexed.findIndex((a) => a.audio_url === oldToday.audio_url && a.audio_path === oldToday.audio_path) : 0;
+                                          setAudioLibrary(reindexed);
+                                          setCurrentDayIndex(newTodayIdx >= 0 ? newTodayIdx : 0);
+                                        }}
+                                        className={`p-3 rounded-lg border-2 transition-colors ${
                                           actualIndex === currentDayIndex
                                             ? "border-purple-500 bg-purple-50"
                                             : "border-gray-200 bg-white"
                                         }`}
+                                        style={{ cursor: "grab" }}
                                       >
                                         <div className="flex items-center gap-2 mb-2">
-                                          <span className="text-xs font-medium text-gray-500 min-w-[60px]">
-                                            Day {index + 1}
+                                          <svg className="w-4 h-4 text-gray-300 shrink-0 cursor-grab" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+                                          <span className="text-xs font-medium text-gray-400 shrink-0">
+                                            {index + 1}
                                           </span>
+                                          <input
+                                            type="text"
+                                            value={audio.name || ""}
+                                            onChange={(e) => {
+                                              const newLib = [...audioLibrary];
+                                              newLib[actualIndex] = { ...newLib[actualIndex], name: e.target.value };
+                                              setAudioLibrary(newLib);
+                                            }}
+                                            placeholder={audio.audio_path?.split("/").pop()?.replace(/\.[^.]+$/, "") || `Day ${index + 1}`}
+                                            className="flex-1 min-w-0 px-2 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-purple-400 focus:border-transparent outline-none bg-transparent"
+                                          />
                                           {actualIndex === currentDayIndex && (
-                                            <span className="text-xs bg-[#fbbf24] text-black px-2 py-0.5 rounded-full font-semibold">
+                                            <span className="text-xs bg-[#fbbf24] text-black px-2 py-0.5 rounded-full font-semibold shrink-0">
                                               Today
-                                            </span>
-                                          )}
-                                          {audio.name && (
-                                            <span className="text-xs text-gray-600 flex-1 truncate">
-                                              {audio.name}
                                             </span>
                                           )}
                                         </div>
@@ -5366,7 +5466,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                                     actualIndex,
                                                   )
                                                 }
-                                                className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                                                className="text-xs text-purple-600 hover:text-purple-700 font-medium cursor-pointer"
                                               >
                                                 Set as Today
                                               </button>
@@ -5374,32 +5474,18 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                             <button
                                               type="button"
                                               onClick={() => {
-                                                const newLibrary =
-                                                  audioLibrary.filter(
-                                                    (_, i) => i !== actualIndex,
-                                                  );
-                                                // Re-index the library
-                                                const reindexed =
-                                                  newLibrary.map((a, i) => ({
-                                                    ...a,
-                                                    id: i,
-                                                  }));
-                                                setAudioLibrary(reindexed);
-                                                // Adjust currentDayIndex if needed
-                                                if (
-                                                  actualIndex ===
-                                                  currentDayIndex
-                                                ) {
-                                                  setCurrentDayIndex(0);
-                                                } else if (
-                                                  actualIndex < currentDayIndex
-                                                ) {
-                                                  setCurrentDayIndex(
-                                                    currentDayIndex - 1,
-                                                  );
+                                                const filled = audioLibrary.filter((a) => a.audio_url);
+                                                const newFilled = filled.filter((_, i) => i !== index);
+                                                const reindexed = newFilled.map((a, i) => ({ ...a, id: i }));
+                                                const oldToday = filled[currentDayIndex];
+                                                let newTodayIdx = 0;
+                                                if (oldToday && index !== currentDayIndex) {
+                                                  newTodayIdx = reindexed.findIndex((a) => a.audio_url === oldToday.audio_url);
                                                 }
+                                                setAudioLibrary(reindexed);
+                                                setCurrentDayIndex(Math.max(0, newTodayIdx));
                                               }}
-                                              className="text-xs text-red-600 hover:text-red-700 font-medium ml-auto"
+                                              className="text-xs text-red-600 hover:text-red-700 font-medium ml-auto cursor-pointer"
                                             >
                                               Remove
                                             </button>
@@ -5529,14 +5615,12 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                     >
                                       {uploadingAudio ? (
                                         <>
-                                          <span className="animate-spin">
-                                            ⏳
-                                          </span>
+                                          <div className="w-4 h-4 border-2 border-gray-300 border-t-purple-500 rounded-full animate-spin" />
                                           Uploading...
                                         </>
                                       ) : (
                                         <>
-                                          <span>➕</span>
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
                                           Add Day (
                                           {audioLibrary.filter(
                                             (a) => a.audio_url,
@@ -7239,44 +7323,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         {/* Resource Hub Content */}
         {activeSection === "resource-hub" && (
           <>
-            {!profileConfig.tier3_enabled ? (
-              <div
-                className="flex items-center justify-center h-full"
-                style={{ minHeight: "calc(100vh - 200px)" }}
-              >
-                <div className="text-center max-w-md mx-auto px-6">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-100 flex items-center justify-center">
-                    <svg
-                      className="w-8 h-8 text-amber-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                      />
-                    </svg>
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-2">
-                    Enable Tier 3 to Use Resource Hub
-                  </h2>
-                  <p className="text-gray-500 mb-6">
-                    The Resource Hub is an exclusive feature for your Tier 3
-                    subscribers. Enable the Tier 3 plan in the Finance tab
-                    first, then come back here to create collections.
-                  </p>
-                  <button
-                    onClick={() => setActiveSection("finance")}
-                    className="px-6 py-2.5 text-sm font-semibold text-black bg-[#fbbf24] rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer"
-                  >
-                    Go to Finance Settings
-                  </button>
-                </div>
-              </div>
-            ) : rhEditing ? (
+            {rhEditing ? (
               /* ── Collection Editor ── */
               <div
                 key={rhEditing}
@@ -7912,6 +7959,19 @@ Remember: You're here to empower them to find their own answers, not to fix thei
               /* ── Collections List View ── */
               <>
                 <div className="bg-white border-b border-gray-200 px-8 py-6">
+                  {!profileConfig.tier3_enabled && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 mb-4 flex items-center gap-3">
+                      <svg className="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                      <p className="text-sm text-amber-800">
+                        <span className="font-medium">Resource Hub is not live for clients yet.</span>{" "}
+                        Enable Tier 3 in{" "}
+                        <button onClick={() => setActiveSection("finance")} className="underline font-medium cursor-pointer bg-transparent border-none text-amber-800 p-0">Finance Settings</button>
+                        {" "}to make it accessible.
+                      </p>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <div>
                       <h1 className="text-3xl font-bold text-gray-900">

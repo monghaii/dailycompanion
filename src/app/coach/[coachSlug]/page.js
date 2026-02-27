@@ -772,7 +772,7 @@ export default function CoachLandingPage() {
                     color: "#4b5563",
                   }}
                 >
-                  <span style={{ color: "#6b7280", fontSize: "18px" }}>✓</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="20 6 9 17 4 12" /></svg>
                   Daily Focus check-ins
                 </li>
                 <li
@@ -785,7 +785,7 @@ export default function CoachLandingPage() {
                     color: "#4b5563",
                   }}
                 >
-                  <span style={{ color: "#6b7280", fontSize: "18px" }}>✓</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="20 6 9 17 4 12" /></svg>
                   Basic task tracking
                 </li>
                 <li
@@ -798,7 +798,7 @@ export default function CoachLandingPage() {
                     color: "#4b5563",
                   }}
                 >
-                  <span style={{ color: "#6b7280", fontSize: "18px" }}>✓</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="20 6 9 17 4 12" /></svg>
                   Community support
                 </li>
               </ul>
@@ -908,9 +908,7 @@ export default function CoachLandingPage() {
                       color: "#4b5563",
                     }}
                   >
-                    <span style={{ color: primaryColor, fontSize: "18px" }}>
-                      ✓
-                    </span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={primaryColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="20 6 9 17 4 12" /></svg>
                     {feature}
                   </li>
                 ))}
@@ -1024,9 +1022,7 @@ export default function CoachLandingPage() {
                         color: "#4b5563",
                       }}
                     >
-                      <span style={{ color: "#ea580c", fontSize: "18px" }}>
-                        ✓
-                      </span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="20 6 9 17 4 12" /></svg>
                       {feature}
                     </li>
                   ))}
@@ -1079,7 +1075,7 @@ export default function CoachLandingPage() {
                 margin: 0,
               }}
             >
-              💡 <strong>Save with yearly billing:</strong> Get 1 month free
+              <strong>Save with yearly billing:</strong> Get 1 month free
               when you choose yearly billing (11 months for the price of 12)
             </p>
           </div>
