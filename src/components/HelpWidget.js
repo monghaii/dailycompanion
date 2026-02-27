@@ -4,7 +4,7 @@ import { useState } from "react";
 
 const PLATFORMS = ["iOS (Safari)", "iOS (Chrome)", "Android (Chrome)", "Android (Other)", "Desktop (Chrome)", "Desktop (Safari)", "Desktop (Firefox)", "Desktop (Other)"];
 
-export default function HelpWidget() {
+export default function HelpWidget({ color = "#6366f1" }) {
   const [open, setOpen] = useState(false);
   const [platform, setPlatform] = useState("");
   const [description, setDescription] = useState("");
@@ -44,7 +44,7 @@ export default function HelpWidget() {
           fontWeight: 600,
           letterSpacing: "0.5px",
           color: "#fff",
-          background: "#6366f1",
+          background: color,
           border: "none",
           borderRadius: "8px 0 0 8px",
           cursor: "pointer",
@@ -181,7 +181,7 @@ export default function HelpWidget() {
               padding: "12px",
               borderRadius: 8,
               border: "none",
-              background: !platform || !description.trim() ? "#d1d5db" : "#6366f1",
+              background: !platform || !description.trim() ? "#d1d5db" : color,
               color: "#fff",
               fontSize: 14,
               fontWeight: 600,

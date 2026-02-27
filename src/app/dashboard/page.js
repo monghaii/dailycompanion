@@ -8,6 +8,7 @@ import html2canvas from "html2canvas";
 import posthog from "posthog-js";
 import { posthogIdentifyIfAllowed } from "@/components/PostHogProvider";
 import CustomDomainWizard from "./components/CustomDomainWizard";
+import HelpWidget from "@/components/HelpWidget";
 
 const ANNOUNCEMENT_ICONS = {
   megaphone: { label: "Megaphone", path: "M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" },
@@ -339,6 +340,7 @@ function ClientsSection() {
       "Email",
       "Joined Date",
       "Subscription",
+      "Tier",
     ];
     const rows = clients.map((client) => [
       client.firstName || "",
@@ -346,6 +348,7 @@ function ClientsSection() {
       client.email || "",
       formatDate(client.userCreatedAt),
       client.subscriptionStatus === "canceled" || client.canceledAt ? "Canceled" : client.subscriptionStatus === "active" ? "Active" : client.subscriptionStatus === "trialing" ? "Trial" : client.subscriptionStatus === "past_due" ? "Past Due" : "Free",
+      client.subscriptionTier ? `Tier ${client.subscriptionTier}` : "",
     ]);
 
     // Combine headers and rows
@@ -528,6 +531,9 @@ function ClientsSection() {
                           {client.subscriptionStatus === "canceled" || client.canceledAt ? (
                             <div>
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Canceled</span>
+                              {client.subscriptionTier && (
+                                <span className="text-xs text-gray-400 ml-1">Tier {client.subscriptionTier}</span>
+                              )}
                               {client.canceledAt && (
                                 <div className="text-xs text-gray-400 mt-1">
                                   {formatDate(client.canceledAt)}
@@ -537,7 +543,7 @@ function ClientsSection() {
                           ) : client.subscriptionStatus === "active" || client.subscriptionStatus === "trialing" ? (
                             <div>
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${client.subscriptionStatus === "trialing" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>
-                                {client.subscriptionStatus === "trialing" ? "Trial" : "Active"}
+                                {client.subscriptionStatus === "trialing" ? "Trial" : "Active"}{client.subscriptionTier ? ` · Tier ${client.subscriptionTier}` : ""}
                               </span>
                               {client.currentPeriodEnd && (
                                 <div className="text-xs text-gray-400 mt-1">
@@ -546,7 +552,12 @@ function ClientsSection() {
                               )}
                             </div>
                           ) : client.subscriptionStatus === "past_due" ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">Past Due</span>
+                            <div>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">Past Due</span>
+                              {client.subscriptionTier && (
+                                <span className="text-xs text-gray-400 ml-1">Tier {client.subscriptionTier}</span>
+                              )}
+                            </div>
                           ) : (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Free</span>
                           )}
@@ -4090,8 +4101,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           <>
             {/* Header */}
             <div className="bg-white border-b border-gray-200 px-8 py-6">
-              <div className="flex items-start justify-between">
-                <div>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
                   <h1 className="text-3xl font-bold text-gray-900">
                     Configuration
                   </h1>
@@ -4101,7 +4112,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 </div>
                 <button
                   onClick={() => setShowPreview(!showPreview)}
-                  className="px-4 py-2 bg-[#fbbf24] hover:bg-[#f59e0b] text-black rounded-lg text-sm font-semibold transition-colors cursor-pointer flex items-center gap-2"
+                  className="px-4 py-2 bg-[#fbbf24] hover:bg-[#f59e0b] text-black rounded-lg text-sm font-semibold transition-colors cursor-pointer flex items-center gap-2 shrink-0"
                 >
                   <svg
                     width="16"
@@ -9148,6 +9159,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           50% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
         }
       `}</style>
+      <HelpWidget />
     </div>
   );
 }

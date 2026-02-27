@@ -66,7 +66,7 @@ export async function GET(request) {
     const userIds = profiles.map(p => p.id);
     const { data: subscriptions } = await supabase
       .from('user_subscriptions')
-      .select('user_id, status, created_at, current_period_start, current_period_end, canceled_at')
+      .select('user_id, status, created_at, current_period_start, current_period_end, canceled_at, subscription_tier')
       .in('user_id', userIds);
     
     // Create a map for quick subscription lookup
@@ -87,6 +87,7 @@ export async function GET(request) {
         name: profile.full_name || 'Unknown',
         email: profile.email,
         subscriptionStatus: subscription?.status || 'no_subscription',
+        subscriptionTier: subscription?.subscription_tier || null,
         subscribedAt: subscription?.created_at || null,
         currentPeriodEnd: subscription?.current_period_end || null,
         canceledAt: subscription?.canceled_at || null,

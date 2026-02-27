@@ -1600,7 +1600,6 @@ function UserDashboardContent() {
   };
 
   const handleNewSession = () => {
-    // Reset chat to initial state
     const initialMessages = [
       {
         role: "assistant",
@@ -1612,8 +1611,9 @@ function UserDashboardContent() {
     setChatMessage("");
     setTokenWarning(null);
     setShowCoachProfile(false);
+    setSelectedPractice(null);
+    setIsSendingChat(false);
 
-    // Clear from user-specific localStorage
     if (user && typeof window !== "undefined") {
       const storageKey = `chatMessages_${user.id}`;
       localStorage.setItem(storageKey, JSON.stringify(initialMessages));
@@ -3514,11 +3514,11 @@ function UserDashboardContent() {
                   style={{
                     width: "100%",
                     maxWidth: "600px",
-                    padding: "12px 24px",
+                    padding: "10px 16px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    gap: "16px",
+                    gap: "10px",
                   }}
                 >
                   <button
@@ -3531,9 +3531,9 @@ function UserDashboardContent() {
                     style={{
                       background: "none",
                       border: "none",
-                      color: coachConfig?.branding?.primary_color || "#ef4444",
+                      color: "#6b7280",
                       fontSize: "14px",
-                      fontWeight: 600,
+                      fontWeight: 500,
                       cursor: !subscriptionStatus?.isPremium
                         ? "not-allowed"
                         : "pointer",
@@ -3542,48 +3542,35 @@ function UserDashboardContent() {
                       gap: "4px",
                       padding: 0,
                       opacity: !subscriptionStatus?.isPremium ? 0.5 : 1,
+                      whiteSpace: "nowrap",
                     }}
                   >
                     Coach Profile
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        display: "inline-block",
-                        transform: showCoachProfile
-                          ? "rotate(180deg)"
-                          : "rotate(0)",
-                        transition: "transform 0.2s",
-                      }}
-                    >
-                      ▼
-                    </span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: showCoachProfile ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}><polyline points="6 9 12 15 18 9" /></svg>
                   </button>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "10px",
-                        height: "10px",
-                        borderRadius: "50%",
-                        backgroundColor: "#10b981",
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontSize: "14px",
-                        color: "#10b981",
-                        fontWeight: 500,
-                      }}
-                    >
-                      Fresh Session
-                    </span>
-                  </div>
+                  {(() => {
+                    const msgCount = chatMessages.length;
+                    let statusColor, statusLabel;
+                    if (msgCount <= 5) {
+                      statusColor = "#10b981";
+                      statusLabel = "Fresh Session";
+                    } else if (msgCount <= 25) {
+                      statusColor = "#f59e0b";
+                      statusLabel = "Active Session";
+                    } else {
+                      statusColor = "#ef4444";
+                      statusLabel = "Wrap Up Soon";
+                    }
+                    return (
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: statusColor, flexShrink: 0 }} />
+                        <span style={{ fontSize: "14px", color: statusColor, fontWeight: 500, whiteSpace: "nowrap" }}>
+                          {statusLabel}
+                        </span>
+                      </div>
+                    );
+                  })()}
 
                   <button
                     onClick={
@@ -3597,14 +3584,16 @@ function UserDashboardContent() {
                         coachConfig?.branding?.primary_color || "#ef4444",
                       color: "#fff",
                       border: "none",
-                      borderRadius: "20px",
-                      padding: "8px 20px",
-                      fontSize: "14px",
+                      borderRadius: "8px",
+                      padding: "6px 14px",
+                      fontSize: "13px",
                       fontWeight: 600,
                       cursor: !subscriptionStatus?.isPremium
                         ? "not-allowed"
                         : "pointer",
                       opacity: !subscriptionStatus?.isPremium ? 0.5 : 1,
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
                     }}
                   >
                     New Session
@@ -3678,167 +3667,111 @@ function UserDashboardContent() {
                   maxWidth: "600px",
                 }}
               >
-                {/* Coach Profile Dropdown */}
+                {/* Coach Profile Modal */}
                 {showCoachProfile && user?.coach && (
-                  <div
-                    style={{
-                      backgroundColor: "#fff",
-                      padding: "24px",
-                      borderRadius: "16px",
-                      marginBottom: "24px",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                    }}
-                  >
+                  <>
+                    <div
+                      onClick={() => setShowCoachProfile(false)}
+                      style={{
+                        position: "fixed",
+                        inset: 0,
+                        backgroundColor: "rgba(0,0,0,0.4)",
+                        zIndex: 9998,
+                      }}
+                    />
                     <div
                       style={{
-                        display: "flex",
-                        gap: "16px",
-                        marginBottom: "16px",
+                        position: "fixed",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        width: "min(420px, 90vw)",
+                        maxHeight: "80vh",
+                        overflowY: "auto",
+                        backgroundColor: "#fff",
+                        borderRadius: "20px",
+                        padding: "24px",
+                        boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+                        zIndex: 9999,
                       }}
                     >
-                      {coachConfig?.coach_tab?.bot_profile_picture_url ||
-                      user.coach.logo_url ? (
-                        <img
-                          src={
-                            coachConfig?.coach_tab?.bot_profile_picture_url ||
-                            user.coach.logo_url
-                          }
-                          alt={user.coach.business_name}
+                      <button
+                        onClick={() => setShowCoachProfile(false)}
+                        style={{
+                          position: "absolute",
+                          top: "16px",
+                          right: "16px",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: "4px",
+                          color: "#9ca3af",
+                        }}
+                        aria-label="Close"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: "20px" }}>
+                        {coachConfig?.coach_tab?.bot_profile_picture_url || user.coach.logo_url ? (
+                          <img
+                            src={coachConfig?.coach_tab?.bot_profile_picture_url || user.coach.logo_url}
+                            alt={user.coach.business_name}
+                            style={{ width: "90px", height: "90px", borderRadius: "50%", objectFit: "cover", marginBottom: "14px" }}
+                          />
+                        ) : (
+                          <div style={{ width: "90px", height: "90px", borderRadius: "50%", background: "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "32px", fontWeight: 700, marginBottom: "14px" }}>
+                            {user.coach.business_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                          </div>
+                        )}
+                        <h3 style={{ fontSize: "22px", fontWeight: 700, color: "#1a1a1a", margin: "0 0 8px" }}>
+                          {user.coach.business_name}
+                        </h3>
+                        <p style={{ fontSize: "14px", lineHeight: "1.6", color: "#6b7280", margin: 0 }}>
+                          {user.coach.bio || coachConfig?.bio || "Your dedicated AI coach here to support your journey."}
+                        </p>
+                      </div>
+
+                      {coachConfig?.coach_tab?.booking?.enabled && (
+                        <button
+                          onClick={() => { setShowCoachProfile(false); setShowBookingModal(true); }}
                           style={{
-                            width: "100px",
-                            height: "100px",
-                            borderRadius: "16px",
-                            objectFit: "cover",
-                            flexShrink: 0,
-                          }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            width: "100px",
-                            height: "100px",
-                            borderRadius: "16px",
-                            background:
-                              "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
+                            width: "100%",
+                            padding: "14px",
+                            backgroundColor: coachConfig?.branding?.primary_color || "#ef4444",
+                            color: "#ffffff",
+                            border: "none",
+                            borderRadius: "12px",
+                            fontSize: "16px",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            marginBottom: "14px",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            color: "#fff",
-                            fontSize: "36px",
-                            fontWeight: 700,
-                            flexShrink: 0,
+                            gap: "8px",
                           }}
                         >
-                          {user.coach.business_name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .toUpperCase()
-                            .slice(0, 2)}
-                        </div>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                            <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                          </svg>
+                          {coachConfig?.coach_tab?.booking?.button_text || "Book a Call"}
+                        </button>
                       )}
-                      <div style={{ flex: 1 }}>
-                        <h3
-                          style={{
-                            fontSize: "28px",
-                            fontWeight: 700,
-                            color: "#1a1a1a",
-                            marginBottom: "12px",
-                            marginTop: "0",
-                          }}
-                        >
-                          {user.coach.business_name}
-                        </h3>
-                        <p
-                          style={{
-                            fontSize: "16px",
-                            lineHeight: "1.5",
-                            color: "#4b5563",
-                            margin: 0,
-                          }}
-                        >
-                          {user.coach.bio ||
-                            coachConfig?.bio ||
-                            "Your dedicated AI coach here to support your journey."}
+
+                      <div style={{ backgroundColor: "#fefce8", border: "1px solid #fde68a", borderRadius: "10px", padding: "12px 14px" }}>
+                        <p style={{ fontSize: "13px", lineHeight: "1.5", color: "#92400e", margin: 0 }}>
+                          <strong>Note:</strong>{" "}
+                          {coachConfig?.coach_tab?.booking?.ai_disclaimer
+                            ? coachConfig.coach_tab.booking.ai_disclaimer.replace("{coach_name}", user.coach.business_name)
+                            : `Responses are AI-generated and not directly from ${user.coach.business_name}.`}
                         </p>
                       </div>
                     </div>
-
-                    {/* Book a Call Button */}
-                    {coachConfig?.coach_tab?.booking?.enabled && (
-                      <button
-                        onClick={() => setShowBookingModal(true)}
-                        style={{
-                          width: "100%",
-                          padding: "16px",
-                          backgroundColor:
-                            coachConfig?.branding?.primary_color || "#ef4444",
-                          color: "#ffffff",
-                          border: "none",
-                          borderRadius: "12px",
-                          fontSize: "18px",
-                          fontWeight: 700,
-                          cursor: "pointer",
-                          marginBottom: "16px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: "8px",
-                        }}
-                      >
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <rect
-                            x="3"
-                            y="4"
-                            width="18"
-                            height="18"
-                            rx="2"
-                            ry="2"
-                          ></rect>
-                          <line x1="16" y1="2" x2="16" y2="6"></line>
-                          <line x1="8" y1="2" x2="8" y2="6"></line>
-                          <line x1="3" y1="10" x2="21" y2="10"></line>
-                        </svg>
-                        {coachConfig?.coach_tab?.booking?.button_text ||
-                          "Book a Call"}
-                      </button>
-                    )}
-
-                    <div
-                      style={{
-                        backgroundColor: "#fefce8",
-                        border: "2px solid #fbbf24",
-                        borderRadius: "12px",
-                        padding: "16px",
-                      }}
-                    >
-                      <p
-                        style={{
-                          fontSize: "16px",
-                          lineHeight: "1.5",
-                          color: "#713f12",
-                          margin: 0,
-                        }}
-                      >
-                        <strong>Note:</strong>{" "}
-                        {coachConfig?.coach_tab?.booking?.ai_disclaimer
-                          ? coachConfig.coach_tab.booking.ai_disclaimer.replace(
-                              "{coach_name}",
-                              user.coach.business_name,
-                            )
-                          : `Responses are AI-generated and not directly from ${user.coach.business_name}.`}
-                      </p>
-                    </div>
-                  </div>
+                  </>
                 )}
 
                 {/* Booking Modal */}
@@ -5684,13 +5617,35 @@ function UserDashboardContent() {
               <div
                 style={{ display: "flex", flexDirection: "column", gap: "12px" }}
               >
+                <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.5px", margin: "4px 0 0" }}>
+                  {coachConfig?.focus_tab?.task_1?.title || "Morning Practice"}
+                </h3>
                 {audioLibrary.map((audio) => {
                   const isToday = audio.audio_path === todayPath;
                   const isActive = libraryPlayingPath === audio.audio_path;
                   const isFav = userFavorites.has(audio.audio_path);
 
                   return (
-                    <div key={audio.audio_path || audio.id}>
+                    <div key={audio.audio_path || audio.id} style={{ position: "relative" }}>
+                      {isToday && (
+                        <span
+                          style={{
+                            position: "absolute",
+                            top: "-9px",
+                            left: "16px",
+                            fontSize: "10px",
+                            fontWeight: 700,
+                            letterSpacing: "0.5px",
+                            textTransform: "uppercase",
+                            color: coachConfig?.branding?.primary_color || "#ef4444",
+                            backgroundColor: "#fff",
+                            padding: "0 6px",
+                            zIndex: 1,
+                          }}
+                        >
+                          Today
+                        </span>
+                      )}
                       <div
                         style={{
                           backgroundColor: "#fff",
@@ -5742,26 +5697,7 @@ function UserDashboardContent() {
                               >
                                 {(audio.name || `Day ${audio.id + 1}`).replace(/\.[^.]+$/, "")}
                               </h3>
-                              {isToday && (
-                                <span
-                                  style={{
-                                    fontSize: "11px",
-                                    fontWeight: 600,
-                                    color: coachConfig?.branding?.primary_color || "#ef4444",
-                                    backgroundColor: `${coachConfig?.branding?.primary_color || "#ef4444"}15`,
-                                    padding: "2px 8px",
-                                    borderRadius: "10px",
-                                    whiteSpace: "nowrap",
-                                    flexShrink: 0,
-                                  }}
-                                >
-                                  Today
-                                </span>
-                              )}
                             </div>
-                            <p style={{ fontSize: "13px", color: "#6b7280", margin: "2px 0 0" }}>
-                              {coachConfig?.focus_tab?.task_1?.title || "Morning Practice"}
-                            </p>
                           </div>
                           <button
                             onClick={() => {
@@ -7256,7 +7192,7 @@ function UserDashboardContent() {
         </div>
       )}
 
-      {!isPreviewMode && <HelpWidget />}
+      {!isPreviewMode && <HelpWidget color={primaryColor} />}
     </div>
   );
 }
