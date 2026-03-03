@@ -11,14 +11,26 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // If user doesn't have a coach_id, return default config
-    if (!user.coach_id) {
+    // Determine the coach_id to load config for
+    let coachId = user.coach_id;
+
+    // If user is a coach with no coach_id, look up their own coach record
+    if (!coachId && user.role === "coach") {
+      const { data: ownCoach } = await supabase
+        .from("coaches")
+        .select("id")
+        .eq("profile_id", user.id)
+        .single();
+      coachId = ownCoach?.id;
+    }
+
+    if (!coachId) {
       return NextResponse.json({ config: null });
     }
 
     // Get coach config
     const { data, error } = await supabase.rpc("get_or_create_coach_config", {
-      p_coach_id: user.coach_id,
+      p_coach_id: coachId,
     });
 
     if (error) {

@@ -95,10 +95,11 @@ function LoginContent({ coachSlug, initialCoachData }) {
 
       // Determine redirect path
       let redirectPath;
-      if (data.profile.role === "coach") {
+      if (data.profile.role === "coach" && !coachSlug) {
+        // Coach logging in from the main login page goes to coach dashboard
         redirectPath = "/dashboard";
       } else {
-        // All end users go to /user/dashboard regardless of coach slug
+        // Users and coaches logging in from a companion login page go to user dashboard
         redirectPath = "/user/dashboard";
       }
 

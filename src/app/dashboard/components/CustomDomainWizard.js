@@ -46,7 +46,7 @@ export default function CustomDomainWizard() {
                 domain.full_domain,
               );
               setSuccess(
-                "✓ SSL certificate is now active! Your domain is fully ready.",
+                "SSL certificate is now active. Your domain is fully ready.",
               );
             }
           }
@@ -174,7 +174,7 @@ export default function CustomDomainWizard() {
       if (data.success) {
         if (data.ssl_status === "active") {
           setSuccess(
-            "✓ SSL certificate is now active! Your domain is fully ready.",
+            "SSL certificate is now active. Your domain is fully ready.",
           );
         } else {
           setSuccess(
@@ -220,7 +220,7 @@ export default function CustomDomainWizard() {
     const badges = {
       pending: { bg: "#FEF3C7", color: "#92400E", text: "Pending Setup" },
       verifying: { bg: "#DBEAFE", color: "#1E40AF", text: "Verifying..." },
-      verified: { bg: "#D1FAE5", color: "#065F46", text: "Verified ✓" },
+      verified: { bg: "#D1FAE5", color: "#065F46", text: "Verified" },
       failed: { bg: "#FEE2E2", color: "#991B1B", text: "Failed" },
       disabled: { bg: "#F3F4F6", color: "#6B7280", text: "Disabled" },
     };
@@ -261,7 +261,7 @@ export default function CustomDomainWizard() {
               color: sslStatus === "active" ? "#065F46" : "#92400E",
             }}
           >
-            {sslStatus === "active" ? "SSL Active 🔒" : "SSL Pending"}
+            {sslStatus === "active" ? "SSL Active" : "SSL Pending"}
           </span>
         )}
       </div>
@@ -304,7 +304,7 @@ export default function CustomDomainWizard() {
                 fontWeight: "600",
               }}
             >
-              🔄 Auto-checking SSL status...
+              Auto-checking SSL status...
             </span>
           )}
         </div>
@@ -356,7 +356,7 @@ export default function CustomDomainWizard() {
             border: "2px dashed #D1D5DB",
           }}
         >
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}>🌐</div>
+          <div style={{ fontSize: "48px", marginBottom: "16px" }}></div>
           <h3
             style={{ fontSize: "20px", fontWeight: "600", marginBottom: "8px" }}
           >
@@ -401,7 +401,7 @@ export default function CustomDomainWizard() {
               fontSize: "14px",
             }}
           >
-            ℹ️ Only one custom domain is allowed per coach account.
+            Only one custom domain is allowed per coach account.
           </div>
 
           {/* Domains List */}
@@ -518,7 +518,7 @@ export default function CustomDomainWizard() {
                         marginBottom: "12px",
                       }}
                     >
-                      📋 DNS Configuration Instructions
+                      DNS Configuration Instructions
                     </h4>
                     <p
                       style={{
@@ -571,7 +571,7 @@ export default function CustomDomainWizard() {
                               marginBottom: "8px",
                             }}
                           >
-                            ⚠️ Ownership Verification Required
+                            Ownership Verification Required
                           </p>
                           <p
                             style={{
@@ -618,7 +618,7 @@ export default function CustomDomainWizard() {
                               marginTop: "8px",
                             }}
                           >
-                            💡 After adding both the A record and TXT record,
+                            After adding both the A record and TXT record,
                             click "Verify" to complete the setup.
                           </p>
                         </div>
@@ -635,7 +635,7 @@ export default function CustomDomainWizard() {
                             marginBottom: "8px",
                           }}
                         >
-                          ⚠️ Ownership Verification Required
+                          Ownership Verification Required
                         </p>
                         <p
                           style={{
@@ -680,7 +680,7 @@ export default function CustomDomainWizard() {
                         marginTop: "12px",
                       }}
                     >
-                      ⏱️ DNS propagation can take up to 48 hours. Click "Verify"
+                      DNS propagation can take up to 48 hours. Click "Verify"
                       to check status.
                     </p>
                     {domain.failed_reason && (
@@ -694,7 +694,7 @@ export default function CustomDomainWizard() {
                           fontSize: "14px",
                         }}
                       >
-                        ❌ {domain.failed_reason}
+                        {domain.failed_reason}
                       </div>
                     )}
                   </div>
@@ -715,7 +715,7 @@ export default function CustomDomainWizard() {
                         color: "#065F46",
                       }}
                     >
-                      ✅ Domain Active!
+                      Domain Active!
                     </h4>
                     <p style={{ fontSize: "14px", color: "#047857" }}>
                       Your landing page is now accessible at{" "}
@@ -747,7 +747,7 @@ export default function CustomDomainWizard() {
                             marginBottom: "8px",
                           }}
                         >
-                          🔒 <strong>SSL Certificate Pending</strong>
+                          <strong>SSL Certificate Pending</strong>
                         </p>
                         <p
                           style={{
@@ -761,7 +761,7 @@ export default function CustomDomainWizard() {
                           5-30 minutes.
                         </p>
                         <p style={{ fontSize: "12px", color: "#92400E" }}>
-                          💡{" "}
+                          {" "}
                           <em>
                             Tip: This page auto-refreshes every 60 seconds, or
                             click "Check SSL Status" above to check manually.
@@ -777,7 +777,7 @@ export default function CustomDomainWizard() {
                           marginTop: "8px",
                         }}
                       >
-                        🔒 SSL certificate is active. Your domain is fully
+                        SSL certificate is active. Your domain is fully
                         secured with HTTPS!
                       </p>
                     )}

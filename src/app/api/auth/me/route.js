@@ -23,6 +23,13 @@ export async function GET() {
       }
     }
 
+    // If user is a coach, set coach_id to their own coach record's id
+    // so they can experience their own companion app from /user/dashboard.
+    // getCurrentUserWithCoach() already attaches the full coach object.
+    if (user.role === "coach" && user.coach?.id && !user.coach_id) {
+      user.coach_id = user.coach.id;
+    }
+
     return NextResponse.json({ user });
   } catch (error) {
     console.error("Get user error:", error);

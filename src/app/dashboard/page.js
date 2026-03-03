@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, memo, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -599,15 +599,66 @@ function ClientsSection() {
   );
 }
 
+const ProfileMenu = memo(function ProfileMenu({ userName, coachSlug, onLogout }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+      >
+        <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-xs shrink-0">
+          {userName?.charAt(0)}
+        </div>
+        <span className="text-sm font-medium text-gray-900">{userName}</span>
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-1 z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px]">
+            <div className="px-4 py-2 border-b border-gray-100">
+              <p className="text-sm font-medium text-gray-900 whitespace-nowrap">{userName}</p>
+              <p className="text-xs text-gray-500 whitespace-nowrap">{coachSlug}</p>
+            </div>
+            <button
+              onClick={() => {
+                setOpen(false);
+                window.open("/user/dashboard", "_blank");
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+              Try Your Companion
+            </button>
+            <button
+              onClick={onLogout}
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
+            >
+              Sign out
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+});
+
 function DashboardContent() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSectionRaw] = useState("config");
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const initialLoadDoneRef = useRef(false);
+  const loadGenRef = useRef(0);
   const [dirtyPanels, setDirtyPanels] = useState(new Set());
   const hasUnsavedChanges = dirtyPanels.size > 0;
 
@@ -710,7 +761,7 @@ function DashboardContent() {
     setPreviewPosition({ x: window.innerWidth - 420, y: 100 });
   }, []);
   const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const dragRef = useRef({ offsetX: 0, offsetY: 0 });
   const previewIframeRef = useRef(null);
   const focusPreviewRef = useRef(null);
   const [focusConfig, setFocusConfig] = useState({
@@ -1149,6 +1200,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
   useEffect(() => {
     if (user?.role === "coach") {
+      initialLoadDoneRef.current = false;
       if (user.coach) {
         setProfileConfig({
           business_name: user.coach.business_name || "",
@@ -1171,6 +1223,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       fetchTokenUsage();
     }
   }, [user]);
+
+  const isErrorToast = (msg) => /fail|error|unauthorized|invalid|must be|under \d+MB|please upload|session expired/i.test(msg);
+
+  const handleSessionExpired = () => {
+    setToastMessage("Session expired. Redirecting to login...");
+    setShowToast(true);
+    setTimeout(() => router.push("/coach/login"), 2000);
+  };
 
   const fetchCoachConfig = async () => {
     try {
@@ -1290,9 +1350,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     } catch (error) {
       console.error("Failed to fetch config:", error);
     }
+    loadGenRef.current += 1;
+    const gen = loadGenRef.current;
     setTimeout(() => {
-      initialLoadDoneRef.current = true;
-    }, 300);
+      if (gen === loadGenRef.current) {
+        setDirtyPanels(new Set());
+        initialLoadDoneRef.current = true;
+      }
+    }, 800);
   };
 
   useEffect(() => {
@@ -1417,38 +1482,41 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     }
   };
 
-  // Preview modal drag handlers
+  // Preview modal drag handlers — use refs to avoid re-rendering on every pixel
   const handlePreviewMouseDown = (e) => {
+    dragRef.current = {
+      offsetX: e.clientX - previewPosition.x,
+      offsetY: e.clientY - previewPosition.y,
+    };
     setIsDragging(true);
-    setDragOffset({
-      x: e.clientX - previewPosition.x,
-      y: e.clientY - previewPosition.y,
-    });
   };
 
   useEffect(() => {
+    if (!isDragging) return;
+
+    let rafId = null;
     const handlePreviewMouseMove = (e) => {
-      if (isDragging) {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
         setPreviewPosition({
-          x: e.clientX - dragOffset.x,
-          y: e.clientY - dragOffset.y,
+          x: e.clientX - dragRef.current.offsetX,
+          y: e.clientY - dragRef.current.offsetY,
         });
-      }
+      });
     };
 
     const handlePreviewMouseUp = () => {
+      if (rafId) cancelAnimationFrame(rafId);
       setIsDragging(false);
     };
 
-    if (isDragging) {
-      document.addEventListener("mousemove", handlePreviewMouseMove);
-      document.addEventListener("mouseup", handlePreviewMouseUp);
-      return () => {
-        document.removeEventListener("mousemove", handlePreviewMouseMove);
-        document.removeEventListener("mouseup", handlePreviewMouseUp);
-      };
-    }
-  }, [isDragging, dragOffset, previewPosition]);
+    document.addEventListener("mousemove", handlePreviewMouseMove);
+    document.addEventListener("mouseup", handlePreviewMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handlePreviewMouseMove);
+      document.removeEventListener("mouseup", handlePreviewMouseUp);
+    };
+  }, [isDragging]);
 
   // ── Resource Hub helpers ──
   const fetchRhCollections = async () => {
@@ -2096,7 +2164,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      setToastMessage("File size must be less than 5MB");
+      setToastMessage("Image must be under 5MB. Please resize or compress it.");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
       return;
@@ -2113,7 +2181,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         body: formData,
       });
 
-      const data = await res.json();
+      let data;
+      try { data = await res.json(); } catch { data = {}; }
 
       if (res.ok && data.url) {
         setProfileConfig((prev) => ({ ...prev, logo_url: data.url }));
@@ -2121,14 +2190,16 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         setToastMessage("Logo uploaded! Remember to save your profile.");
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
+      } else if (res.status === 401) {
+        handleSessionExpired();
       } else {
-        setToastMessage("" + (data.error || "Failed to upload logo"));
+        setToastMessage(data.error || "Failed to upload logo");
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       }
     } catch (error) {
       console.error("Upload error:", error);
-      setToastMessage("Failed to upload logo");
+      setToastMessage("Failed to upload logo. Check your connection and try again.");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } finally {
@@ -2174,7 +2245,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         body: formData,
       });
 
-      const data = await res.json();
+      let data;
+      try { data = await res.json(); } catch { data = {}; }
 
       if (res.ok && data.url) {
         setFocusConfig((prev) => ({
@@ -2190,14 +2262,16 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         );
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
+      } else if (res.status === 401) {
+        handleSessionExpired();
       } else {
-        setToastMessage("" + (data.error || "Failed to upload audio"));
+        setToastMessage(data.error || "Failed to upload audio");
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       }
     } catch (error) {
       console.error("Upload error:", error);
-      setToastMessage("Failed to upload audio");
+      setToastMessage("Failed to upload audio. Check your connection and try again.");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } finally {
@@ -2351,16 +2425,15 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         body: formData,
       });
 
-      const data = await res.json();
+      let data;
+      try { data = await res.json(); } catch { data = {}; }
 
       if (res.ok && data.url) {
-        // Get the duration from the audio file
         const audioDuration = await getAudioDuration(file);
 
         const newCategories = [...emotionalStateConfig.categories];
         newCategories[catIndex].options[optIndex].audio_url = data.url;
         newCategories[catIndex].options[optIndex].audio_path = data.path;
-        // Auto-detect and set duration from audio file
         newCategories[catIndex].options[optIndex].duration = audioDuration;
         setEmotionalStateConfig({
           ...emotionalStateConfig,
@@ -2371,14 +2444,16 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         );
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
+      } else if (res.status === 401) {
+        handleSessionExpired();
       } else {
-        setToastMessage("" + (data.error || "Failed to upload audio"));
+        setToastMessage(data.error || "Failed to upload audio");
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       }
     } catch (error) {
       console.error("Upload error:", error);
-      setToastMessage("Failed to upload audio");
+      setToastMessage("Failed to upload audio. Check your connection and try again.");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } finally {
@@ -2424,8 +2499,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       landing_cta:
         document.getElementById("profile-landing-cta")?.value ??
         profileConfig.landing_cta,
-      is_active:
-        document.getElementById("profile-is-active")?.checked ?? true,
+      is_active: true,
     };
 
     setProfileConfig(currentProfile);
@@ -2492,6 +2566,10 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         else if (section === "focus_tab") markPanelClean("focus");
         else if (section === "awareness_tab" || section === "emotional_state_tab") markPanelClean("awareness");
         else if (section === "coach_tab") markPanelClean("coach_tab");
+
+        if (["branding", "header", "focus_tab"].includes(section)) {
+          setTimeout(() => captureFocusScreenshot(), 500);
+        }
       } else {
         setToastMessage(
           "Failed to save config: " + (resData.error || "Unknown error"),
@@ -3071,37 +3149,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
         <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-end shrink-0 relative z-30">
-          <div className="relative">
-            <button
-              onClick={() => setShowProfileMenu((v) => !v)}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-            >
-              <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-xs shrink-0">
-                {user?.full_name?.charAt(0)}
-              </div>
-              <span className="text-sm font-medium text-gray-900">{user?.full_name}</span>
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {showProfileMenu && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)} />
-                <div className="absolute right-0 top-full mt-1 z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px]">
-                  <div className="px-4 py-2 border-b border-gray-100">
-                    <p className="text-sm font-medium text-gray-900 whitespace-nowrap">{user?.full_name}</p>
-                    <p className="text-xs text-gray-500 whitespace-nowrap">{coach?.slug}</p>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
-                  >
-                    Sign out
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          <ProfileMenu userName={user?.full_name} coachSlug={coach?.slug} onLogout={handleLogout} />
         </div>
 
         {/* Clients Section */}
@@ -4078,12 +4126,12 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               setShowToast(true);
                               setTimeout(() => setShowToast(false), 3000);
                             } else {
-                              setToastMessage("✗ Failed to save Kit settings");
+                              setToastMessage("Failed to save Kit settings");
                               setShowToast(true);
                               setTimeout(() => setShowToast(false), 3000);
                             }
                           } catch (error) {
-                            setToastMessage("✗ Error saving Kit settings");
+                            setToastMessage("Error saving Kit settings");
                             setShowToast(true);
                             setTimeout(() => setShowToast(false), 3000);
                           } finally {
@@ -4168,21 +4216,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
             {/* Config Content */}
             <div className="flex-1 overflow-y-auto p-8">
               <div className="max-w-4xl mx-auto space-y-8">
-                {/* Page Not Viewable Warning */}
-                {!coach?.is_active && (
-                  <div className="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 flex items-start gap-3">
-                    <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                    <div>
-                      <p className="text-sm font-medium text-red-800">Your landing page is not publicly viewable</p>
-                      <p className="text-xs text-red-600 mt-0.5">
-                        Visitors will see a maintenance page. To make it live, enable &ldquo;Make page viewable&rdquo; in the Landing Page Configuration section below and save.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
                 {/* Direct Signup Links */}
                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
                   <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
@@ -4732,34 +4765,55 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
                         <input
                           type="file"
-                          accept="image/*"
+                          accept="image/jpeg,image/png,image/gif,image/webp"
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
 
+                            const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+                            if (!validTypes.includes(file.type)) {
+                              setToastMessage("Please upload a valid image (JPEG, PNG, GIF, or WebP)");
+                              setShowToast(true);
+                              setTimeout(() => setShowToast(false), 3000);
+                              return;
+                            }
+                            if (file.size > 5 * 1024 * 1024) {
+                              setToastMessage("Image must be under 5MB. Please resize or compress it.");
+                              setShowToast(true);
+                              setTimeout(() => setShowToast(false), 3000);
+                              return;
+                            }
+
                             setUploadingAppLogo(true);
                             const formData = new FormData();
                             formData.append("file", file);
-                            formData.append("bucket", "public");
+                            formData.append("type", "logo");
 
                             try {
                               const res = await fetch("/api/upload", {
                                 method: "POST",
                                 body: formData,
                               });
-                              const data = await res.json();
+                              let data;
+                              try { data = await res.json(); } catch { data = {}; }
 
-                              if (res.ok) {
+                              if (res.ok && data.url) {
                                 setBrandingConfig({
                                   ...brandingConfig,
                                   app_logo_url: data.url,
                                 });
+                              } else if (res.status === 401) {
+                                handleSessionExpired();
                               } else {
-                                alert("Failed to upload logo");
+                                setToastMessage(data.error || "Failed to upload logo");
+                                setShowToast(true);
+                                setTimeout(() => setShowToast(false), 3000);
                               }
                             } catch (error) {
                               console.error("Upload error:", error);
-                              alert("Failed to upload logo");
+                              setToastMessage("Failed to upload logo. Check your connection and try again.");
+                              setShowToast(true);
+                              setTimeout(() => setShowToast(false), 3000);
                             } finally {
                               setUploadingAppLogo(false);
                             }
@@ -5055,29 +5109,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             previews when someone shares your landing page.
                           </p>
                         </div>
-                      </div>
-
-                      {/* Page Visibility */}
-                      <div className="pt-4 border-t border-gray-100">
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                          Visibility
-                        </h3>
-                        <label className="flex items-center gap-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            id="profile-is-active"
-                            defaultChecked={coach?.is_active}
-                            className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                          />
-                          <div>
-                            <div className="text-xs font-medium text-gray-700">
-                              Make page viewable
-                            </div>
-                            <div className="text-xs text-gray-400">
-                              When off, visitors see a maintenance page instead
-                            </div>
-                          </div>
-                        </label>
                       </div>
 
                       {/* Save Button */}
@@ -5590,7 +5621,12 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                             },
                                           );
 
-                                          const data = await res.json();
+                                          let data;
+                                          try {
+                                            data = await res.json();
+                                          } catch {
+                                            data = {};
+                                          }
 
                                           if (res.ok && data.url) {
                                             const newAudio = {
@@ -5611,11 +5647,12 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                               () => setShowToast(false),
                                               3000,
                                             );
+                                          } else if (res.status === 401) {
+                                            handleSessionExpired();
                                           } else {
                                             setToastMessage(
-                                              "" +
-                                                (data.error ||
-                                                  "Failed to upload audio"),
+                                              data.error ||
+                                                "Failed to upload audio. Please try again.",
                                             );
                                             setShowToast(true);
                                             setTimeout(
@@ -5626,7 +5663,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                         } catch (error) {
                                           console.error("Upload error:", error);
                                           setToastMessage(
-                                            "Failed to upload audio",
+                                            "Failed to upload audio. Check your connection and try again.",
                                           );
                                           setShowToast(true);
                                           setTimeout(
@@ -7024,34 +7061,55 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
                         <input
                           type="file"
-                          accept="image/*"
+                          accept="image/jpeg,image/png,image/gif,image/webp"
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
 
+                            const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+                            if (!validTypes.includes(file.type)) {
+                              setToastMessage("Please upload a valid image (JPEG, PNG, GIF, or WebP)");
+                              setShowToast(true);
+                              setTimeout(() => setShowToast(false), 3000);
+                              return;
+                            }
+                            if (file.size > 5 * 1024 * 1024) {
+                              setToastMessage("Image must be under 5MB. Please resize or compress it.");
+                              setShowToast(true);
+                              setTimeout(() => setShowToast(false), 3000);
+                              return;
+                            }
+
                             setUploadingBotProfilePicture(true);
                             const formData = new FormData();
                             formData.append("file", file);
-                            formData.append("bucket", "public");
+                            formData.append("type", "logo");
 
                             try {
                               const res = await fetch("/api/upload", {
                                 method: "POST",
                                 body: formData,
                               });
-                              const data = await res.json();
+                              let data;
+                              try { data = await res.json(); } catch { data = {}; }
 
-                              if (res.ok) {
+                              if (res.ok && data.url) {
                                 setCoachTabConfig({
                                   ...coachTabConfig,
                                   bot_profile_picture_url: data.url,
                                 });
+                              } else if (res.status === 401) {
+                                handleSessionExpired();
                               } else {
-                                alert("Failed to upload picture");
+                                setToastMessage(data.error || "Failed to upload picture");
+                                setShowToast(true);
+                                setTimeout(() => setShowToast(false), 3000);
                               }
                             } catch (error) {
                               console.error("Upload error:", error);
-                              alert("Failed to upload picture");
+                              setToastMessage("Failed to upload picture. Check your connection and try again.");
+                              setShowToast(true);
+                              setTimeout(() => setShowToast(false), 3000);
                             } finally {
                               setUploadingBotProfilePicture(false);
                             }
@@ -7327,6 +7385,39 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 + Add booking option
                               </button>
                             </div>
+
+                            {/* Suggest Booking During Long Sessions */}
+                            {(coachTabConfig.booking?.options || []).some(o => o.url) && (
+                              <div className="border-t border-gray-200 pt-4">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700">
+                                      Suggest Booking During Long Sessions
+                                    </label>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                      When a session enters "Wrap Up Soon" status, the AI will suggest booking a call and a booking button will appear in the chat
+                                    </p>
+                                  </div>
+                                  <label className="relative inline-flex items-center cursor-pointer ml-4 flex-shrink-0">
+                                    <input
+                                      type="checkbox"
+                                      checked={coachTabConfig.booking?.suggest_booking_in_session || false}
+                                      onChange={(e) =>
+                                        setCoachTabConfig({
+                                          ...coachTabConfig,
+                                          booking: {
+                                            ...coachTabConfig.booking,
+                                            suggest_booking_in_session: e.target.checked,
+                                          },
+                                        })
+                                      }
+                                      className="sr-only peer"
+                                    />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-400"></div>
+                                  </label>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -8430,6 +8521,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 width: "100%",
                 height: "100%",
                 border: "none",
+                pointerEvents: isDragging ? "none" : "auto",
               }}
               title="Mobile Preview"
             />
@@ -9157,11 +9249,9 @@ Remember: You're here to empower them to find their own answers, not to fix thei
             position: "fixed",
             bottom: "32px",
             right: "32px",
-            backgroundColor: toastMessage.startsWith("❌")
-              ? "#fef2f2"
-              : "#f0fdf4",
-            border: `1px solid ${toastMessage.startsWith("❌") ? "#fecaca" : "#bbf7d0"}`,
-            color: toastMessage.startsWith("❌") ? "#991b1b" : "#166534",
+            backgroundColor: isErrorToast(toastMessage) ? "#fef2f2" : "#f0fdf4",
+            border: `1px solid ${isErrorToast(toastMessage) ? "#fecaca" : "#bbf7d0"}`,
+            color: isErrorToast(toastMessage) ? "#991b1b" : "#166534",
             padding: "12px 20px",
             borderRadius: "12px",
             boxShadow: "0 4px 20px rgba(0,0,0,0.12)",

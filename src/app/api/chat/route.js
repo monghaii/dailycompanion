@@ -41,7 +41,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
 export async function POST(request) {
   try {
-    const { messages } = await request.json();
+    const { messages, messageCount } = await request.json();
 
     if (!CLAUDE_API_KEY) {
       return NextResponse.json(
@@ -110,6 +110,21 @@ export async function POST(request) {
 
       if (!configError && coachConfig?.config?.coach_tab?.system_prompt) {
         systemPrompt = coachConfig.config.coach_tab.system_prompt;
+      }
+
+      const booking = coachConfig?.config?.coach_tab?.booking;
+      const hasBookingUrls = booking?.enabled && (booking?.options || []).some(o => o.url);
+      const shouldSuggestBooking = booking?.suggest_booking_in_session && hasBookingUrls;
+
+      if (shouldSuggestBooking && messageCount > 25) {
+        const { data: coachProfile } = await supabase
+          .from("profiles")
+          .select("business_name")
+          .eq("id", profile.coach_id)
+          .single();
+        const coachName = coachProfile?.business_name || "your coach";
+
+        systemPrompt += `\n\nIMPORTANT SESSION CONTEXT: This conversation has been going for a while. In your next response, naturally wrap up by acknowledging the depth of the conversation and gently suggesting that the user could benefit from a live coaching session with ${coachName} to go even deeper. Mention that they can book a call directly from this app. Keep it warm and non-pushy — frame it as an opportunity, not a sales pitch. Do NOT repeat this suggestion if you've already made it in a previous message.`;
       }
     }
 

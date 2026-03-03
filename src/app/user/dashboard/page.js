@@ -25,7 +25,9 @@ function UserDashboardContent() {
   const [activeTab, setActiveTab] = useState(() => {
     return "focus";
   });
-  const [todayKey, setTodayKey] = useState(() => new Date().toLocaleDateString("en-CA"));
+  const [todayKey, setTodayKey] = useState(() =>
+    new Date().toLocaleDateString("en-CA"),
+  );
   const [dayNotes, setDayNotes] = useState("");
   const [completedTasks, setCompletedTasks] = useState({
     morning: false,
@@ -44,7 +46,9 @@ function UserDashboardContent() {
   const previousCompletedCount = useRef(0);
   const [showModal, setShowModal] = useState(false);
   const [selectedMindfulness, setSelectedMindfulness] = useState(null);
-  const [modalTime, setModalTime] = useState(() => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+  const [modalTime, setModalTime] = useState(() =>
+    new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+  );
   const [modalNotes, setModalNotes] = useState("");
   const [showEmotionalModal, setShowEmotionalModal] = useState(false);
   const [selectedEmotions, setSelectedEmotions] = useState([]);
@@ -119,7 +123,10 @@ function UserDashboardContent() {
     CH: { code: "chf", symbol: "CHF " },
     SG: { code: "sgd", symbol: "S$" },
   };
-  const coachCurrency = COUNTRY_CURRENCY[user?.coach?.stripe_country] || { code: "usd", symbol: "$" };
+  const coachCurrency = COUNTRY_CURRENCY[user?.coach?.stripe_country] || {
+    code: "usd",
+    symbol: "$",
+  };
   const cs = coachCurrency.symbol;
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -179,21 +186,7 @@ function UserDashboardContent() {
   const [rhAudioDuration, setRhAudioDuration] = useState(0);
   const rhAudioRef = useRef(null);
 
-  // Timezone utility functions
-  const getTodayInUserTimezone = () => {
-    const now = new Date();
-    const userDate = new Date(
-      now.toLocaleString("en-US", { timeZone: settingsTimezone }),
-    );
-    return userDate.toISOString().split("T")[0];
-  };
-
-  const formatDateInUserTimezone = (dateStr) => {
-    // Convert YYYY-MM-DD string to user's timezone
-    const [year, month, day] = dateStr.split("-").map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.toISOString().split("T")[0];
-  };
+  const getLocalToday = () => new Date().toLocaleDateString("en-CA");
 
   const getDaysSinceLibraryStart = () => {
     const startDate = coachConfig?.focus_tab?.library_start_date;
@@ -470,7 +463,11 @@ function UserDashboardContent() {
       const now = new Date().toLocaleDateString("en-CA");
       setTodayKey((prev) => {
         if (prev !== now) {
-          setCompletedTasks({ morning: false, intention: false, evening: false });
+          setCompletedTasks({
+            morning: false,
+            intention: false,
+            evening: false,
+          });
           setFocusEntry(null);
           setDayNotes("");
           setNotesModified(false);
@@ -486,13 +483,15 @@ function UserDashboardContent() {
       });
     };
 
-    document.addEventListener("visibilitychange", () => {
+    const onVisible = () => {
       if (!document.hidden) checkDayChange();
-    });
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
     const interval = setInterval(checkDayChange, 60_000);
 
     return () => {
-      document.removeEventListener("visibilitychange", checkDayChange);
+      document.removeEventListener("visibilitychange", onVisible);
       clearInterval(interval);
     };
   }, []);
@@ -517,7 +516,13 @@ function UserDashboardContent() {
 
   // Fetch resource hub collections when page opens
   useEffect(() => {
-    if (user && moreSubpage === "resources" && subscriptionStatus?.tier === 3 && rhCollections.length === 0 && !rhLoadingCollections) {
+    if (
+      user &&
+      moreSubpage === "resources" &&
+      subscriptionStatus?.tier === 3 &&
+      rhCollections.length === 0 &&
+      !rhLoadingCollections
+    ) {
       fetchRhCollections();
     }
   }, [user, moreSubpage, subscriptionStatus]);
@@ -692,7 +697,7 @@ function UserDashboardContent() {
 
   const fetchFocusEntry = async () => {
     try {
-      const todayStr = getTodayInUserTimezone();
+      const todayStr = getLocalToday();
       const res = await fetch(`/api/daily-entries/date?date=${todayStr}`);
       if (checkAuthResponse(res)) return;
       const data = await res.json();
@@ -787,7 +792,9 @@ function UserDashboardContent() {
         setTimeout(() => setShowToast(false), 3000);
         posthog.capture("day_notes_saved", {
           date: selectedInsightsDate,
-          word_count: dayNotesEdit ? dayNotesEdit.split(/\s+/).filter(Boolean).length : 0,
+          word_count: dayNotesEdit
+            ? dayNotesEdit.split(/\s+/).filter(Boolean).length
+            : 0,
         });
       }
     } catch (error) {
@@ -910,7 +917,9 @@ function UserDashboardContent() {
         const data = await res.json();
         setRhCollections(data.collections || []);
       }
-    } catch (e) { console.error("Failed to fetch resource hub:", e); }
+    } catch (e) {
+      console.error("Failed to fetch resource hub:", e);
+    }
     setRhLoadingCollections(false);
   };
 
@@ -918,7 +927,9 @@ function UserDashboardContent() {
     setRhLoadingItems(true);
     setRhActiveCollection(collectionId);
     try {
-      const res = await fetch(`/api/user/resource-hub?collectionId=${collectionId}`);
+      const res = await fetch(
+        `/api/user/resource-hub?collectionId=${collectionId}`,
+      );
       if (checkAuthResponse(res)) return;
       if (res.ok) {
         const data = await res.json();
@@ -929,7 +940,9 @@ function UserDashboardContent() {
           collection_name: data.collection?.name,
         });
       }
-    } catch (e) { console.error("Failed to fetch collection:", e); }
+    } catch (e) {
+      console.error("Failed to fetch collection:", e);
+    }
     setRhLoadingItems(false);
   };
 
@@ -938,9 +951,14 @@ function UserDashboardContent() {
       await fetch("/api/user/resource-hub/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content_item_id: contentItemId, collection_id: collectionId }),
+        body: JSON.stringify({
+          content_item_id: contentItemId,
+          collection_id: collectionId,
+        }),
       });
-    } catch (e) { console.error("Failed to mark viewed:", e); }
+    } catch (e) {
+      console.error("Failed to mark viewed:", e);
+    }
   };
 
   const handleContentAction = async (item, collection) => {
@@ -1129,8 +1147,14 @@ function UserDashboardContent() {
   };
 
   const handleLogout = async () => {
+    const isCoachUser = user?.role === "coach";
+    const coachSlug = user?.coach?.slug;
+    if (isCoachUser) {
+      window.location.href = "/dashboard";
+      return;
+    }
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
+    window.location.href = coachSlug ? `/login?coach=${coachSlug}` : "/login";
   };
 
   const toggleTask = async (task) => {
@@ -1153,7 +1177,7 @@ function UserDashboardContent() {
         evening: "task_3_completed",
       };
 
-      const todayStr = getTodayInUserTimezone();
+      const todayStr = getLocalToday();
       const res = await fetch("/api/daily-entries/focus", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -1194,7 +1218,7 @@ function UserDashboardContent() {
   const saveIntention = async (obstacles, focusWord) => {
     setIsSavingIntention(true);
     try {
-      const todayStr = getTodayInUserTimezone();
+      const todayStr = getLocalToday();
       const res = await fetch("/api/daily-entries/focus", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -1216,7 +1240,7 @@ function UserDashboardContent() {
         posthog.capture("intention_set", {
           has_obstacles: !!obstacles,
           has_focus_word: !!focusWord,
-          date: getTodayInUserTimezone(),
+          date: getLocalToday(),
         });
       }
     } catch (error) {
@@ -1248,7 +1272,7 @@ function UserDashboardContent() {
         setIsPlaying(false);
       });
       posthog.capture("morning_practice_audio_played", {
-        date: getTodayInUserTimezone(),
+        date: getLocalToday(),
       });
     }
   };
@@ -1397,7 +1421,9 @@ function UserDashboardContent() {
 
   const handleMindfulnessClick = (item) => {
     setSelectedMindfulness(item);
-    setModalTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+    setModalTime(
+      new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    );
     setShowModal(true);
   };
 
@@ -1664,6 +1690,7 @@ function UserDashboardContent() {
             role: m.role,
             content: m.content,
           })),
+          messageCount: newMessages.length,
         }),
       });
 
@@ -1846,6 +1873,49 @@ function UserDashboardContent() {
         paddingBottom: "80px",
       }}
     >
+      {/* Coach admin preview banner */}
+      {user?.role === "coach" && !isPreviewMode && (
+        <div
+          style={{
+            background: "linear-gradient(90deg, #1e293b 0%, #334155 100%)",
+            color: "#fff",
+            padding: "10px 20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "10px",
+            fontSize: "13px",
+            fontWeight: 500,
+            position: "sticky",
+            top: 0,
+            zIndex: 100,
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          <span>
+            You are viewing as <strong>coach admin</strong> — this is the {subscriptionStatus?.tier === 3 ? (user?.coach?.tier3_name || "Premium Plus") : "Premium"} user experience
+          </span>
+          <button
+            onClick={() => window.close() || (window.location.href = "/dashboard")}
+            style={{
+              marginLeft: "8px",
+              padding: "4px 12px",
+              backgroundColor: "rgba(255,255,255,0.15)",
+              color: "#fff",
+              border: "1px solid rgba(255,255,255,0.3)",
+              borderRadius: "6px",
+              fontSize: "12px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Exit
+          </button>
+        </div>
+      )}
+
       {/* Header with gradient or custom color */}
       <div
         style={{
@@ -1999,21 +2069,21 @@ function UserDashboardContent() {
               <div
                 style={{
                   backgroundColor: "#fff",
-                  padding: "20px",
+                  padding: "14px 16px",
                   borderRadius: "12px",
-                  marginBottom: "16px",
+                  marginBottom: "12px",
                   boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                 }}
               >
                 <div
-                  style={{ display: "flex", gap: "16px", marginBottom: "16px" }}
+                  style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "12px" }}
                 >
                   <div
                     style={{
-                      width: "56px",
-                      height: "56px",
+                      width: "40px",
+                      height: "40px",
                       backgroundColor: "#fff9e6",
-                      borderRadius: "12px",
+                      borderRadius: "10px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -2026,76 +2096,71 @@ function UserDashboardContent() {
                         src={coachConfig.focus_tab.task_1.icon_url}
                         alt="Task Icon"
                         style={{
-                          width: "36px",
-                          height: "36px",
+                          width: "24px",
+                          height: "24px",
                           objectFit: "contain",
                         }}
                       />
                     ) : (
-                      <Sun size={28} color="#f59e0b" strokeWidth={2} />
+                      <Sun size={20} color="#f59e0b" strokeWidth={2} />
                     )}
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        marginBottom: "4px",
+                        fontSize: "15px",
+                        fontWeight: 600,
+                        color: "#1a1a1a",
+                        margin: 0,
                       }}
                     >
-                      <h3
-                        style={{
-                          fontSize: "18px",
-                          fontWeight: 600,
-                          color: "#1a1a1a",
-                        }}
-                      >
-                        {coachConfig?.focus_tab?.task_1?.title ||
-                          "Morning Practice"}
-                      </h3>
-                      {getTodaysAudioPath() && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleFavorite(getTodaysAudioPath());
-                          }}
-                          style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: "0",
-                            display: "flex",
-                            alignItems: "center",
-                          }}
-                        >
-                          <Star
-                            size={20}
-                            fill={
-                              userFavorites.has(getTodaysAudioPath())
-                                ? "#f59e0b"
-                                : "none"
-                            }
-                            color="#f59e0b"
-                            strokeWidth={2}
-                          />
-                        </button>
-                      )}
-                    </div>
-                    <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                      {coachConfig?.focus_tab?.task_1?.title ||
+                        "Morning Practice"}
+                    </h3>
+                    <p style={{ fontSize: "13px", color: "#6b7280", margin: 0 }}>
                       {coachConfig?.focus_tab?.task_1?.subtitle ||
                         "Follow Your Spark • 7:00"}
                     </p>
                   </div>
+                  {getTodaysAudioPath() && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(getTodaysAudioPath());
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "0",
+                        display: "flex",
+                        alignItems: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Star
+                        size={18}
+                        fill={
+                          userFavorites.has(getTodaysAudioPath())
+                            ? "#f59e0b"
+                            : "none"
+                        }
+                        color="#f59e0b"
+                        strokeWidth={2}
+                      />
+                    </button>
+                  )}
                   <button
                     onClick={() => toggleTask("morning")}
                     style={{
-                      width: "28px",
-                      height: "28px",
+                      width: "24px",
+                      height: "24px",
                       borderRadius: "50%",
-                      border: completedTasks.morning ? "none" : "2px solid #d1d5db",
+                      border: completedTasks.morning
+                        ? "none"
+                        : "2px solid #d1d5db",
                       backgroundColor: completedTasks.morning
-                        ? (coachConfig?.branding?.primary_color || "#ef4444")
+                        ? coachConfig?.branding?.primary_color || "#ef4444"
                         : "#fff",
                       cursor: "pointer",
                       flexShrink: 0,
@@ -2106,8 +2171,19 @@ function UserDashboardContent() {
                     }}
                   >
                     {completedTasks.morning && (
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <path d="M2 7L5.5 10.5L12 3.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 14 14"
+                        fill="none"
+                      >
+                        <path
+                          d="M2 7L5.5 10.5L12 3.5"
+                          stroke="#fff"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
                     )}
                   </button>
@@ -2126,9 +2202,17 @@ function UserDashboardContent() {
                       onLoadedMetadata={handleLoadedMetadata}
                       onEnded={handleAudioEnded}
                       onPlay={() => setIsPlaying(true)}
-                      onPause={() => { if (audioRef.current && !audioRef.current.ended) setIsPlaying(false); }}
-                      onError={(e) => { console.error("Audio error:", e.target.error); setIsPlaying(false); }}
-                      onStalled={() => console.warn("Audio stalled - buffering")}
+                      onPause={() => {
+                        if (audioRef.current && !audioRef.current.ended)
+                          setIsPlaying(false);
+                      }}
+                      onError={(e) => {
+                        console.error("Audio error:", e.target.error);
+                        setIsPlaying(false);
+                      }}
+                      onStalled={() =>
+                        console.warn("Audio stalled - buffering")
+                      }
                       onWaiting={() => console.warn("Audio waiting for data")}
                       style={{ display: "none" }}
                     />
@@ -2138,13 +2222,13 @@ function UserDashboardContent() {
                       onClick={togglePlayPause}
                       style={{
                         width: "100%",
-                        padding: "16px",
+                        padding: "10px",
                         backgroundColor:
                           coachConfig?.branding?.primary_color || "#ef4444",
                         color: "#fff",
                         border: "none",
                         borderRadius: "8px",
-                        fontSize: "18px",
+                        fontSize: "14px",
                         fontWeight: 600,
                         cursor: "pointer",
                         display: "flex",
@@ -2222,9 +2306,9 @@ function UserDashboardContent() {
               <div
                 style={{
                   backgroundColor: "#fff",
-                  padding: "20px",
+                  padding: "14px 16px",
                   borderRadius: "12px",
-                  marginBottom: "16px",
+                  marginBottom: "12px",
                   boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                   cursor: "pointer",
                 }}
@@ -2233,14 +2317,14 @@ function UserDashboardContent() {
                 }}
               >
                 <div
-                  style={{ display: "flex", alignItems: "center", gap: "16px" }}
+                  style={{ display: "flex", alignItems: "center", gap: "12px" }}
                 >
                   <div
                     style={{
-                      width: "56px",
-                      height: "56px",
+                      width: "40px",
+                      height: "40px",
                       backgroundColor: "#f3e8ff",
-                      borderRadius: "12px",
+                      borderRadius: "10px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -2253,15 +2337,15 @@ function UserDashboardContent() {
                         src={coachConfig.focus_tab.task_2.icon_url}
                         alt="Task Icon"
                         style={{
-                          width: "36px",
-                          height: "36px",
+                          width: "24px",
+                          height: "24px",
                           objectFit: "contain",
                         }}
                       />
                     ) : (
                       <svg
-                        width="28"
-                        height="28"
+                        width="20"
+                        height="20"
                         viewBox="0 0 20 20"
                         fill="#a855f7"
                         xmlns="http://www.w3.org/2000/svg"
@@ -2273,16 +2357,16 @@ function UserDashboardContent() {
                   <div style={{ flex: 1 }}>
                     <h3
                       style={{
-                        fontSize: "18px",
+                        fontSize: "15px",
                         fontWeight: 600,
                         color: "#1a1a1a",
-                        marginBottom: "4px",
+                        margin: 0,
                       }}
                     >
                       {coachConfig?.focus_tab?.task_2?.title ||
                         "Daily Intention"}
                     </h3>
-                    <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                    <p style={{ fontSize: "13px", color: "#6b7280", margin: 0 }}>
                       {completedTasks.intention && intentionFocusWord
                         ? intentionFocusWord
                         : coachConfig?.focus_tab?.task_2?.subtitle ||
@@ -2292,8 +2376,8 @@ function UserDashboardContent() {
                   {completedTasks.intention ? (
                     <div
                       style={{
-                        width: "28px",
-                        height: "28px",
+                        width: "24px",
+                        height: "24px",
                         borderRadius: "50%",
                         backgroundColor:
                           coachConfig?.branding?.primary_color || "#ef4444",
@@ -2339,21 +2423,21 @@ function UserDashboardContent() {
               <div
                 style={{
                   backgroundColor: "#fff",
-                  padding: "20px",
+                  padding: "14px 16px",
                   borderRadius: "12px",
-                  marginBottom: "24px",
+                  marginBottom: "16px",
                   boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                   display: "flex",
                   alignItems: "center",
-                  gap: "16px",
+                  gap: "12px",
                 }}
               >
                 <div
                   style={{
-                    width: "56px",
-                    height: "56px",
+                    width: "40px",
+                    height: "40px",
                     backgroundColor: "#e0e7ff",
-                    borderRadius: "12px",
+                    borderRadius: "10px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -2366,15 +2450,15 @@ function UserDashboardContent() {
                       src={coachConfig.focus_tab.task_3.icon_url}
                       alt="Task Icon"
                       style={{
-                        width: "36px",
-                        height: "36px",
+                        width: "24px",
+                        height: "24px",
                         objectFit: "contain",
                       }}
                     />
                   ) : (
                     <svg
-                      width="28"
-                      height="28"
+                      width="20"
+                      height="20"
                       viewBox="0 0 20 20"
                       fill="#6366f1"
                       xmlns="http://www.w3.org/2000/svg"
@@ -2386,15 +2470,15 @@ function UserDashboardContent() {
                 <div style={{ flex: 1 }}>
                   <h3
                     style={{
-                      fontSize: "18px",
+                      fontSize: "15px",
                       fontWeight: 600,
                       color: "#1a1a1a",
-                      marginBottom: "4px",
+                      margin: 0,
                     }}
                   >
                     {coachConfig?.focus_tab?.task_3?.title || "Evening Review"}
                   </h3>
-                  <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                  <p style={{ fontSize: "13px", color: "#6b7280", margin: 0 }}>
                     {coachConfig?.focus_tab?.task_3?.subtitle ||
                       "Journal offline tonight"}
                   </p>
@@ -2402,12 +2486,14 @@ function UserDashboardContent() {
                 <button
                   onClick={() => toggleTask("evening")}
                   style={{
-                    width: "28px",
-                    height: "28px",
+                    width: "24px",
+                    height: "24px",
                     borderRadius: "50%",
-                    border: completedTasks.evening ? "none" : "2px solid #d1d5db",
+                    border: completedTasks.evening
+                      ? "none"
+                      : "2px solid #d1d5db",
                     backgroundColor: completedTasks.evening
-                      ? (coachConfig?.branding?.primary_color || "#ef4444")
+                      ? coachConfig?.branding?.primary_color || "#ef4444"
                       : "#fff",
                     cursor: "pointer",
                     flexShrink: 0,
@@ -2419,7 +2505,13 @@ function UserDashboardContent() {
                 >
                   {completedTasks.evening && (
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <path d="M2 7L5.5 10.5L12 3.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path
+                        d="M2 7L5.5 10.5L12 3.5"
+                        stroke="#fff"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   )}
                 </button>
@@ -2430,9 +2522,9 @@ function UserDashboardContent() {
             <div
               style={{
                 backgroundColor: "#fff",
-                padding: "24px",
+                padding: "14px 16px",
                 borderRadius: "12px",
-                marginBottom: "24px",
+                marginBottom: "16px",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
               }}
             >
@@ -2440,16 +2532,16 @@ function UserDashboardContent() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "12px",
-                  marginBottom: "16px",
+                  gap: "10px",
+                  marginBottom: "10px",
                 }}
               >
                 <div
                   style={{
-                    width: "48px",
-                    height: "48px",
+                    width: "36px",
+                    height: "36px",
                     backgroundColor: "#10b981",
-                    borderRadius: "12px",
+                    borderRadius: "10px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -2461,15 +2553,15 @@ function UserDashboardContent() {
                       src={coachConfig.focus_tab.day_notes.icon_url}
                       alt="Day Notes Icon"
                       style={{
-                        width: "32px",
-                        height: "32px",
+                        width: "22px",
+                        height: "22px",
                         objectFit: "contain",
                       }}
                     />
                   ) : (
                     <svg
-                      width="24"
-                      height="24"
+                      width="18"
+                      height="18"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="#ffffff"
@@ -2487,15 +2579,15 @@ function UserDashboardContent() {
                 <div>
                   <h3
                     style={{
-                      fontSize: "18px",
+                      fontSize: "15px",
                       fontWeight: 600,
                       color: "#1a1a1a",
-                      marginBottom: "2px",
+                      margin: 0,
                     }}
                   >
                     {coachConfig?.focus_tab?.day_notes?.title || "Day Notes"}
                   </h3>
-                  <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                  <p style={{ fontSize: "13px", color: "#6b7280", margin: 0 }}>
                     {coachConfig?.focus_tab?.day_notes?.subtitle ||
                       "Log observations to spot patterns"}
                   </p>
@@ -2529,7 +2621,10 @@ function UserDashboardContent() {
                     const res = await fetch("/api/daily-entries/focus", {
                       method: "PATCH",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ focus_notes: dayNotes }),
+                      body: JSON.stringify({
+                        focus_notes: dayNotes,
+                        date: getLocalToday(),
+                      }),
                     });
 
                     if (res.ok) {
@@ -2986,6 +3081,166 @@ function UserDashboardContent() {
                     ))}
                   </div>
 
+                  {/* Suggested Practice */}
+                  {showSuggestedPractice && selectedPractice && (
+                    <div
+                      ref={suggestedPracticeRef}
+                      style={{
+                        backgroundColor: "#eff6ff",
+                        padding: "20px",
+                        borderRadius: "12px",
+                        marginBottom: "24px",
+                        position: "relative",
+                      }}
+                    >
+                      <button
+                        onClick={() => {
+                          setShowSuggestedPractice(false);
+                          setSelectedPractice(null);
+                          setShowPracticeControls(false);
+                          setIsPracticePlaying(false);
+                          if (practiceAudioRef.current) {
+                            practiceAudioRef.current.pause();
+                            practiceAudioRef.current.currentTime = 0;
+                          }
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: "16px",
+                          right: "16px",
+                          background: "none",
+                          border: "none",
+                          fontSize: "20px",
+                          color: "#6b7280",
+                          cursor: "pointer",
+                        }}
+                      >
+                        ×
+                      </button>
+                      <h3
+                        style={{
+                          fontSize: "18px",
+                          fontWeight: 700,
+                          color: "#1a1a1a",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        Suggested Practice
+                      </h3>
+                      <p
+                        style={{
+                          fontSize: "14px",
+                          color: "#6b7280",
+                          marginBottom: "16px",
+                        }}
+                      >
+                        For when feeling {selectedPractice.name?.toLowerCase()}
+                      </p>
+                      <div
+                        style={{
+                          backgroundColor: "#fff",
+                          padding: "16px",
+                          borderRadius: "8px",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        <h4
+                          style={{
+                            fontSize: "16px",
+                            fontWeight: 600,
+                            color: "#1a1a1a",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          {selectedPractice.practice_name ||
+                            "Mindfulness Practice"}
+                        </h4>
+                        <p style={{ fontSize: "14px", color: "#3b82f6" }}>
+                          {selectedPractice.duration || ""}
+                        </p>
+                      </div>
+
+                      {selectedPractice.audio_url && (
+                        <div>
+                          <audio
+                            ref={practiceAudioRef}
+                            src={selectedPractice.audio_url}
+                            onTimeUpdate={handlePracticeTimeUpdate}
+                            onLoadedMetadata={handlePracticeLoadedMetadata}
+                            onEnded={handlePracticeAudioEnded}
+                            style={{ display: "none" }}
+                          />
+
+                          <button
+                            onClick={togglePracticePlayPause}
+                            style={{
+                              width: "100%",
+                              padding: "16px",
+                              backgroundColor: primaryColor,
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "8px",
+                              fontSize: "18px",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "10px",
+                              marginBottom: showPracticeControls ? "12px" : "0",
+                              transition: "background-color 0.2s",
+                              outline: "none",
+                            }}
+                            onMouseEnter={(e) =>
+                              (e.target.style.opacity = "0.9")
+                            }
+                            onMouseLeave={(e) => (e.target.style.opacity = "1")}
+                          >
+                            {showPracticeControls
+                              ? isPracticePlaying
+                                ? "Pause"
+                                : "Play"
+                              : "Start Practice"}
+                          </button>
+
+                          {showPracticeControls && (
+                            <>
+                              <div style={{ marginBottom: "8px" }}>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max={practiceDuration || 0}
+                                  value={practiceCurrentTime}
+                                  onChange={handlePracticeSeek}
+                                  style={{
+                                    width: "100%",
+                                    height: "6px",
+                                    borderRadius: "3px",
+                                    outline: "none",
+                                    cursor: "pointer",
+                                    accentColor: "#3b82f6",
+                                  }}
+                                />
+                              </div>
+
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  fontSize: "12px",
+                                  color: "#6b7280",
+                                }}
+                              >
+                                <span>{formatTime(practiceCurrentTime)}</span>
+                                <span>{formatTime(practiceDuration)}</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* EMOTIONAL STATE Section */}
                   <div>
                     <h3
@@ -3232,168 +3487,6 @@ function UserDashboardContent() {
                     </div>
                   )}
 
-                  {/* Suggested Practice */}
-                  {showSuggestedPractice && selectedPractice && (
-                    <div
-                      ref={suggestedPracticeRef}
-                      style={{
-                        backgroundColor: "#eff6ff",
-                        padding: "20px",
-                        borderRadius: "12px",
-                        marginTop: "24px",
-                        position: "relative",
-                      }}
-                    >
-                      <button
-                        onClick={() => {
-                          setShowSuggestedPractice(false);
-                          setSelectedPractice(null);
-                          setShowPracticeControls(false);
-                          setIsPracticePlaying(false);
-                          if (practiceAudioRef.current) {
-                            practiceAudioRef.current.pause();
-                            practiceAudioRef.current.currentTime = 0;
-                          }
-                        }}
-                        style={{
-                          position: "absolute",
-                          top: "16px",
-                          right: "16px",
-                          background: "none",
-                          border: "none",
-                          fontSize: "20px",
-                          color: "#6b7280",
-                          cursor: "pointer",
-                        }}
-                      >
-                        ×
-                      </button>
-                      <h3
-                        style={{
-                          fontSize: "18px",
-                          fontWeight: 700,
-                          color: "#1a1a1a",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        Suggested Practice
-                      </h3>
-                      <p
-                        style={{
-                          fontSize: "14px",
-                          color: "#6b7280",
-                          marginBottom: "16px",
-                        }}
-                      >
-                        For when feeling {selectedPractice.name?.toLowerCase()}
-                      </p>
-                      <div
-                        style={{
-                          backgroundColor: "#fff",
-                          padding: "16px",
-                          borderRadius: "8px",
-                          marginBottom: "12px",
-                        }}
-                      >
-                        <h4
-                          style={{
-                            fontSize: "16px",
-                            fontWeight: 600,
-                            color: "#1a1a1a",
-                            marginBottom: "4px",
-                          }}
-                        >
-                          {selectedPractice.practice_name ||
-                            "Mindfulness Practice"}
-                        </h4>
-                        <p style={{ fontSize: "14px", color: "#3b82f6" }}>
-                          {selectedPractice.duration || ""}
-                        </p>
-                      </div>
-
-                      {selectedPractice.audio_url && (
-                        <div>
-                          <audio
-                            ref={practiceAudioRef}
-                            src={selectedPractice.audio_url}
-                            onTimeUpdate={handlePracticeTimeUpdate}
-                            onLoadedMetadata={handlePracticeLoadedMetadata}
-                            onEnded={handlePracticeAudioEnded}
-                            style={{ display: "none" }}
-                          />
-
-                          {/* Play/Pause Button */}
-                          <button
-                            onClick={togglePracticePlayPause}
-                            style={{
-                              width: "100%",
-                              padding: "16px",
-                              backgroundColor: primaryColor,
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "8px",
-                              fontSize: "18px",
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: "10px",
-                              marginBottom: showPracticeControls ? "12px" : "0",
-                              transition: "background-color 0.2s",
-                              outline: "none",
-                            }}
-                            onMouseEnter={(e) =>
-                              (e.target.style.opacity = "0.9")
-                            }
-                            onMouseLeave={(e) => (e.target.style.opacity = "1")}
-                          >
-                            {showPracticeControls
-                              ? isPracticePlaying
-                                ? "Pause"
-                                : "Play"
-                              : "Start Practice"}
-                          </button>
-
-                          {/* Progress Bar - Only show after first click */}
-                          {showPracticeControls && (
-                            <>
-                              <div style={{ marginBottom: "8px" }}>
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max={practiceDuration || 0}
-                                  value={practiceCurrentTime}
-                                  onChange={handlePracticeSeek}
-                                  style={{
-                                    width: "100%",
-                                    height: "6px",
-                                    borderRadius: "3px",
-                                    outline: "none",
-                                    cursor: "pointer",
-                                    accentColor: "#3b82f6",
-                                  }}
-                                />
-                              </div>
-
-                              {/* Time Display */}
-                              <div
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  fontSize: "12px",
-                                  color: "#6b7280",
-                                }}
-                              >
-                                <span>{formatTime(practiceCurrentTime)}</span>
-                                <span>{formatTime(practiceDuration)}</span>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
 
                   {/* Entries for this day */}
                 </>
@@ -3560,7 +3653,24 @@ function UserDashboardContent() {
                     }}
                   >
                     Coach Profile
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: showCoachProfile ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}><polyline points="6 9 12 15 18 9" /></svg>
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{
+                        transform: showCoachProfile
+                          ? "rotate(180deg)"
+                          : "rotate(0)",
+                        transition: "transform 0.2s",
+                      }}
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
                   </button>
 
                   {(() => {
@@ -3577,9 +3687,30 @@ function UserDashboardContent() {
                       statusLabel = "Wrap Up Soon";
                     }
                     return (
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: statusColor, flexShrink: 0 }} />
-                        <span style={{ fontSize: "14px", color: statusColor, fontWeight: 500, whiteSpace: "nowrap" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "8px",
+                            height: "8px",
+                            borderRadius: "50%",
+                            backgroundColor: statusColor,
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontSize: "14px",
+                            color: statusColor,
+                            fontWeight: 500,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
                           {statusLabel}
                         </span>
                       </div>
@@ -3723,38 +3854,106 @@ function UserDashboardContent() {
                         }}
                         aria-label="Close"
                       >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
                         </svg>
                       </button>
 
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: "20px" }}>
-                        {coachConfig?.coach_tab?.bot_profile_picture_url || user.coach.logo_url ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          textAlign: "center",
+                          marginBottom: "20px",
+                        }}
+                      >
+                        {coachConfig?.coach_tab?.bot_profile_picture_url ||
+                        user.coach.logo_url ? (
                           <img
-                            src={coachConfig?.coach_tab?.bot_profile_picture_url || user.coach.logo_url}
+                            src={
+                              coachConfig?.coach_tab?.bot_profile_picture_url ||
+                              user.coach.logo_url
+                            }
                             alt={user.coach.business_name}
-                            style={{ width: "90px", height: "90px", borderRadius: "50%", objectFit: "cover", marginBottom: "14px" }}
+                            style={{
+                              width: "90px",
+                              height: "90px",
+                              borderRadius: "50%",
+                              objectFit: "cover",
+                              marginBottom: "14px",
+                            }}
                           />
                         ) : (
-                          <div style={{ width: "90px", height: "90px", borderRadius: "50%", background: "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "32px", fontWeight: 700, marginBottom: "14px" }}>
-                            {user.coach.business_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                          <div
+                            style={{
+                              width: "90px",
+                              height: "90px",
+                              borderRadius: "50%",
+                              background:
+                                "linear-gradient(135deg, #ff6b9d 0%, #ffa057 100%)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "#fff",
+                              fontSize: "32px",
+                              fontWeight: 700,
+                              marginBottom: "14px",
+                            }}
+                          >
+                            {user.coach.business_name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .toUpperCase()
+                              .slice(0, 2)}
                           </div>
                         )}
-                        <h3 style={{ fontSize: "22px", fontWeight: 700, color: "#1a1a1a", margin: "0 0 8px" }}>
+                        <h3
+                          style={{
+                            fontSize: "22px",
+                            fontWeight: 700,
+                            color: "#1a1a1a",
+                            margin: "0 0 8px",
+                          }}
+                        >
                           {user.coach.business_name}
                         </h3>
-                        <p style={{ fontSize: "14px", lineHeight: "1.6", color: "#6b7280", margin: 0 }}>
-                          {user.coach.bio || coachConfig?.bio || "Your dedicated AI coach here to support your journey."}
+                        <p
+                          style={{
+                            fontSize: "14px",
+                            lineHeight: "1.6",
+                            color: "#6b7280",
+                            margin: 0,
+                          }}
+                        >
+                          {user.coach.bio ||
+                            coachConfig?.bio ||
+                            "Your dedicated AI coach here to support your journey."}
                         </p>
                       </div>
 
                       {coachConfig?.coach_tab?.booking?.enabled && (
                         <button
-                          onClick={() => { setShowCoachProfile(false); setShowBookingModal(true); }}
+                          onClick={() => {
+                            setShowCoachProfile(false);
+                            setShowBookingModal(true);
+                          }}
                           style={{
                             width: "100%",
                             padding: "14px",
-                            backgroundColor: coachConfig?.branding?.primary_color || "#ef4444",
+                            backgroundColor:
+                              coachConfig?.branding?.primary_color || "#ef4444",
                             color: "#ffffff",
                             border: "none",
                             borderRadius: "12px",
@@ -3768,19 +3967,55 @@ function UserDashboardContent() {
                             gap: "8px",
                           }}
                         >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                            <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect
+                              x="3"
+                              y="4"
+                              width="18"
+                              height="18"
+                              rx="2"
+                              ry="2"
+                            />
+                            <line x1="16" y1="2" x2="16" y2="6" />
+                            <line x1="8" y1="2" x2="8" y2="6" />
+                            <line x1="3" y1="10" x2="21" y2="10" />
                           </svg>
-                          {coachConfig?.coach_tab?.booking?.button_text || "Book a Call"}
+                          {coachConfig?.coach_tab?.booking?.button_text ||
+                            "Book a Call"}
                         </button>
                       )}
 
-                      <div style={{ backgroundColor: "#fefce8", border: "1px solid #fde68a", borderRadius: "10px", padding: "12px 14px" }}>
-                        <p style={{ fontSize: "13px", lineHeight: "1.5", color: "#92400e", margin: 0 }}>
+                      <div
+                        style={{
+                          backgroundColor: "#fefce8",
+                          border: "1px solid #fde68a",
+                          borderRadius: "10px",
+                          padding: "12px 14px",
+                        }}
+                      >
+                        <p
+                          style={{
+                            fontSize: "13px",
+                            lineHeight: "1.5",
+                            color: "#92400e",
+                            margin: 0,
+                          }}
+                        >
                           <strong>Note:</strong>{" "}
                           {coachConfig?.coach_tab?.booking?.ai_disclaimer
-                            ? coachConfig.coach_tab.booking.ai_disclaimer.replace("{coach_name}", user.coach.business_name)
+                            ? coachConfig.coach_tab.booking.ai_disclaimer.replaceAll(
+                                "{coach_name}",
+                                user.coach.business_name,
+                              )
                             : `Responses are AI-generated and not directly from ${user.coach.business_name}.`}
                         </p>
                       </div>
@@ -4095,13 +4330,21 @@ function UserDashboardContent() {
                         <img
                           src={coachConfig.coach_tab.bot_profile_picture_url}
                           alt="AI Coach"
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
                         />
                       ) : user?.coach?.logo_url ? (
                         <img
                           src={user.coach.logo_url}
                           alt={user.coach.business_name}
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
                         />
                       ) : user?.coach?.business_name ? (
                         user.coach.business_name
@@ -4150,6 +4393,59 @@ function UserDashboardContent() {
                     </div>
                   </div>
                 )}
+
+                {/* Inline Book a Call prompt during Wrap Up Soon */}
+                {chatMessages.length > 25 &&
+                  !isSendingChat &&
+                  coachConfig?.coach_tab?.booking?.enabled &&
+                  coachConfig?.coach_tab?.booking?.suggest_booking_in_session &&
+                  (coachConfig?.coach_tab?.booking?.options || []).some(o => o.url) && (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        marginBottom: "16px",
+                      }}
+                    >
+                      <button
+                        onClick={() => setShowBookingModal(true)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          padding: "12px 24px",
+                          backgroundColor: coachConfig?.branding?.primary_color || "#ef4444",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "16px",
+                          fontSize: "15px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                          transition: "opacity 0.2s",
+                        }}
+                        onMouseEnter={(e) => (e.target.style.opacity = "0.9")}
+                        onMouseLeave={(e) => (e.target.style.opacity = "1")}
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                          <line x1="16" y1="2" x2="16" y2="6" />
+                          <line x1="8" y1="2" x2="8" y2="6" />
+                          <line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
+                        {coachConfig?.coach_tab?.booking?.button_text || "Book a Call"}
+                      </button>
+                    </div>
+                  )}
 
                 {/* Spacer to allow scrolling past the input pill */}
                 <div style={{ height: "220px", width: "100%" }} />
@@ -4366,108 +4662,114 @@ function UserDashboardContent() {
                   id: "settings",
                   isPremium: false,
                 },
-              ].filter((item) => {
-                if (item.requiresTier3 && user?.coach?.tier3_enabled === false && subscriptionStatus?.tier !== 3) {
-                  return false;
-                }
-                return true;
-              }).map((item, idx) => {
-                const isLocked = item.requiresTier3
-                  ? subscriptionStatus?.tier !== 3
-                  : item.isPremium && !subscriptionStatus?.isPremium;
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => {
-                      setMoreSubpage(item.id);
-                      if (isLocked) {
-                        setUpgradeModalContext(item.title);
-                        setShowUpgradeModal(true);
-                      }
-                    }}
-                    style={{
-                      backgroundColor: "#fff",
-                      padding: "16px",
-                      borderRadius: "12px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "16px",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                      cursor: "pointer",
-                    }}
-                  >
+              ]
+                .filter((item) => {
+                  if (
+                    item.requiresTier3 &&
+                    user?.coach?.tier3_enabled === false &&
+                    subscriptionStatus?.tier !== 3
+                  ) {
+                    return false;
+                  }
+                  return true;
+                })
+                .map((item, idx) => {
+                  const isLocked = item.requiresTier3
+                    ? subscriptionStatus?.tier !== 3
+                    : item.isPremium && !subscriptionStatus?.isPremium;
+                  return (
                     <div
+                      key={idx}
+                      onClick={() => {
+                        setMoreSubpage(item.id);
+                        if (isLocked) {
+                          setUpgradeModalContext(item.title);
+                          setShowUpgradeModal(true);
+                        }
+                      }}
                       style={{
-                        width: "56px",
-                        height: "56px",
-                        backgroundColor: item.bgColor,
+                        backgroundColor: "#fff",
+                        padding: "16px",
                         borderRadius: "12px",
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
+                        gap: "16px",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                        cursor: "pointer",
                       }}
                     >
-                      {item.icon}
+                      <div
+                        style={{
+                          width: "56px",
+                          height: "56px",
+                          backgroundColor: item.bgColor,
+                          borderRadius: "12px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {item.icon}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <h3
+                          style={{
+                            fontSize: "18px",
+                            fontWeight: 600,
+                            color: "#1a1a1a",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          {item.title}
+                        </h3>
+                        <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                          {item.subtitle}
+                        </p>
+                      </div>
+                      {isLocked ? (
+                        <svg
+                          style={{
+                            width: "20px",
+                            height: "20px",
+                            color: "#fbbf24",
+                          }}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          style={{
+                            width: "20px",
+                            height: "20px",
+                            color: "#9ca3af",
+                          }}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      )}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <h3
-                        style={{
-                          fontSize: "18px",
-                          fontWeight: 600,
-                          color: "#1a1a1a",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        {item.title}
-                      </h3>
-                      <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                        {item.subtitle}
-                      </p>
-                    </div>
-                    {isLocked ? (
-                      <svg
-                        style={{
-                          width: "20px",
-                          height: "20px",
-                          color: "#fbbf24",
-                        }}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        style={{
-                          width: "20px",
-                          height: "20px",
-                          color: "#9ca3af",
-                        }}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
 
-            {/* Logout Button */}
+            {/* Logout / Back Button */}
             <button
               onClick={handleLogout}
               style={{
@@ -4476,177 +4778,481 @@ function UserDashboardContent() {
                 marginTop: "32px",
                 marginBottom: "32px",
                 backgroundColor: "#fff",
-                color: "#dc2626",
-                border: "1px solid #fecaca",
+                color: user?.role === "coach" ? "#4b5563" : "#dc2626",
+                border: user?.role === "coach" ? "1px solid #d1d5db" : "1px solid #fecaca",
                 borderRadius: "12px",
                 fontSize: "16px",
                 fontWeight: 600,
                 cursor: "pointer",
               }}
             >
-              Sign Out
+              {user?.role === "coach" ? "Back to Dashboard" : "Sign Out"}
             </button>
           </div>
         )}
 
         {/* Announcements Page */}
-        {activeTab === "more" && moreSubpage === "announcements" && (() => {
-          const ICON_PATHS = {
-            megaphone: "M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z",
-            bell: "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9",
-            star: "M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z",
-            info: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-            calendar: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
-            gift: "M12 8v13m0-13V6a4 4 0 00-4-4c-1.38 0-2.5.82-2.5 2S6.62 6 8 6h4zm0 0V6a4 4 0 014-4c1.38 0 2.5.82 2.5 2S17.38 6 16 6h-4zm-8 2h16v2H4v-2zm2 2v7a2 2 0 002 2h8a2 2 0 002-2v-7",
-            sparkles: "M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z",
-            heart: "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z",
-            lightning: "M13 10V3L4 14h7v7l9-11h-7z",
-            book: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253",
-            check: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
-            flag: "M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2z",
-            link: "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1",
-            rocket: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z",
-            users: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z",
-          };
-          const getIconPath = (key) => ICON_PATHS[key] || ICON_PATHS.megaphone;
-          const formatTimeAgo = (dateStr) => {
-            const diff = Date.now() - new Date(dateStr).getTime();
-            const mins = Math.floor(diff / 60000);
-            if (mins < 60) return `${mins}m ago`;
-            const hours = Math.floor(mins / 60);
-            if (hours < 24) return `${hours}h ago`;
-            const days = Math.floor(hours / 24);
-            if (days < 7) return `${days}d ago`;
-            return new Date(dateStr).toLocaleDateString();
-          };
+        {activeTab === "more" &&
+          moreSubpage === "announcements" &&
+          (() => {
+            const ICON_PATHS = {
+              megaphone:
+                "M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z",
+              bell: "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9",
+              star: "M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z",
+              info: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+              calendar:
+                "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
+              gift: "M12 8v13m0-13V6a4 4 0 00-4-4c-1.38 0-2.5.82-2.5 2S6.62 6 8 6h4zm0 0V6a4 4 0 014-4c1.38 0 2.5.82 2.5 2S17.38 6 16 6h-4zm-8 2h16v2H4v-2zm2 2v7a2 2 0 002 2h8a2 2 0 002-2v-7",
+              sparkles:
+                "M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z",
+              heart:
+                "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z",
+              lightning: "M13 10V3L4 14h7v7l9-11h-7z",
+              book: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253",
+              check: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+              flag: "M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2z",
+              link: "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1",
+              rocket:
+                "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z",
+              users:
+                "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z",
+            };
+            const getIconPath = (key) =>
+              ICON_PATHS[key] || ICON_PATHS.megaphone;
+            const formatTimeAgo = (dateStr) => {
+              const diff = Date.now() - new Date(dateStr).getTime();
+              const mins = Math.floor(diff / 60000);
+              if (mins < 60) return `${mins}m ago`;
+              const hours = Math.floor(mins / 60);
+              if (hours < 24) return `${hours}h ago`;
+              const days = Math.floor(hours / 24);
+              if (days < 7) return `${days}d ago`;
+              return new Date(dateStr).toLocaleDateString();
+            };
 
-          return (
-          <div style={{ marginTop: "24px", paddingBottom: "100px", position: "relative" }}>
-            {!subscriptionStatus?.isPremium && (
-              <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(255, 255, 255, 0.7)", backdropFilter: "blur(4px)", zIndex: 10, pointerEvents: "all", cursor: "not-allowed" }} />
-            )}
-            <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px", position: "relative", zIndex: 20 }}>
-              <button onClick={() => setMoreSubpage(null)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", padding: "0", color: "#1a1a1a" }}>←</button>
-              <h2 style={{ fontSize: "28px", fontWeight: 700, color: "#1a1a1a", margin: 0 }}>Announcements</h2>
-            </div>
-
-            {announcementsLoading ? (
-              <div style={{ textAlign: "center", padding: "60px 0" }}>
-                <div style={{ width: "32px", height: "32px", border: `2px solid ${primaryColor}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto" }} />
-              </div>
-            ) : userAnnouncements.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "60px 20px" }}>
-                <div style={{ width: "64px", height: "64px", borderRadius: "50%", backgroundColor: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                  <svg width="28" height="28" fill="none" stroke="#9ca3af" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    <path d={ICON_PATHS.megaphone} />
-                  </svg>
+            return (
+              <div
+                style={{
+                  marginTop: "24px",
+                  paddingBottom: "100px",
+                  position: "relative",
+                }}
+              >
+                {!subscriptionStatus?.isPremium && (
+                  <div
+                    style={{
+                      position: "fixed",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: "rgba(255, 255, 255, 0.7)",
+                      backdropFilter: "blur(4px)",
+                      zIndex: 10,
+                      pointerEvents: "all",
+                      cursor: "not-allowed",
+                    }}
+                  />
+                )}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    marginBottom: "24px",
+                    position: "relative",
+                    zIndex: 20,
+                  }}
+                >
+                  <button
+                    onClick={() => setMoreSubpage(null)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      fontSize: "24px",
+                      cursor: "pointer",
+                      padding: "0",
+                      color: "#1a1a1a",
+                    }}
+                  >
+                    ←
+                  </button>
+                  <h2
+                    style={{
+                      fontSize: "28px",
+                      fontWeight: 700,
+                      color: "#1a1a1a",
+                      margin: 0,
+                    }}
+                  >
+                    Announcements
+                  </h2>
                 </div>
-                <h3 style={{ fontSize: "18px", fontWeight: 600, color: "#1a1a1a", margin: "0 0 4px" }}>No announcements yet</h3>
-                <p style={{ fontSize: "14px", color: "#9ca3af", margin: 0 }}>Your coach hasn&apos;t posted any updates yet. Check back later.</p>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {userAnnouncements.map((a) => {
-                  const isPinned = a.is_pinned;
-                  return (
+
+                {announcementsLoading ? (
+                  <div style={{ textAlign: "center", padding: "60px 0" }}>
                     <div
-                      key={a.id}
                       style={{
-                        backgroundColor: isPinned ? `${primaryColor}10` : "#fff",
-                        padding: "14px",
-                        borderRadius: "10px",
-                        borderLeft: isPinned ? `3px solid ${primaryColor}` : "none",
-                        boxShadow: isPinned ? "none" : "0 1px 3px rgba(0,0,0,0.08)",
+                        width: "32px",
+                        height: "32px",
+                        border: `2px solid ${primaryColor}`,
+                        borderTopColor: "transparent",
+                        borderRadius: "50%",
+                        animation: "spin 1s linear infinite",
+                        margin: "0 auto",
+                      }}
+                    />
+                  </div>
+                ) : userAnnouncements.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                    <div
+                      style={{
+                        width: "64px",
+                        height: "64px",
+                        borderRadius: "50%",
+                        backgroundColor: "#f3f4f6",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "0 auto 16px",
                       }}
                     >
-                      <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+                      <svg
+                        width="28"
+                        height="28"
+                        fill="none"
+                        stroke="#9ca3af"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d={ICON_PATHS.megaphone} />
+                      </svg>
+                    </div>
+                    <h3
+                      style={{
+                        fontSize: "18px",
+                        fontWeight: 600,
+                        color: "#1a1a1a",
+                        margin: "0 0 4px",
+                      }}
+                    >
+                      No announcements yet
+                    </h3>
+                    <p
+                      style={{ fontSize: "14px", color: "#9ca3af", margin: 0 }}
+                    >
+                      Your coach hasn&apos;t posted any updates yet. Check back
+                      later.
+                    </p>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "10px",
+                    }}
+                  >
+                    {userAnnouncements.map((a) => {
+                      const isPinned = a.is_pinned;
+                      return (
                         <div
+                          key={a.id}
                           style={{
-                            width: "36px",
-                            height: "36px",
-                            backgroundColor: isPinned ? primaryColor : "#f3f4f6",
-                            borderRadius: "9px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
-                            marginTop: "2px",
+                            backgroundColor: isPinned
+                              ? `${primaryColor}10`
+                              : "#fff",
+                            padding: "14px",
+                            borderRadius: "10px",
+                            borderLeft: isPinned
+                              ? `3px solid ${primaryColor}`
+                              : "none",
+                            boxShadow: isPinned
+                              ? "none"
+                              : "0 1px 3px rgba(0,0,0,0.08)",
                           }}
                         >
-                          <svg width="18" height="18" fill="none" stroke={isPinned ? "#fff" : "#6b7280"} viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                            <path d={getIconPath(a.icon)} />
-                          </svg>
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
-                            <h3 style={{ fontSize: "15px", fontWeight: isPinned ? 700 : 600, color: isPinned ? primaryColor : "#1a1a1a", margin: 0 }}>{a.title}</h3>
-                            <span style={{ fontSize: "12px", color: "#9ca3af", whiteSpace: "nowrap", marginLeft: "10px" }}>{formatTimeAgo(a.created_at)}</span>
-                          </div>
-                          <p style={{ fontSize: "13px", color: isPinned ? "#374151" : "#6b7280", lineHeight: "1.5", margin: 0 }}>{a.body}</p>
-                          {a.link && (
-                            <a
-                              href={a.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "12px",
+                              alignItems: "flex-start",
+                            }}
+                          >
+                            <div
                               style={{
-                                display: "inline-flex",
+                                width: "36px",
+                                height: "36px",
+                                backgroundColor: isPinned
+                                  ? primaryColor
+                                  : "#f3f4f6",
+                                borderRadius: "9px",
+                                display: "flex",
                                 alignItems: "center",
-                                gap: "5px",
-                                marginTop: "6px",
-                                fontSize: "13px",
-                                fontWeight: 500,
-                                color: primaryColor,
-                                textDecoration: "none",
+                                justifyContent: "center",
+                                flexShrink: 0,
+                                marginTop: "2px",
                               }}
                             >
-                              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-                                <polyline points="15 3 21 3 21 9" />
-                                <line x1="10" y1="14" x2="21" y2="3" />
+                              <svg
+                                width="18"
+                                height="18"
+                                fill="none"
+                                stroke={isPinned ? "#fff" : "#6b7280"}
+                                viewBox="0 0 24 24"
+                                strokeWidth={2}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d={getIconPath(a.icon)} />
                               </svg>
-                              Open link
-                            </a>
-                          )}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "flex-start",
+                                  marginBottom: "4px",
+                                }}
+                              >
+                                <h3
+                                  style={{
+                                    fontSize: "15px",
+                                    fontWeight: isPinned ? 700 : 600,
+                                    color: isPinned ? primaryColor : "#1a1a1a",
+                                    margin: 0,
+                                  }}
+                                >
+                                  {a.title}
+                                </h3>
+                                <span
+                                  style={{
+                                    fontSize: "12px",
+                                    color: "#9ca3af",
+                                    whiteSpace: "nowrap",
+                                    marginLeft: "10px",
+                                  }}
+                                >
+                                  {formatTimeAgo(a.created_at)}
+                                </span>
+                              </div>
+                              <p
+                                style={{
+                                  fontSize: "13px",
+                                  color: isPinned ? "#374151" : "#6b7280",
+                                  lineHeight: "1.5",
+                                  margin: 0,
+                                }}
+                              >
+                                {a.body}
+                              </p>
+                              {a.link && (
+                                <a
+                                  href={a.link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "5px",
+                                    marginTop: "6px",
+                                    fontSize: "13px",
+                                    fontWeight: 500,
+                                    color: primaryColor,
+                                    textDecoration: "none",
+                                  }}
+                                >
+                                  <svg
+                                    width="12"
+                                    height="12"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    strokeWidth={2}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+                                    <polyline points="15 3 21 3 21 9" />
+                                    <line x1="10" y1="14" x2="21" y2="3" />
+                                  </svg>
+                                  Open link
+                                </a>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          );
-        })()}
+            );
+          })()}
 
         {/* Resource Hub Page */}
         {activeTab === "more" && moreSubpage === "resources" && (
-          <div style={{ marginTop: "24px", paddingBottom: "100px", position: "relative" }}>
+          <div
+            style={{
+              marginTop: "24px",
+              paddingBottom: "100px",
+              position: "relative",
+            }}
+          >
             {/* Locked Overlay - Only Tier 3 users can access */}
             {subscriptionStatus?.tier !== 3 && (
-              <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(255, 255, 255, 0.7)", backdropFilter: "blur(4px)", zIndex: 10, pointerEvents: "all", cursor: "not-allowed" }} />
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: "rgba(255, 255, 255, 0.7)",
+                  backdropFilter: "blur(4px)",
+                  zIndex: 10,
+                  pointerEvents: "all",
+                  cursor: "not-allowed",
+                }}
+              />
             )}
 
             {rhActiveCollection && typeof rhActiveCollection === "object" ? (
               /* ── Collection Detail View ── */
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px" }}>
-                  <button onClick={() => { setRhActiveCollection(null); setRhCollectionItems([]); setRhAudioPlayer(null); setRhVideoPlayer(null); fetchRhCollections(); }} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", padding: "0", color: "#1a1a1a" }}>←</button>
-                  <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#1a1a1a", margin: 0 }}>{rhActiveCollection.title}</h2>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      setRhActiveCollection(null);
+                      setRhCollectionItems([]);
+                      setRhAudioPlayer(null);
+                      setRhVideoPlayer(null);
+                      fetchRhCollections();
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      fontSize: "24px",
+                      cursor: "pointer",
+                      padding: "0",
+                      color: "#1a1a1a",
+                    }}
+                  >
+                    ←
+                  </button>
+                  <h2
+                    style={{
+                      fontSize: "24px",
+                      fontWeight: 700,
+                      color: "#1a1a1a",
+                      margin: 0,
+                    }}
+                  >
+                    {rhActiveCollection.title}
+                  </h2>
                 </div>
-                {rhActiveCollection.description && <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "20px" }}>{rhActiveCollection.description}</p>}
-                {rhActiveCollection.delivery_mode === "drip" && <div style={{ fontSize: "13px", color: primaryColor, backgroundColor: `${primaryColor}10`, border: `1px solid ${primaryColor}30`, borderRadius: "8px", padding: "8px 12px", marginBottom: "20px" }}>This is a drip collection — content unlocks progressively as you complete items.</div>}
+                {rhActiveCollection.description && (
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      color: "#6b7280",
+                      marginBottom: "20px",
+                    }}
+                  >
+                    {rhActiveCollection.description}
+                  </p>
+                )}
+                {rhActiveCollection.delivery_mode === "drip" && (
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      color: primaryColor,
+                      backgroundColor: `${primaryColor}10`,
+                      border: `1px solid ${primaryColor}30`,
+                      borderRadius: "8px",
+                      padding: "8px 12px",
+                      marginBottom: "20px",
+                    }}
+                  >
+                    This is a drip collection — content unlocks progressively as
+                    you complete items.
+                  </div>
+                )}
 
                 {rhLoadingItems ? (
-                  <div style={{ textAlign: "center", padding: "40px 0" }}><div style={{ width: "32px", height: "32px", border: `2px solid ${primaryColor}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto" }} /></div>
+                  <div style={{ textAlign: "center", padding: "40px 0" }}>
+                    <div
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        border: `2px solid ${primaryColor}`,
+                        borderTopColor: "transparent",
+                        borderRadius: "50%",
+                        animation: "spin 1s linear infinite",
+                        margin: "0 auto",
+                      }}
+                    />
+                  </div>
                 ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingBottom: "100px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                      paddingBottom: "100px",
+                    }}
+                  >
                     {rhCollectionItems.map((item, idx) => {
                       if (item.item_type === "pause") {
                         return (
-                          <div key={item.id || idx} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 16px", backgroundColor: item.locked ? "#fef3c7" : "#f0fdf4", borderRadius: "10px", border: `1px dashed ${item.locked ? "#fbbf24" : "#86efac"}` }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={item.locked ? "#d97706" : "#16a34a"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="M12 6v6l4 2" /></svg>
-                            <span style={{ fontSize: "14px", fontWeight: 600, color: item.locked ? "#92400e" : "#166534" }}>
-                              {item.locked ? `Wait ${item.days_remaining || item.pause_days || 1} more day${(item.days_remaining || item.pause_days || 1) !== 1 ? "s" : ""}` : `${item.pause_days || 1} day pause — complete!`}
+                          <div
+                            key={item.id || idx}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "12px",
+                              padding: "12px 16px",
+                              backgroundColor: item.locked
+                                ? "#fef3c7"
+                                : "#f0fdf4",
+                              borderRadius: "10px",
+                              border: `1px dashed ${item.locked ? "#fbbf24" : "#86efac"}`,
+                            }}
+                          >
+                            <svg
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke={item.locked ? "#d97706" : "#16a34a"}
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+                              <path d="M12 6v6l4 2" />
+                            </svg>
+                            <span
+                              style={{
+                                fontSize: "14px",
+                                fontWeight: 600,
+                                color: item.locked ? "#92400e" : "#166534",
+                              }}
+                            >
+                              {item.locked
+                                ? `Wait ${item.days_remaining || item.pause_days || 1} more day${(item.days_remaining || item.pause_days || 1) !== 1 ? "s" : ""}`
+                                : `${item.pause_days || 1} day pause — complete!`}
                             </span>
                           </div>
                         );
@@ -4656,33 +5262,216 @@ function UserDashboardContent() {
                       if (!content) return null;
                       const isLocked = item.locked;
                       const isViewed = item.viewed;
-                      const actionLabel = content.link_url ? "Open" : content.type === "video" ? "Watch" : content.type === "audio" ? "Listen" : "View";
+                      const actionLabel = content.link_url
+                        ? "Open"
+                        : content.type === "video"
+                          ? "Watch"
+                          : content.type === "audio"
+                            ? "Listen"
+                            : "View";
 
                       return (
-                        <div key={item.id || idx} style={{ backgroundColor: "#fff", borderRadius: "12px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", opacity: isLocked ? 0.5 : 1, pointerEvents: isLocked ? "none" : "auto", border: isViewed ? `1px solid ${primaryColor}40` : "1px solid #e5e7eb" }}>
-                          <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                            <div style={{ width: "36px", height: "36px", borderRadius: "8px", backgroundColor: content.type === "video" ? "#dbeafe" : content.type === "audio" ? "#fce7f3" : "#fef3c7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              {content.type === "video" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 7l-7 5 7 5V7z" /><path d="M1 5a2 2 0 012-2h11a2 2 0 012 2v14a2 2 0 01-2 2H3a2 2 0 01-2-2V5z" /></svg>}
-                              {content.type === "audio" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#be185d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0118 0v6" /><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3z" /><path d="M3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z" /></svg>}
-                              {content.type === "pdf" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><path d="M14 2v6h6" /><path d="M16 13H8" /><path d="M16 17H8" /></svg>}
+                        <div
+                          key={item.id || idx}
+                          style={{
+                            backgroundColor: "#fff",
+                            borderRadius: "12px",
+                            padding: "16px",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                            opacity: isLocked ? 0.5 : 1,
+                            pointerEvents: isLocked ? "none" : "auto",
+                            border: isViewed
+                              ? `1px solid ${primaryColor}40`
+                              : "1px solid #e5e7eb",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: "12px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: "36px",
+                                height: "36px",
+                                borderRadius: "8px",
+                                backgroundColor:
+                                  content.type === "video"
+                                    ? "#dbeafe"
+                                    : content.type === "audio"
+                                      ? "#fce7f3"
+                                      : "#fef3c7",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {content.type === "video" && (
+                                <svg
+                                  width="18"
+                                  height="18"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#2563eb"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M23 7l-7 5 7 5V7z" />
+                                  <path d="M1 5a2 2 0 012-2h11a2 2 0 012 2v14a2 2 0 01-2 2H3a2 2 0 01-2-2V5z" />
+                                </svg>
+                              )}
+                              {content.type === "audio" && (
+                                <svg
+                                  width="18"
+                                  height="18"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#be185d"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M3 18v-6a9 9 0 0118 0v6" />
+                                  <path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3z" />
+                                  <path d="M3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z" />
+                                </svg>
+                              )}
+                              {content.type === "pdf" && (
+                                <svg
+                                  width="18"
+                                  height="18"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#92400e"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                                  <path d="M14 2v6h6" />
+                                  <path d="M16 13H8" />
+                                  <path d="M16 17H8" />
+                                </svg>
+                              )}
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                                <h4 style={{ fontSize: "16px", fontWeight: 600, color: "#1a1a1a", margin: 0 }}>{content.title}</h4>
-                                {isViewed && <span style={{ fontSize: "11px", fontWeight: 700, color: primaryColor, backgroundColor: `${primaryColor}15`, padding: "2px 8px", borderRadius: "8px" }}>Viewed</span>}
-                                {!isViewed && !isLocked && <span style={{ fontSize: "11px", fontWeight: 700, color: "#16a34a", backgroundColor: "#f0fdf4", padding: "2px 8px", borderRadius: "8px" }}>New</span>}
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                  marginBottom: "4px",
+                                }}
+                              >
+                                <h4
+                                  style={{
+                                    fontSize: "16px",
+                                    fontWeight: 600,
+                                    color: "#1a1a1a",
+                                    margin: 0,
+                                  }}
+                                >
+                                  {content.title}
+                                </h4>
+                                {isViewed && (
+                                  <span
+                                    style={{
+                                      fontSize: "11px",
+                                      fontWeight: 700,
+                                      color: primaryColor,
+                                      backgroundColor: `${primaryColor}15`,
+                                      padding: "2px 8px",
+                                      borderRadius: "8px",
+                                    }}
+                                  >
+                                    Viewed
+                                  </span>
+                                )}
+                                {!isViewed && !isLocked && (
+                                  <span
+                                    style={{
+                                      fontSize: "11px",
+                                      fontWeight: 700,
+                                      color: "#16a34a",
+                                      backgroundColor: "#f0fdf4",
+                                      padding: "2px 8px",
+                                      borderRadius: "8px",
+                                    }}
+                                  >
+                                    New
+                                  </span>
+                                )}
                               </div>
-                              {content.description && <p style={{ fontSize: "13px", color: "#6b7280", margin: "0 0 8px 0" }}>{content.description}</p>}
-                              {content.duration && <span style={{ fontSize: "12px", color: "#9ca3af" }}>{content.duration}</span>}
+                              {content.description && (
+                                <p
+                                  style={{
+                                    fontSize: "13px",
+                                    color: "#6b7280",
+                                    margin: "0 0 8px 0",
+                                  }}
+                                >
+                                  {content.description}
+                                </p>
+                              )}
+                              {content.duration && (
+                                <span
+                                  style={{ fontSize: "12px", color: "#9ca3af" }}
+                                >
+                                  {content.duration}
+                                </span>
+                              )}
                             </div>
-                            {isLocked && <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2z" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>}
+                            {isLocked && (
+                              <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#9ca3af"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2z" />
+                                <path d="M7 11V7a5 5 0 0110 0v4" />
+                              </svg>
+                            )}
                           </div>
                           {!isLocked && (
                             <button
-                              onClick={() => handleContentAction(item, rhActiveCollection)}
-                              style={{ marginTop: "12px", width: "100%", padding: "10px", backgroundColor: primaryColor, color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                              onClick={() =>
+                                handleContentAction(item, rhActiveCollection)
+                              }
+                              style={{
+                                marginTop: "12px",
+                                width: "100%",
+                                padding: "10px",
+                                backgroundColor: primaryColor,
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "8px",
+                                fontSize: "14px",
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "8px",
+                              }}
                             >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                                stroke="none"
+                              >
+                                <polygon points="5 3 19 12 5 21 5 3" />
+                              </svg>
                               {actionLabel}
                             </button>
                           )}
@@ -4694,47 +5483,165 @@ function UserDashboardContent() {
 
                 {/* Audio Player Bar */}
                 {rhAudioPlayer && (
-                  <div style={{ position: "fixed", bottom: "80px", left: "16px", right: "16px", backgroundColor: "#fff", borderRadius: "16px", boxShadow: "0 4px 20px rgba(0,0,0,0.15)", padding: "12px 16px", zIndex: 30, border: `1px solid ${primaryColor}30` }}>
+                  <div
+                    style={{
+                      position: "fixed",
+                      bottom: "80px",
+                      left: "16px",
+                      right: "16px",
+                      backgroundColor: "#fff",
+                      borderRadius: "16px",
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                      padding: "12px 16px",
+                      zIndex: 30,
+                      border: `1px solid ${primaryColor}30`,
+                    }}
+                  >
                     <audio
                       ref={rhAudioRef}
                       src={rhAudioPlayer.url}
-                      onTimeUpdate={() => { if (rhAudioRef.current) setRhAudioTime(rhAudioRef.current.currentTime); }}
-                      onLoadedMetadata={() => { if (rhAudioRef.current) setRhAudioDuration(rhAudioRef.current.duration); }}
-                      onEnded={() => { setRhAudioPlaying(false); setRhAudioTime(0); }}
+                      onTimeUpdate={() => {
+                        if (rhAudioRef.current)
+                          setRhAudioTime(rhAudioRef.current.currentTime);
+                      }}
+                      onLoadedMetadata={() => {
+                        if (rhAudioRef.current)
+                          setRhAudioDuration(rhAudioRef.current.duration);
+                      }}
+                      onEnded={() => {
+                        setRhAudioPlaying(false);
+                        setRhAudioTime(0);
+                      }}
                     />
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                      }}
+                    >
                       <button
                         onClick={() => {
                           if (rhAudioRef.current) {
-                            if (rhAudioPlaying) { rhAudioRef.current.pause(); } else { rhAudioRef.current.play(); }
+                            if (rhAudioPlaying) {
+                              rhAudioRef.current.pause();
+                            } else {
+                              rhAudioRef.current.play();
+                            }
                             setRhAudioPlaying(!rhAudioPlaying);
                           }
                         }}
-                        style={{ width: "40px", height: "40px", borderRadius: "50%", backgroundColor: primaryColor, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                        style={{
+                          width: "40px",
+                          height: "40px",
+                          borderRadius: "50%",
+                          backgroundColor: primaryColor,
+                          border: "none",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
                       >
                         {rhAudioPlaying ? (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" stroke="none"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="#fff"
+                            stroke="none"
+                          >
+                            <rect x="6" y="4" width="4" height="16" />
+                            <rect x="14" y="4" width="4" height="16" />
+                          </svg>
                         ) : (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="#fff"
+                            stroke="none"
+                          >
+                            <polygon points="5 3 19 12 5 21 5 3" />
+                          </svg>
                         )}
                       </button>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: "13px", fontWeight: 600, color: "#1a1a1a", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rhAudioPlayer.title}</p>
+                        <p
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: 600,
+                            color: "#1a1a1a",
+                            margin: 0,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {rhAudioPlayer.title}
+                        </p>
                         <input
                           type="range"
                           min="0"
                           max={rhAudioDuration || 0}
                           value={rhAudioTime}
-                          onChange={(e) => { if (rhAudioRef.current) { rhAudioRef.current.currentTime = Number(e.target.value); setRhAudioTime(Number(e.target.value)); } }}
-                          style={{ width: "100%", height: "4px", marginTop: "4px", accentColor: primaryColor }}
+                          onChange={(e) => {
+                            if (rhAudioRef.current) {
+                              rhAudioRef.current.currentTime = Number(
+                                e.target.value,
+                              );
+                              setRhAudioTime(Number(e.target.value));
+                            }
+                          }}
+                          style={{
+                            width: "100%",
+                            height: "4px",
+                            marginTop: "4px",
+                            accentColor: primaryColor,
+                          }}
                         />
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#9ca3af" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            fontSize: "11px",
+                            color: "#9ca3af",
+                          }}
+                        >
                           <span>{formatRhTime(rhAudioTime)}</span>
                           <span>{formatRhTime(rhAudioDuration)}</span>
                         </div>
                       </div>
-                      <button onClick={() => { if (rhAudioRef.current) { rhAudioRef.current.pause(); } setRhAudioPlayer(null); setRhAudioPlaying(false); }} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", color: "#9ca3af" }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      <button
+                        onClick={() => {
+                          if (rhAudioRef.current) {
+                            rhAudioRef.current.pause();
+                          }
+                          setRhAudioPlayer(null);
+                          setRhAudioPlaying(false);
+                        }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: "4px",
+                          color: "#9ca3af",
+                        }}
+                      >
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
                       </button>
                     </div>
                   </div>
@@ -4742,15 +5649,81 @@ function UserDashboardContent() {
 
                 {/* Video Player Modal */}
                 {rhVideoPlayer && (
-                  <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.85)", zIndex: 50, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                    <div style={{ width: "100%", maxWidth: "640px", padding: "16px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                        <h3 style={{ color: "#fff", fontSize: "16px", fontWeight: 600, margin: 0 }}>{rhVideoPlayer.title}</h3>
-                        <button onClick={() => setRhVideoPlayer(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#fff", padding: "4px" }}>
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  <div
+                    style={{
+                      position: "fixed",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: "rgba(0,0,0,0.85)",
+                      zIndex: 50,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "100%",
+                        maxWidth: "640px",
+                        padding: "16px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        <h3
+                          style={{
+                            color: "#fff",
+                            fontSize: "16px",
+                            fontWeight: 600,
+                            margin: 0,
+                          }}
+                        >
+                          {rhVideoPlayer.title}
+                        </h3>
+                        <button
+                          onClick={() => setRhVideoPlayer(null)}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            color: "#fff",
+                            padding: "4px",
+                          }}
+                        >
+                          <svg
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                          </svg>
                         </button>
                       </div>
-                      <video src={rhVideoPlayer.url} controls autoPlay style={{ width: "100%", borderRadius: "12px", backgroundColor: "#000" }} />
+                      <video
+                        src={rhVideoPlayer.url}
+                        controls
+                        autoPlay
+                        style={{
+                          width: "100%",
+                          borderRadius: "12px",
+                          backgroundColor: "#000",
+                        }}
+                      />
                     </div>
                   </div>
                 )}
@@ -4758,40 +5731,206 @@ function UserDashboardContent() {
             ) : (
               /* ── Collections List View ── */
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px" }}>
-                  <button onClick={() => setMoreSubpage(null)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", padding: "0", color: "#1a1a1a" }}>←</button>
-                  <h2 style={{ fontSize: "28px", fontWeight: 700, color: "#1a1a1a", margin: 0 }}>Resource Hub</h2>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <button
+                    onClick={() => setMoreSubpage(null)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      fontSize: "24px",
+                      cursor: "pointer",
+                      padding: "0",
+                      color: "#1a1a1a",
+                    }}
+                  >
+                    ←
+                  </button>
+                  <h2
+                    style={{
+                      fontSize: "28px",
+                      fontWeight: 700,
+                      color: "#1a1a1a",
+                      margin: 0,
+                    }}
+                  >
+                    Resource Hub
+                  </h2>
                 </div>
-                <p style={{ fontSize: "16px", color: "#6b7280", marginBottom: "24px" }}>Your curated collection of tools & wisdom</p>
+                <p
+                  style={{
+                    fontSize: "16px",
+                    color: "#6b7280",
+                    marginBottom: "24px",
+                  }}
+                >
+                  Your curated collection of tools & wisdom
+                </p>
 
                 {rhLoadingCollections ? (
-                  <div style={{ textAlign: "center", padding: "40px 0" }}><div style={{ width: "32px", height: "32px", border: `2px solid ${primaryColor}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto" }} /></div>
+                  <div style={{ textAlign: "center", padding: "40px 0" }}>
+                    <div
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        border: `2px solid ${primaryColor}`,
+                        borderTopColor: "transparent",
+                        borderRadius: "50%",
+                        animation: "spin 1s linear infinite",
+                        margin: "0 auto",
+                      }}
+                    />
+                  </div>
                 ) : rhCollections.length === 0 ? (
-                  <div style={{ textAlign: "center", padding: "60px 20px", color: "#9ca3af" }}>
-                    <p style={{ fontSize: "16px", fontWeight: 500 }}>No collections available yet</p>
-                    <p style={{ fontSize: "14px", marginTop: "4px" }}>Your coach hasn&apos;t published any resource collections.</p>
+                  <div
+                    style={{
+                      textAlign: "center",
+                      padding: "60px 20px",
+                      color: "#9ca3af",
+                    }}
+                  >
+                    <p style={{ fontSize: "16px", fontWeight: 500 }}>
+                      No collections available yet
+                    </p>
+                    <p style={{ fontSize: "14px", marginTop: "4px" }}>
+                      Your coach hasn&apos;t published any resource collections.
+                    </p>
                   </div>
                 ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingBottom: "100px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                      paddingBottom: "100px",
+                    }}
+                  >
                     {rhCollections.map((col) => (
-                      <div key={col.id} onClick={() => openRhCollection(col.id)} style={{ backgroundColor: "#fff", padding: "16px 20px", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", cursor: "pointer", display: "flex", alignItems: "center", gap: "16px" }}>
-                        <div style={{ width: "48px", height: "48px", backgroundColor: "#f3f4f6", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" /></svg>
+                      <div
+                        key={col.id}
+                        onClick={() => openRhCollection(col.id)}
+                        style={{
+                          backgroundColor: "#fff",
+                          padding: "16px 20px",
+                          borderRadius: "12px",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "16px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "48px",
+                            height: "48px",
+                            backgroundColor: "#f3f4f6",
+                            borderRadius: "12px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <svg
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#6b7280"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                          </svg>
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                            <h3 style={{ fontSize: "17px", fontWeight: 700, color: "#1a1a1a", margin: 0 }}>{col.title}</h3>
-                            {col.viewed_count < col.item_count && col.item_count > 0 && (
-                              <span style={{ backgroundColor: primaryColor, color: "#fff", fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "12px", flexShrink: 0 }}>
-                                {col.item_count - col.viewed_count}
-                              </span>
-                            )}
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              marginBottom: "4px",
+                            }}
+                          >
+                            <h3
+                              style={{
+                                fontSize: "17px",
+                                fontWeight: 700,
+                                color: "#1a1a1a",
+                                margin: 0,
+                              }}
+                            >
+                              {col.title}
+                            </h3>
+                            {col.viewed_count < col.item_count &&
+                              col.item_count > 0 && (
+                                <span
+                                  style={{
+                                    backgroundColor: primaryColor,
+                                    color: "#fff",
+                                    fontSize: "11px",
+                                    fontWeight: 700,
+                                    padding: "2px 8px",
+                                    borderRadius: "12px",
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {col.item_count - col.viewed_count}
+                                </span>
+                              )}
                           </div>
-                          {col.description && <p style={{ fontSize: "14px", color: "#6b7280", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{col.description}</p>}
+                          {col.description && (
+                            <p
+                              style={{
+                                fontSize: "14px",
+                                color: "#6b7280",
+                                margin: 0,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {col.description}
+                            </p>
+                          )}
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-                          <span style={{ fontSize: "15px", color: "#9ca3af", fontWeight: 600 }}>{col.item_count}</span>
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "15px",
+                              color: "#9ca3af",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {col.item_count}
+                          </span>
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#9ca3af"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M9 5l7 7-7 7" />
+                          </svg>
                         </div>
                       </div>
                     ))}
@@ -4804,7 +5943,13 @@ function UserDashboardContent() {
 
         {/* Insights Page */}
         {activeTab === "more" && moreSubpage === "insights" && (
-          <div style={{ marginTop: "24px", paddingBottom: "100px", position: "relative" }}>
+          <div
+            style={{
+              marginTop: "12px",
+              paddingBottom: "100px",
+              position: "relative",
+            }}
+          >
             {/* Locked Overlay */}
             {!subscriptionStatus?.isPremium && (
               <div
@@ -4828,18 +5973,18 @@ function UserDashboardContent() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: "24px",
+                marginBottom: "12px",
               }}
             >
               <div
-                style={{ display: "flex", alignItems: "center", gap: "16px" }}
+                style={{ display: "flex", alignItems: "center", gap: "10px" }}
               >
                 <button
                   onClick={() => setMoreSubpage(null)}
                   style={{
                     background: "none",
                     border: "none",
-                    fontSize: "24px",
+                    fontSize: "20px",
                     cursor: "pointer",
                     padding: "0",
                     color: "#1a1a1a",
@@ -4849,7 +5994,7 @@ function UserDashboardContent() {
                 </button>
                 <h2
                   style={{
-                    fontSize: "28px",
+                    fontSize: "22px",
                     fontWeight: 700,
                     color: "#1a1a1a",
                     margin: 0,
@@ -4878,7 +6023,7 @@ function UserDashboardContent() {
                   >
                     ‹
                   </button>
-                  <span style={{ fontSize: "16px", fontWeight: 600 }}>
+                  <span style={{ fontSize: "14px", fontWeight: 600 }}>
                     {insightsMonth.toLocaleDateString("en-US", {
                       month: "long",
                       year: "numeric",
@@ -4908,21 +6053,21 @@ function UserDashboardContent() {
             <div
               style={{
                 display: "flex",
-                gap: "12px",
-                marginBottom: "24px",
+                gap: "8px",
+                marginBottom: "16px",
               }}
             >
               <button
                 onClick={() => setInsightsTab("focus")}
                 style={{
                   flex: 1,
-                  padding: "12px 24px",
+                  padding: "8px 12px",
                   backgroundColor:
                     insightsTab === "focus" ? "#3b82f6" : "#f3f4f6",
                   color: insightsTab === "focus" ? "#fff" : "#6b7280",
                   border: "none",
                   borderRadius: "8px",
-                  fontSize: "16px",
+                  fontSize: "13px",
                   fontWeight: 600,
                   cursor: "pointer",
                 }}
@@ -4933,13 +6078,13 @@ function UserDashboardContent() {
                 onClick={() => setInsightsTab("awareness")}
                 style={{
                   flex: 1,
-                  padding: "12px 24px",
+                  padding: "8px 12px",
                   backgroundColor:
                     insightsTab === "awareness" ? "#3b82f6" : "#f3f4f6",
                   color: insightsTab === "awareness" ? "#fff" : "#6b7280",
                   border: "none",
                   borderRadius: "8px",
-                  fontSize: "16px",
+                  fontSize: "13px",
                   fontWeight: 600,
                   cursor: "pointer",
                 }}
@@ -4955,10 +6100,10 @@ function UserDashboardContent() {
                 <div
                   style={{
                     backgroundColor: "#fff",
-                    padding: "24px",
+                    padding: "16px",
                     borderRadius: "12px",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                    marginBottom: selectedInsightsDate ? "16px" : "80px",
+                    marginBottom: selectedInsightsDate ? "12px" : "80px",
                   }}
                 >
                   <div
@@ -4966,12 +6111,12 @@ function UserDashboardContent() {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      marginBottom: "20px",
+                      marginBottom: "12px",
                     }}
                   >
                     <h3
                       style={{
-                        fontSize: "20px",
+                        fontSize: "16px",
                         fontWeight: 700,
                         color: "#1a1a1a",
                         margin: 0,
@@ -4979,7 +6124,7 @@ function UserDashboardContent() {
                     >
                       Your Journey
                     </h3>
-                    <span style={{ fontSize: "14px", color: "#9ca3af" }}>
+                    <span style={{ fontSize: "12px", color: "#9ca3af" }}>
                       Tap a day to add notes
                     </span>
                   </div>
@@ -4989,7 +6134,7 @@ function UserDashboardContent() {
                     style={{
                       display: "grid",
                       gridTemplateColumns: "repeat(7, 1fr)",
-                      gap: "8px",
+                      gap: "4px",
                     }}
                   >
                     {(() => {
@@ -5072,9 +6217,9 @@ function UserDashboardContent() {
                               style={{
                                 width: "100%",
                                 aspectRatio: "1",
-                                maxWidth: "44px",
+                                maxWidth: "38px",
                                 margin: "0 auto",
-                                borderRadius: "8px",
+                                borderRadius: "6px",
                                 backgroundColor: isSelected
                                   ? "#e0e7ff"
                                   : "#fff",
@@ -5084,7 +6229,7 @@ function UserDashboardContent() {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                fontSize: "14px",
+                                fontSize: "13px",
                                 fontWeight: 600,
                                 color: "#1a1a1a",
                               }}
@@ -5106,7 +6251,7 @@ function UserDashboardContent() {
                                       ? "#3b82f6"
                                       : "#f97316",
                                   borderRadius: "2px",
-                                  margin: "4px auto 0",
+                                  margin: "2px auto 0",
                                   maxWidth: "100%",
                                 }}
                               />
@@ -5123,7 +6268,7 @@ function UserDashboardContent() {
                   <div
                     style={{
                       backgroundColor: "#fff",
-                      padding: "24px",
+                      padding: "16px",
                       borderRadius: "12px",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                       marginBottom: "80px",
@@ -5254,12 +6399,12 @@ function UserDashboardContent() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    marginBottom: "24px",
+                    marginBottom: "12px",
                   }}
                 >
                   <h3
                     style={{
-                      fontSize: "24px",
+                      fontSize: "16px",
                       fontWeight: 700,
                       color: "#1a1a1a",
                       margin: 0,
@@ -5273,8 +6418,8 @@ function UserDashboardContent() {
                       setAwarenessTimeframe(parseInt(e.target.value))
                     }
                     style={{
-                      padding: "10px 40px 10px 16px",
-                      fontSize: "16px",
+                      padding: "6px 32px 6px 12px",
+                      fontSize: "13px",
                       border: "1px solid #e5e7eb",
                       borderRadius: "8px",
                       backgroundColor: "#fff",
@@ -5296,7 +6441,7 @@ function UserDashboardContent() {
                 <div
                   style={{
                     backgroundColor: "#fff",
-                    padding: "24px",
+                    padding: "16px",
                     borderRadius: "12px",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                     marginBottom: "80px",
@@ -5304,19 +6449,19 @@ function UserDashboardContent() {
                 >
                   <h3
                     style={{
-                      fontSize: "20px",
+                      fontSize: "16px",
                       fontWeight: 700,
                       color: "#1a1a1a",
-                      marginBottom: "8px",
+                      marginBottom: "4px",
                     }}
                   >
                     Your Emotional Landscape
                   </h3>
                   <p
                     style={{
-                      fontSize: "14px",
+                      fontSize: "12px",
                       color: "#9ca3af",
-                      marginBottom: "32px",
+                      marginBottom: "16px",
                     }}
                   >
                     Distribution of emotions logged (tap slices for details)
@@ -5331,8 +6476,9 @@ function UserDashboardContent() {
                         <div
                           style={{
                             textAlign: "center",
-                            padding: "48px",
+                            padding: "32px 16px",
                             color: "#9ca3af",
+                            fontSize: "14px",
                           }}
                         >
                           No emotional data logged in this timeframe
@@ -5376,13 +6522,13 @@ function UserDashboardContent() {
                           style={{
                             display: "flex",
                             justifyContent: "center",
-                            marginBottom: "32px",
-                            padding: "20px",
+                            marginBottom: "16px",
+                            padding: "2px",
                           }}
                         >
                           <svg
-                            width="280"
-                            height="280"
+                            width="200"
+                            height="200"
                             viewBox="0 0 200 200"
                             style={{ overflow: "visible" }}
                           >
@@ -5423,7 +6569,7 @@ function UserDashboardContent() {
                           style={{
                             display: "grid",
                             gridTemplateColumns: "repeat(2, 1fr)",
-                            gap: "16px",
+                            gap: "8px",
                           }}
                         >
                           {distribution.map((item, i) => (
@@ -5432,13 +6578,14 @@ function UserDashboardContent() {
                               style={{
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "12px",
+                                gap: "8px",
+                                minWidth: 0,
                               }}
                             >
                               <div
                                 style={{
-                                  width: "16px",
-                                  height: "16px",
+                                  width: "12px",
+                                  height: "12px",
                                   borderRadius: "50%",
                                   backgroundColor: getEmotionColor(
                                     item.categoryId,
@@ -5448,8 +6595,11 @@ function UserDashboardContent() {
                               />
                               <span
                                 style={{
-                                  fontSize: "16px",
+                                  fontSize: "13px",
                                   color: "#1a1a1a",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
                                 }}
                               >
                                 {item.emotion.charAt(0).toUpperCase() +
@@ -5469,371 +6619,444 @@ function UserDashboardContent() {
         )}
 
         {/* Library Page */}
-        {activeTab === "more" && moreSubpage === "library" && (() => {
-          const allAudios = (coachConfig?.focus_tab?.audio_library || []).filter(
-            (a) => a && a.audio_url,
-          );
-          const todayPath = getTodaysAudioPath();
-          const audioLibrary = libraryFilter === "favorites"
-            ? allAudios.filter((a) => userFavorites.has(a.audio_path))
-            : allAudios;
+        {activeTab === "more" &&
+          moreSubpage === "library" &&
+          (() => {
+            const allAudios = (
+              coachConfig?.focus_tab?.audio_library || []
+            ).filter((a) => a && a.audio_url);
+            const todayPath = getTodaysAudioPath();
+            const audioLibrary =
+              libraryFilter === "favorites"
+                ? allAudios.filter((a) => userFavorites.has(a.audio_path))
+                : allAudios;
 
-          return (
-          <div style={{ marginTop: "24px", paddingBottom: "100px", position: "relative" }}>
-            {/* Locked Overlay */}
-            {!subscriptionStatus?.isPremium && (
+            return (
               <div
                 style={{
-                  position: "fixed",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: "rgba(255, 255, 255, 0.7)",
-                  backdropFilter: "blur(4px)",
-                  zIndex: 10,
-                  pointerEvents: "all",
-                  cursor: "not-allowed",
-                }}
-              />
-            )}
-            {/* Back Button & Title */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
-                marginBottom: "24px",
-                position: "relative",
-                zIndex: 20,
-              }}
-            >
-              <button
-                onClick={() => {
-                  setMoreSubpage(null);
-                  setLibraryPlayingPath(null);
-                  setLibIsPlaying(false);
-                  if (libraryAudioRef.current) {
-                    libraryAudioRef.current.pause();
-                  }
-                }}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "24px",
-                  cursor: "pointer",
-                  padding: "0",
-                  color: "#1a1a1a",
+                  marginTop: "24px",
+                  paddingBottom: "100px",
+                  position: "relative",
                 }}
               >
-                ←
-              </button>
-              <h2
-                style={{
-                  fontSize: "28px",
-                  fontWeight: 700,
-                  color: "#1a1a1a",
-                  margin: 0,
-                }}
-              >
-                Library
-              </h2>
-            </div>
-
-            {/* Filter Chips */}
-            <div
-              style={{
-                display: "flex",
-                gap: "8px",
-                marginBottom: "20px",
-              }}
-            >
-              {[
-                { key: "all", label: "All" },
-                { key: "favorites", label: "Favorites" },
-              ].map((chip) => (
-                <button
-                  key={chip.key}
-                  onClick={() => setLibraryFilter(chip.key)}
+                {/* Locked Overlay */}
+                {!subscriptionStatus?.isPremium && (
+                  <div
+                    style={{
+                      position: "fixed",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: "rgba(255, 255, 255, 0.7)",
+                      backdropFilter: "blur(4px)",
+                      zIndex: 10,
+                      pointerEvents: "all",
+                      cursor: "not-allowed",
+                    }}
+                  />
+                )}
+                {/* Back Button & Title */}
+                <div
                   style={{
-                    padding: "8px 16px",
-                    backgroundColor:
-                      libraryFilter === chip.key
-                        ? coachConfig?.branding?.primary_color || "#ef4444"
-                        : "#f3f4f6",
-                    color: libraryFilter === chip.key ? "#fff" : "#6b7280",
-                    border: "none",
-                    borderRadius: "20px",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    marginBottom: "24px",
+                    position: "relative",
+                    zIndex: 20,
                   }}
                 >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
+                  <button
+                    onClick={() => {
+                      setMoreSubpage(null);
+                      setLibraryPlayingPath(null);
+                      setLibIsPlaying(false);
+                      if (libraryAudioRef.current) {
+                        libraryAudioRef.current.pause();
+                      }
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      fontSize: "24px",
+                      cursor: "pointer",
+                      padding: "0",
+                      color: "#1a1a1a",
+                    }}
+                  >
+                    ←
+                  </button>
+                  <h2
+                    style={{
+                      fontSize: "28px",
+                      fontWeight: 700,
+                      color: "#1a1a1a",
+                      margin: 0,
+                    }}
+                  >
+                    Library
+                  </h2>
+                </div>
 
-            {/* Hidden audio element for library playback */}
-            <audio
-              ref={libraryAudioRef}
-              preload="auto"
-              onTimeUpdate={() => {
-                if (!libraryAudioRef.current) return;
-                const now = Date.now();
-                if (!libraryAudioRef.current._lastUpdate || now - libraryAudioRef.current._lastUpdate > 250) {
-                  libraryAudioRef.current._lastUpdate = now;
-                  setLibCurrentTime(libraryAudioRef.current.currentTime);
-                }
-              }}
-              onLoadedMetadata={() => {
-                if (libraryAudioRef.current) setLibDuration(libraryAudioRef.current.duration);
-              }}
-              onPlay={() => setLibIsPlaying(true)}
-              onPause={() => { if (libraryAudioRef.current && !libraryAudioRef.current.ended) setLibIsPlaying(false); }}
-              onEnded={() => {
-                setLibIsPlaying(false);
-                setLibCurrentTime(0);
-              }}
-              onError={(e) => { console.error("Library audio error:", e.target.error); setLibIsPlaying(false); }}
-              style={{ display: "none" }}
-            />
+                {/* Filter Chips */}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "8px",
+                    marginBottom: "20px",
+                  }}
+                >
+                  {[
+                    { key: "all", label: "All" },
+                    { key: "favorites", label: "Favorites" },
+                  ].map((chip) => (
+                    <button
+                      key={chip.key}
+                      onClick={() => setLibraryFilter(chip.key)}
+                      style={{
+                        padding: "8px 16px",
+                        backgroundColor:
+                          libraryFilter === chip.key
+                            ? coachConfig?.branding?.primary_color || "#ef4444"
+                            : "#f3f4f6",
+                        color: libraryFilter === chip.key ? "#fff" : "#6b7280",
+                        border: "none",
+                        borderRadius: "20px",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
 
-            {audioLibrary.length === 0 ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "48px 24px",
-                  color: "#9ca3af",
-                }}
-              >
-                {libraryFilter === "favorites" ? (
-                  <>
-                    <Star size={48} color="#d1d5db" style={{ marginBottom: "16px" }} />
-                    <p style={{ fontSize: "16px", fontWeight: 500 }}>
-                      No favorites yet
-                    </p>
-                    <p style={{ fontSize: "14px" }}>
-                      Tap the star on any practice to save it here.
-                    </p>
-                  </>
+                {/* Hidden audio element for library playback */}
+                <audio
+                  ref={libraryAudioRef}
+                  preload="auto"
+                  onTimeUpdate={() => {
+                    if (!libraryAudioRef.current) return;
+                    const now = Date.now();
+                    if (
+                      !libraryAudioRef.current._lastUpdate ||
+                      now - libraryAudioRef.current._lastUpdate > 250
+                    ) {
+                      libraryAudioRef.current._lastUpdate = now;
+                      setLibCurrentTime(libraryAudioRef.current.currentTime);
+                    }
+                  }}
+                  onLoadedMetadata={() => {
+                    if (libraryAudioRef.current)
+                      setLibDuration(libraryAudioRef.current.duration);
+                  }}
+                  onPlay={() => setLibIsPlaying(true)}
+                  onPause={() => {
+                    if (
+                      libraryAudioRef.current &&
+                      !libraryAudioRef.current.ended
+                    )
+                      setLibIsPlaying(false);
+                  }}
+                  onEnded={() => {
+                    setLibIsPlaying(false);
+                    setLibCurrentTime(0);
+                  }}
+                  onError={(e) => {
+                    console.error("Library audio error:", e.target.error);
+                    setLibIsPlaying(false);
+                  }}
+                  style={{ display: "none" }}
+                />
+
+                {audioLibrary.length === 0 ? (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      padding: "48px 24px",
+                      color: "#9ca3af",
+                    }}
+                  >
+                    {libraryFilter === "favorites" ? (
+                      <>
+                        <Star
+                          size={48}
+                          color="#d1d5db"
+                          style={{ marginBottom: "16px" }}
+                        />
+                        <p style={{ fontSize: "16px", fontWeight: 500 }}>
+                          No favorites yet
+                        </p>
+                        <p style={{ fontSize: "14px" }}>
+                          Tap the star on any practice to save it here.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <Sun
+                          size={48}
+                          color="#d1d5db"
+                          style={{ marginBottom: "16px" }}
+                        />
+                        <p style={{ fontSize: "16px", fontWeight: 500 }}>
+                          No practices available yet
+                        </p>
+                        <p style={{ fontSize: "14px" }}>
+                          Your coach hasn&apos;t uploaded any audio practices
+                          yet.
+                        </p>
+                      </>
+                    )}
+                  </div>
                 ) : (
-                  <>
-                    <Sun size={48} color="#d1d5db" style={{ marginBottom: "16px" }} />
-                    <p style={{ fontSize: "16px", fontWeight: 500 }}>
-                      No practices available yet
-                    </p>
-                    <p style={{ fontSize: "14px" }}>
-                      Your coach hasn&apos;t uploaded any audio practices yet.
-                    </p>
-                  </>
-                )}
-              </div>
-            ) : (
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-              >
-                <h3 style={{ fontSize: "13px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.5px", margin: "4px 0 0" }}>
-                  {coachConfig?.focus_tab?.task_1?.title || "Morning Practice"}
-                </h3>
-                {audioLibrary.map((audio) => {
-                  const isToday = audio.audio_path === todayPath;
-                  const isActive = libraryPlayingPath === audio.audio_path;
-                  const isFav = userFavorites.has(audio.audio_path);
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                    }}
+                  >
+                    <h3
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: "#9ca3af",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                        margin: "4px 0 0",
+                      }}
+                    >
+                      {coachConfig?.focus_tab?.task_1?.title ||
+                        "Morning Practice"}
+                    </h3>
+                    {audioLibrary.map((audio) => {
+                      const isToday = audio.audio_path === todayPath;
+                      const isActive = libraryPlayingPath === audio.audio_path;
+                      const isFav = userFavorites.has(audio.audio_path);
 
-                  return (
-                    <div key={audio.audio_path || audio.id} style={{ position: "relative" }}>
-                      {isToday && (
-                        <span
-                          style={{
-                            position: "absolute",
-                            top: "-9px",
-                            left: "16px",
-                            fontSize: "10px",
-                            fontWeight: 700,
-                            letterSpacing: "0.5px",
-                            textTransform: "uppercase",
-                            color: coachConfig?.branding?.primary_color || "#ef4444",
-                            backgroundColor: "#fff",
-                            padding: "0 6px",
-                            zIndex: 1,
-                          }}
+                      return (
+                        <div
+                          key={audio.audio_path || audio.id}
+                          style={{ position: "relative" }}
                         >
-                          Today
-                        </span>
-                      )}
-                      <div
-                        style={{
-                          backgroundColor: "#fff",
-                          padding: "14px",
-                          borderRadius: isActive ? "12px 12px 0 0" : "12px",
-                          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                          border: isToday
-                            ? `2px solid ${coachConfig?.branding?.primary_color || "#ef4444"}`
-                            : "none",
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          {isToday && (
+                            <span
+                              style={{
+                                position: "absolute",
+                                top: "-9px",
+                                left: "16px",
+                                fontSize: "10px",
+                                fontWeight: 700,
+                                letterSpacing: "0.5px",
+                                textTransform: "uppercase",
+                                color:
+                                  coachConfig?.branding?.primary_color ||
+                                  "#ef4444",
+                                backgroundColor: "#fff",
+                                padding: "0 6px",
+                                zIndex: 1,
+                              }}
+                            >
+                              Today
+                            </span>
+                          )}
                           <div
                             style={{
-                              width: "44px",
-                              height: "44px",
-                              backgroundColor: isToday ? "#fff9e6" : "#f3f4f6",
-                              borderRadius: "10px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexShrink: 0,
-                              overflow: "hidden",
+                              backgroundColor: "#fff",
+                              padding: "14px",
+                              borderRadius: isActive ? "12px 12px 0 0" : "12px",
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                              border: isToday
+                                ? `2px solid ${coachConfig?.branding?.primary_color || "#ef4444"}`
+                                : "none",
                             }}
                           >
-                            {coachConfig?.focus_tab?.task_1?.icon_url ? (
-                              <img
-                                src={coachConfig.focus_tab.task_1.icon_url}
-                                alt=""
-                                style={{ width: "28px", height: "28px", objectFit: "contain" }}
-                              />
-                            ) : (
-                              <Sun
-                                size={22}
-                                color={isToday ? "#f59e0b" : "#9ca3af"}
-                                strokeWidth={2}
-                              />
-                            )}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                              <h3
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "12px",
+                              }}
+                            >
+                              <div
                                 style={{
-                                  fontSize: "15px",
-                                  fontWeight: 700,
-                                  color: "#1a1a1a",
-                                  margin: 0,
+                                  width: "44px",
+                                  height: "44px",
+                                  backgroundColor: isToday
+                                    ? "#fff9e6"
+                                    : "#f3f4f6",
+                                  borderRadius: "10px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  flexShrink: 0,
+                                  overflow: "hidden",
                                 }}
                               >
-                                {(audio.name || `Day ${audio.id + 1}`).replace(/\.[^.]+$/, "")}
-                              </h3>
+                                {coachConfig?.focus_tab?.task_1?.icon_url ? (
+                                  <img
+                                    src={coachConfig.focus_tab.task_1.icon_url}
+                                    alt=""
+                                    style={{
+                                      width: "28px",
+                                      height: "28px",
+                                      objectFit: "contain",
+                                    }}
+                                  />
+                                ) : (
+                                  <Sun
+                                    size={22}
+                                    color={isToday ? "#f59e0b" : "#9ca3af"}
+                                    strokeWidth={2}
+                                  />
+                                )}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                  }}
+                                >
+                                  <h3
+                                    style={{
+                                      fontSize: "15px",
+                                      fontWeight: 700,
+                                      color: "#1a1a1a",
+                                      margin: 0,
+                                    }}
+                                  >
+                                    {(
+                                      audio.name || `Day ${audio.id + 1}`
+                                    ).replace(/\.[^.]+$/, "")}
+                                  </h3>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  if (isActive) {
+                                    if (libIsPlaying) {
+                                      libraryAudioRef.current?.pause();
+                                      setLibIsPlaying(false);
+                                    } else {
+                                      libraryAudioRef.current?.play();
+                                      setLibIsPlaying(true);
+                                    }
+                                  } else {
+                                    if (libraryAudioRef.current) {
+                                      libraryAudioRef.current.pause();
+                                    }
+                                    setLibraryPlayingPath(audio.audio_path);
+                                    setLibCurrentTime(0);
+                                    setLibDuration(0);
+                                    setLibIsPlaying(true);
+                                    setTimeout(() => {
+                                      if (libraryAudioRef.current) {
+                                        libraryAudioRef.current.src =
+                                          audio.audio_url;
+                                        libraryAudioRef.current.load();
+                                        libraryAudioRef.current.play();
+                                      }
+                                    }, 50);
+                                  }
+                                }}
+                                style={{
+                                  padding: "8px 16px",
+                                  backgroundColor:
+                                    coachConfig?.branding?.primary_color ||
+                                    "#ef4444",
+                                  color: "#fff",
+                                  border: "none",
+                                  borderRadius: "16px",
+                                  fontSize: "13px",
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {isActive && libIsPlaying ? "Pause" : "Play"}
+                              </button>
+                              <button
+                                onClick={() => toggleFavorite(audio.audio_path)}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  cursor: "pointer",
+                                  padding: "0",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <Star
+                                  size={22}
+                                  fill={isFav ? "#f59e0b" : "none"}
+                                  color={isFav ? "#f59e0b" : "#d1d5db"}
+                                  strokeWidth={2}
+                                />
+                              </button>
                             </div>
                           </div>
-                          <button
-                            onClick={() => {
-                              if (isActive) {
-                                if (libIsPlaying) {
-                                  libraryAudioRef.current?.pause();
-                                  setLibIsPlaying(false);
-                                } else {
-                                  libraryAudioRef.current?.play();
-                                  setLibIsPlaying(true);
-                                }
-                              } else {
-                                if (libraryAudioRef.current) {
-                                  libraryAudioRef.current.pause();
-                                }
-                                setLibraryPlayingPath(audio.audio_path);
-                                setLibCurrentTime(0);
-                                setLibDuration(0);
-                                setLibIsPlaying(true);
-                                setTimeout(() => {
-                                  if (libraryAudioRef.current) {
-                                    libraryAudioRef.current.src = audio.audio_url;
-                                    libraryAudioRef.current.load();
-                                    libraryAudioRef.current.play();
-                                  }
-                                }, 50);
-                              }
-                            }}
-                            style={{
-                              padding: "8px 16px",
-                              backgroundColor:
-                                coachConfig?.branding?.primary_color || "#ef4444",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "16px",
-                              fontSize: "13px",
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              flexShrink: 0,
-                            }}
-                          >
-                            {isActive && libIsPlaying ? "Pause" : "Play"}
-                          </button>
-                          <button
-                            onClick={() => toggleFavorite(audio.audio_path)}
-                          style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: "0",
-                            display: "flex",
-                            alignItems: "center",
-                            flexShrink: 0,
-                          }}
-                        >
-                          <Star
-                            size={22}
-                            fill={isFav ? "#f59e0b" : "none"}
-                            color={isFav ? "#f59e0b" : "#d1d5db"}
-                            strokeWidth={2}
-                          />
-                        </button>
-                        </div>
-                      </div>
 
-                      {/* Inline Audio Player */}
-                      {isActive && (
-                        <div
-                          style={{
-                            backgroundColor: "#fff",
-                            padding: "12px 16px 16px",
-                            borderRadius: "0 0 12px 12px",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                            borderTop: "1px solid #f3f4f6",
-                          }}
-                        >
-                          <input
-                            type="range"
-                            min="0"
-                            max={libDuration || 0}
-                            value={libCurrentTime}
-                            onChange={(e) => {
-                              const t = parseFloat(e.target.value);
-                              if (libraryAudioRef.current) {
-                                libraryAudioRef.current.currentTime = t;
-                              }
-                              setLibCurrentTime(t);
-                            }}
-                            style={{
-                              width: "100%",
-                              height: "6px",
-                              borderRadius: "3px",
-                              outline: "none",
-                              cursor: "pointer",
-                              accentColor:
-                                coachConfig?.branding?.primary_color || "#ef4444",
-                            }}
-                          />
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              fontSize: "12px",
-                              color: "#6b7280",
-                              marginTop: "4px",
-                            }}
-                          >
-                            <span>{formatTime(libCurrentTime)}</span>
-                            <span>{formatTime(libDuration)}</span>
-                          </div>
+                          {/* Inline Audio Player */}
+                          {isActive && (
+                            <div
+                              style={{
+                                backgroundColor: "#fff",
+                                padding: "12px 16px 16px",
+                                borderRadius: "0 0 12px 12px",
+                                boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                                borderTop: "1px solid #f3f4f6",
+                              }}
+                            >
+                              <input
+                                type="range"
+                                min="0"
+                                max={libDuration || 0}
+                                value={libCurrentTime}
+                                onChange={(e) => {
+                                  const t = parseFloat(e.target.value);
+                                  if (libraryAudioRef.current) {
+                                    libraryAudioRef.current.currentTime = t;
+                                  }
+                                  setLibCurrentTime(t);
+                                }}
+                                style={{
+                                  width: "100%",
+                                  height: "6px",
+                                  borderRadius: "3px",
+                                  outline: "none",
+                                  cursor: "pointer",
+                                  accentColor:
+                                    coachConfig?.branding?.primary_color ||
+                                    "#ef4444",
+                                }}
+                              />
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  fontSize: "12px",
+                                  color: "#6b7280",
+                                  marginTop: "4px",
+                                }}
+                              >
+                                <span>{formatTime(libCurrentTime)}</span>
+                                <span>{formatTime(libDuration)}</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          );
-        })()}
+            );
+          })()}
 
         {/* Settings Page */}
         {activeTab === "more" && moreSubpage === "settings" && (
@@ -6077,8 +7300,8 @@ function UserDashboardContent() {
               </div>
             </div>
 
-            {/* Subscription */}
-            <div>
+            {/* Subscription - hidden for coaches using their own companion */}
+            {user?.role !== "coach" && <div>
               <h3
                 style={{
                   fontSize: "12px",
@@ -6333,125 +7556,129 @@ function UserDashboardContent() {
                     </div>
 
                     {/* Tier 3 Plan - only show if enabled by coach or user is currently on tier 3 */}
-                    {(user?.coach?.tier3_enabled !== false || subscriptionStatus?.tier === 3) && (<div
-                      style={{
-                        border: `1px solid ${subscriptionStatus?.tier === 3 ? primaryColor : "#e5e7eb"}`,
-                        borderRadius: "12px",
-                        padding: "16px",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        backgroundColor:
-                          subscriptionStatus?.tier === 3 ? "#fdf4ff" : "#fff",
-                        boxShadow:
-                          subscriptionStatus?.tier === 3
-                            ? `0 0 0 1px ${primaryColor}`
-                            : "none",
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 600, color: "#1a1a1a" }}>
-                          {user?.coach?.tier3_name || "Premium Plus"}
-                          <span
-                            style={{
-                              marginLeft: "8px",
-                              fontSize: "11px",
-                              backgroundColor: "#fbbf24",
-                              color: "#000",
-                              padding: "2px 8px",
-                              borderRadius: "4px",
-                              fontWeight: 700,
-                            }}
-                          >
-                            ELITE
-                          </span>
-                        </div>
-                        <div style={{ fontSize: "14px", color: "#6b7280" }}>
-                          Premium + exclusive Resource Hub
-                        </div>
-                        {subscriptionStatus?.tier === 3 &&
-                          subscriptionStatus.subscription?.currentPeriodEnd && (
-                            <div
-                              style={{
-                                fontSize: "12px",
-                                color: primaryColor,
-                                marginTop: "4px",
-                              }}
-                            >
-                              Next billing:{" "}
-                              {new Date(
-                                subscriptionStatus.subscription
-                                  .currentPeriodEnd,
-                              ).toLocaleDateString()}
-                            </div>
-                          )}
-                      </div>
+                    {(user?.coach?.tier3_enabled !== false ||
+                      subscriptionStatus?.tier === 3) && (
                       <div
                         style={{
+                          border: `1px solid ${subscriptionStatus?.tier === 3 ? primaryColor : "#e5e7eb"}`,
+                          borderRadius: "12px",
+                          padding: "16px",
                           display: "flex",
+                          justifyContent: "space-between",
                           alignItems: "center",
-                          gap: "16px",
+                          backgroundColor:
+                            subscriptionStatus?.tier === 3 ? "#fdf4ff" : "#fff",
+                          boxShadow:
+                            subscriptionStatus?.tier === 3
+                              ? `0 0 0 1px ${primaryColor}`
+                              : "none",
                         }}
                       >
-                        <div style={{ textAlign: "right" }}>
-                          <div
-                            style={{
-                              fontWeight: 700,
-                              fontSize: "18px",
-                              color: "#1a1a1a",
-                            }}
-                          >
-                            {cs}
-                            {(
-                              (user?.coach?.user_monthly_price_cents || 1999) /
-                              100
-                            ).toFixed(2)}
+                        <div>
+                          <div style={{ fontWeight: 600, color: "#1a1a1a" }}>
+                            {user?.coach?.tier3_name || "Premium Plus"}
+                            <span
+                              style={{
+                                marginLeft: "8px",
+                                fontSize: "11px",
+                                backgroundColor: "#fbbf24",
+                                color: "#000",
+                                padding: "2px 8px",
+                                borderRadius: "4px",
+                                fontWeight: 700,
+                              }}
+                            >
+                              ELITE
+                            </span>
                           </div>
-                          <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                            /month
+                          <div style={{ fontSize: "14px", color: "#6b7280" }}>
+                            Premium + exclusive Resource Hub
                           </div>
+                          {subscriptionStatus?.tier === 3 &&
+                            subscriptionStatus.subscription
+                              ?.currentPeriodEnd && (
+                              <div
+                                style={{
+                                  fontSize: "12px",
+                                  color: primaryColor,
+                                  marginTop: "4px",
+                                }}
+                              >
+                                Next billing:{" "}
+                                {new Date(
+                                  subscriptionStatus.subscription
+                                    .currentPeriodEnd,
+                                ).toLocaleDateString()}
+                              </div>
+                            )}
                         </div>
-                        {subscriptionStatus?.tier === 3 ? (
-                          <span
-                            style={{
-                              backgroundColor: primaryColor,
-                              color: "#fff",
-                              fontSize: "12px",
-                              fontWeight: 700,
-                              padding: "4px 12px",
-                              borderRadius: "12px",
-                            }}
-                          >
-                            CURRENT
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => handleChangeTier(3, "monthly")}
-                            disabled={upgradingToPremium || !user?.coach}
-                            style={{
-                              padding: "8px 16px",
-                              backgroundColor: primaryColor,
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "8px",
-                              fontSize: "14px",
-                              fontWeight: 600,
-                              cursor:
-                                upgradingToPremium || !user?.coach
-                                  ? "not-allowed"
-                                  : "pointer",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {upgradingToPremium
-                              ? "..."
-                              : subscriptionStatus?.tier === 2
-                                ? "Upgrade"
-                                : "Select"}
-                          </button>
-                        )}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "16px",
+                          }}
+                        >
+                          <div style={{ textAlign: "right" }}>
+                            <div
+                              style={{
+                                fontWeight: 700,
+                                fontSize: "18px",
+                                color: "#1a1a1a",
+                              }}
+                            >
+                              {cs}
+                              {(
+                                (user?.coach?.user_monthly_price_cents ||
+                                  1999) / 100
+                              ).toFixed(2)}
+                            </div>
+                            <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                              /month
+                            </div>
+                          </div>
+                          {subscriptionStatus?.tier === 3 ? (
+                            <span
+                              style={{
+                                backgroundColor: primaryColor,
+                                color: "#fff",
+                                fontSize: "12px",
+                                fontWeight: 700,
+                                padding: "4px 12px",
+                                borderRadius: "12px",
+                              }}
+                            >
+                              CURRENT
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleChangeTier(3, "monthly")}
+                              disabled={upgradingToPremium || !user?.coach}
+                              style={{
+                                padding: "8px 16px",
+                                backgroundColor: primaryColor,
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "8px",
+                                fontSize: "14px",
+                                fontWeight: 600,
+                                cursor:
+                                  upgradingToPremium || !user?.coach
+                                    ? "not-allowed"
+                                    : "pointer",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {upgradingToPremium
+                                ? "..."
+                                : subscriptionStatus?.tier === 2
+                                  ? "Upgrade"
+                                  : "Select"}
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>)}
+                    )}
                   </div>
 
                   {/* Yearly Billing Info */}
@@ -6477,20 +7704,41 @@ function UserDashboardContent() {
                       width: "100%",
                       padding: "16px",
                       backgroundColor: "#fff",
-                      color: "#dc2626",
-                      border: "2px solid #dc2626",
+                      color: user?.role === "coach" ? "#4b5563" : "#dc2626",
+                      border: user?.role === "coach" ? "2px solid #6b7280" : "2px solid #dc2626",
                       borderRadius: "8px",
                       fontSize: "16px",
                       fontWeight: 600,
                       cursor: "pointer",
-                      marginBottom: "90px", // Clear the bottom tab bar
+                      marginBottom: "90px",
                     }}
                   >
-                    Sign Out
+                    {user?.role === "coach" ? "Back to Dashboard" : "Sign Out"}
                   </button>
                 </>
               )}
-            </div>
+            </div>}
+
+            {/* Sign out for coaches (when subscription section is hidden) */}
+            {user?.role === "coach" && (
+              <button
+                onClick={handleLogout}
+                style={{
+                  width: "100%",
+                  padding: "16px",
+                  backgroundColor: "#fff",
+                  color: "#4b5563",
+                  border: "2px solid #6b7280",
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  marginBottom: "90px",
+                }}
+              >
+                Back to Dashboard
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -6524,18 +7772,39 @@ function UserDashboardContent() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "20px", color: "#1a1a1a" }}>
-              {coachConfig?.focus_tab?.task_2?.intention_modal_title || "Set Your Intention"}
+            <h3
+              style={{
+                fontSize: "20px",
+                fontWeight: 700,
+                marginBottom: "20px",
+                color: "#1a1a1a",
+              }}
+            >
+              {coachConfig?.focus_tab?.task_2?.intention_modal_title ||
+                "Set Your Intention"}
             </h3>
 
             <div style={{ marginBottom: "16px" }}>
-              <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
-                {coachConfig?.focus_tab?.task_2?.intention_obstacles_label || "What might get in the way today?"}
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "6px",
+                }}
+              >
+                {coachConfig?.focus_tab?.task_2?.intention_obstacles_label ||
+                  "What might get in the way today?"}
               </label>
               <textarea
                 value={intentionObstacles}
                 onChange={(e) => setIntentionObstacles(e.target.value)}
-                placeholder={coachConfig?.focus_tab?.task_2?.intention_obstacles_placeholder || "Meetings, distractions, fatigue, worry about..."}
+                placeholder={
+                  coachConfig?.focus_tab?.task_2
+                    ?.intention_obstacles_placeholder ||
+                  "Meetings, distractions, fatigue, worry about..."
+                }
                 style={{
                   width: "100%",
                   minHeight: "80px",
@@ -6552,14 +7821,26 @@ function UserDashboardContent() {
             </div>
 
             <div style={{ marginBottom: "24px" }}>
-              <label style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>
-                {coachConfig?.focus_tab?.task_2?.intention_focus_label || "One word to refocus your energy"}
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "6px",
+                }}
+              >
+                {coachConfig?.focus_tab?.task_2?.intention_focus_label ||
+                  "One word to refocus your energy"}
               </label>
               <input
                 type="text"
                 value={intentionFocusWord}
                 onChange={(e) => setIntentionFocusWord(e.target.value)}
-                placeholder={coachConfig?.focus_tab?.task_2?.intention_focus_placeholder || "Peace, Presence, Trust, Joy..."}
+                placeholder={
+                  coachConfig?.focus_tab?.task_2?.intention_focus_placeholder ||
+                  "Peace, Presence, Trust, Joy..."
+                }
                 style={{
                   width: "100%",
                   padding: "12px",
@@ -6591,20 +7872,26 @@ function UserDashboardContent() {
                 Cancel
               </button>
               <button
-                onClick={() => saveIntention(intentionObstacles, intentionFocusWord)}
+                onClick={() =>
+                  saveIntention(intentionObstacles, intentionFocusWord)
+                }
                 disabled={isSavingIntention || !intentionFocusWord.trim()}
                 style={{
                   flex: 1,
                   padding: "12px",
                   fontSize: "15px",
                   fontWeight: 600,
-                  backgroundColor: (!intentionFocusWord.trim() || isSavingIntention)
-                    ? "#d1d5db"
-                    : (coachConfig?.branding?.primary_color || "#a855f7"),
+                  backgroundColor:
+                    !intentionFocusWord.trim() || isSavingIntention
+                      ? "#d1d5db"
+                      : coachConfig?.branding?.primary_color || "#a855f7",
                   color: "#fff",
                   border: "none",
                   borderRadius: "10px",
-                  cursor: (!intentionFocusWord.trim() || isSavingIntention) ? "not-allowed" : "pointer",
+                  cursor:
+                    !intentionFocusWord.trim() || isSavingIntention
+                      ? "not-allowed"
+                      : "pointer",
                   opacity: isSavingIntention ? 0.7 : 1,
                 }}
               >
@@ -6810,44 +8097,56 @@ function UserDashboardContent() {
             style={{
               backgroundColor: "#f3f4f6",
               borderRadius: "16px",
-              padding: "24px",
               width: "100%",
               maxWidth: "500px",
               maxHeight: "90vh",
-              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
             }}
           >
-            <h3
-              style={{
-                fontSize: "24px",
-                fontWeight: 700,
-                textAlign: "center",
-                marginBottom: "8px",
-                color: "#1a1a1a",
-              }}
-            >
-              {formatDate(selectedAwarenessDate)}
-            </h3>
-            <p
-              style={{
-                fontSize: "14px",
-                textAlign: "center",
-                color: "#6b7280",
-                marginBottom: "24px",
-              }}
-            >
-              {coachConfig?.emotional_state_tab?.modal_subtitle ||
-                "Select all that apply"}
-            </p>
+            {/* Header */}
+            <div style={{ padding: "20px 20px 0", position: "relative", flexShrink: 0 }}>
+              <button
+                onClick={() => setShowEmotionalModal(false)}
+                style={{
+                  position: "absolute",
+                  top: "12px",
+                  right: "12px",
+                  background: "none",
+                  border: "none",
+                  fontSize: "22px",
+                  cursor: "pointer",
+                  color: "#9ca3af",
+                  padding: "4px",
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+              <p
+                style={{
+                  fontSize: "14px",
+                  textAlign: "center",
+                  color: "#6b7280",
+                  marginBottom: "16px",
+                }}
+              >
+                {coachConfig?.emotional_state_tab?.modal_subtitle ||
+                  "What do you need right now?"}
+              </p>
+            </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "10px",
-                marginBottom: "24px",
-              }}
-            >
+            {/* Scrollable content */}
+            <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "10px",
+                  paddingBottom: "16px",
+                }}
+              >
               {(
                 coachConfig?.emotional_state_tab?.categories || [
                   { id: "challenging", label: "CHALLENGING", color: "#3b82f6" },
@@ -6910,23 +8209,27 @@ function UserDashboardContent() {
                 </div>
               ))}
             </div>
+            </div>
 
-            <button
-              onClick={handleEmotionalDone}
-              style={{
-                width: "100%",
-                padding: "16px",
-                backgroundColor: "#fff",
-                color: "#3b82f6",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "16px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              Done
-            </button>
+            {/* Sticky footer */}
+            <div style={{ padding: "12px 20px 20px", flexShrink: 0 }}>
+              <button
+                onClick={handleEmotionalDone}
+                style={{
+                  width: "100%",
+                  padding: "14px",
+                  backgroundColor: "#fff",
+                  color: "#3b82f6",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -7126,8 +8429,8 @@ function UserDashboardContent() {
                   marginBottom: "16px",
                 }}
               >
-                Requires {user?.coach?.tier3_name || "Premium Plus"} for exclusive access to community
-                calls, programs & resources.
+                Requires {user?.coach?.tier3_name || "Premium Plus"} for
+                exclusive access to community calls, programs & resources.
               </p>
             )}
 

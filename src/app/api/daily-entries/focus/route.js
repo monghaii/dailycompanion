@@ -21,8 +21,13 @@ export async function PATCH(request) {
       date,
     } = body;
 
-    // Use provided date or default to today
-    const targetDate = date || new Date().toISOString().split("T")[0];
+    if (!date) {
+      return NextResponse.json(
+        { error: "Date parameter is required" },
+        { status: 400 },
+      );
+    }
+    const targetDate = date;
 
     // Build update object with only provided fields
     const updates = {};
@@ -33,8 +38,10 @@ export async function PATCH(request) {
     if (task_3_completed !== undefined)
       updates.task_3_completed = task_3_completed;
     if (focus_notes !== undefined) updates.focus_notes = focus_notes;
-    if (intention_obstacles !== undefined) updates.intention_obstacles = intention_obstacles;
-    if (intention_focus_word !== undefined) updates.intention_focus_word = intention_focus_word;
+    if (intention_obstacles !== undefined)
+      updates.intention_obstacles = intention_obstacles;
+    if (intention_focus_word !== undefined)
+      updates.intention_focus_word = intention_focus_word;
 
     // Update the entry (create if doesn't exist)
     // First check if entry exists
@@ -82,7 +89,7 @@ export async function PATCH(request) {
   } catch (error) {
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

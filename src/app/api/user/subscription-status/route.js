@@ -10,10 +10,10 @@ export async function GET() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    // Get user profile to check test premium flag
+    // Get user profile to check test premium flag and role
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("is_test_premium")
+      .select("is_test_premium, role")
       .eq("id", user.id)
       .single();
 
@@ -55,6 +55,34 @@ export async function GET() {
         tier: 3, // Test accounts get tier 3 access
         subscription: mockSubscription,
       });
+    }
+
+    // If user is a coach, auto-grant the highest tier they've enabled
+    if (profile?.role === "coach") {
+      const { data: ownCoach } = await supabase
+        .from("coaches")
+        .select("id, business_name, slug, user_monthly_price_cents, tier3_enabled")
+        .eq("profile_id", user.id)
+        .single();
+
+      if (ownCoach) {
+        const tier = ownCoach.tier3_enabled !== false ? 3 : 2;
+        return NextResponse.json({
+          isPremium: true,
+          status: "coach_owner",
+          tier,
+          subscription: {
+            id: "coach_owner",
+            coach: ownCoach,
+            pricePerMonth: 0,
+            currentPeriodEnd: new Date(
+              Date.now() + 365 * 24 * 60 * 60 * 1000,
+            ).toISOString(),
+            canceledAt: null,
+            willCancelAtPeriodEnd: false,
+          },
+        });
+      }
     }
 
     // Get user's subscription
