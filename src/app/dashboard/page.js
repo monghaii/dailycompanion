@@ -43,6 +43,7 @@ function AnnouncementsSection({ coachId }) {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ title: "", body: "", icon: "megaphone", link: "", is_pinned: false });
+  const [editingId, setEditingId] = useState(null);
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
 
   useEffect(() => {
@@ -61,26 +62,38 @@ function AnnouncementsSection({ coachId }) {
     }
   };
 
-  const handleCreate = async (e) => {
+  const resetForm = () => {
+    setForm({ title: "", body: "", icon: "megaphone", link: "", is_pinned: false });
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title.trim() || !form.body.trim()) return;
     setSaving(true);
     try {
+      const isEdit = !!editingId;
       const res = await fetch("/api/coach/announcements", {
-        method: "POST",
+        method: isEdit ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(isEdit ? { id: editingId, ...form } : form),
       });
       if (res.ok) {
-        setForm({ title: "", body: "", icon: "megaphone", link: "", is_pinned: false });
-        setShowForm(false);
+        resetForm();
         fetchAnnouncements();
       }
     } catch (err) {
-      console.error("Failed to create announcement:", err);
+      console.error("Failed to save announcement:", err);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleEdit = (a) => {
+    setForm({ title: a.title, body: a.body, icon: a.icon, link: a.link || "", is_pinned: a.is_pinned });
+    setEditingId(a.id);
+    setShowForm(true);
   };
 
   const handleDelete = async (id) => {
@@ -112,7 +125,7 @@ function AnnouncementsSection({ coachId }) {
           <p className="text-gray-600 mt-1">Share updates and news with your clients</p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => { if (showForm) { resetForm(); } else { setShowForm(true); } }}
           className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors cursor-pointer"
         >
           {showForm ? "Cancel" : "+ New Announcement"}
@@ -122,8 +135,8 @@ function AnnouncementsSection({ coachId }) {
       <div className="p-8">
         <div className="max-w-3xl mx-auto space-y-6">
           {showForm && (
-            <form onSubmit={handleCreate} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-4">
-              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">New Announcement</h3>
+            <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-4">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">{editingId ? "Edit Announcement" : "New Announcement"}</h3>
 
               <div className="flex gap-3">
                 <div className="relative">
@@ -202,7 +215,7 @@ function AnnouncementsSection({ coachId }) {
                   disabled={saving || !form.title.trim() || !form.body.trim()}
                   className="px-5 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors cursor-pointer"
                 >
-                  {saving ? "Posting..." : "Post Announcement"}
+                  {saving ? "Saving..." : editingId ? "Update Announcement" : "Post Announcement"}
                 </button>
               </div>
             </form>
@@ -240,15 +253,26 @@ function AnnouncementsSection({ coachId }) {
                     </a>
                   )}
                 </div>
-                <button
-                  onClick={() => handleDelete(a.id)}
-                  className="text-gray-400 hover:text-red-500 transition-colors p-1 cursor-pointer"
-                  title="Delete"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={() => handleEdit(a)}
+                    className="text-gray-400 hover:text-purple-600 transition-colors p-1 cursor-pointer"
+                    title="Edit"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(a.id)}
+                    className="text-gray-400 hover:text-red-500 transition-colors p-1 cursor-pointer"
+                    title="Delete"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             ))
           )}
@@ -2259,6 +2283,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
   };
 
   const handleUpdateEmotionOption = (catIndex, optIndex, field, value) => {
+    if (field === "name" && value.length > 17) return;
     const newCategories = [...emotionalStateConfig.categories];
     newCategories[catIndex].options[optIndex][field] = value;
     setEmotionalStateConfig({
@@ -6708,20 +6733,24 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                                     />
                                                   </svg>
                                                 </div>
-                                                <input
-                                                  type="text"
-                                                  value={option.name}
-                                                  onChange={(e) =>
-                                                    handleUpdateEmotionOption(
-                                                      catIndex,
-                                                      optIndex,
-                                                      "name",
-                                                      e.target.value,
-                                                    )
-                                                  }
-                                                  placeholder="Emotion name"
-                                                  className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                                />
+                                                <div className="flex-1 relative">
+                                                  <input
+                                                    type="text"
+                                                    value={option.name}
+                                                    maxLength={17}
+                                                    onChange={(e) =>
+                                                      handleUpdateEmotionOption(
+                                                        catIndex,
+                                                        optIndex,
+                                                        "name",
+                                                        e.target.value,
+                                                      )
+                                                    }
+                                                    placeholder="Emotion name"
+                                                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                  />
+                                                  <span className={`absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] ${option.name.length >= 17 ? "text-red-400" : "text-gray-300"}`}>{option.name.length}/17</span>
+                                                </div>
                                                 <button
                                                   type="button"
                                                   onClick={() =>

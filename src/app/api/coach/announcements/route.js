@@ -85,6 +85,56 @@ export async function POST(request) {
   }
 }
 
+export async function PUT(request) {
+  try {
+    const user = await getCurrentUser();
+    if (!user || user.role !== "coach") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { data: coach } = await supabase
+      .from("coaches")
+      .select("id")
+      .eq("profile_id", user.id)
+      .single();
+
+    if (!coach) {
+      return NextResponse.json({ error: "Coach not found" }, { status: 404 });
+    }
+
+    const { id, title, body, icon, link, is_pinned } = await request.json();
+
+    if (!id || !title || !body) {
+      return NextResponse.json({ error: "ID, title and body are required" }, { status: 400 });
+    }
+
+    const { data, error } = await supabase
+      .from("coach_announcements")
+      .update({
+        title,
+        body,
+        icon: icon || "megaphone",
+        link: link || null,
+        is_pinned: is_pinned || false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("coach_id", coach.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Update announcement error:", error);
+      return NextResponse.json({ error: "Failed to update" }, { status: 500 });
+    }
+
+    return NextResponse.json({ announcement: data });
+  } catch (error) {
+    console.error("Update announcement error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
 export async function DELETE(request) {
   try {
     const user = await getCurrentUser();

@@ -44,7 +44,7 @@ function UserDashboardContent() {
   const previousCompletedCount = useRef(0);
   const [showModal, setShowModal] = useState(false);
   const [selectedMindfulness, setSelectedMindfulness] = useState(null);
-  const [modalTime, setModalTime] = useState("01:50 PM");
+  const [modalTime, setModalTime] = useState(() => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
   const [modalNotes, setModalNotes] = useState("");
   const [showEmotionalModal, setShowEmotionalModal] = useState(false);
   const [selectedEmotions, setSelectedEmotions] = useState([]);
@@ -152,6 +152,19 @@ function UserDashboardContent() {
   // Announcements state
   const [userAnnouncements, setUserAnnouncements] = useState([]);
   const [announcementsLoading, setAnnouncementsLoading] = useState(false);
+
+  // Keyboard detection for mobile
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    const threshold = 150;
+    const onResize = () => {
+      setKeyboardOpen(window.innerHeight - vv.height > threshold);
+    };
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
 
   // Resource Hub state
   const [rhCollections, setRhCollections] = useState([]);
@@ -1384,6 +1397,7 @@ function UserDashboardContent() {
 
   const handleMindfulnessClick = (item) => {
     setSelectedMindfulness(item);
+    setModalTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
     setShowModal(true);
   };
 
@@ -4148,13 +4162,14 @@ function UserDashboardContent() {
             <div
               style={{
                 position: "fixed",
-                bottom: "90px",
+                bottom: keyboardOpen ? "8px" : "90px",
                 left: 0,
                 right: 0,
                 zIndex: 40,
                 display: "flex",
                 justifyContent: "center",
                 padding: "0 24px 16px 24px",
+                transition: "bottom 0.15s ease",
               }}
             >
               <form
@@ -4530,7 +4545,7 @@ function UserDashboardContent() {
                 <p style={{ fontSize: "14px", color: "#9ca3af", margin: 0 }}>Your coach hasn&apos;t posted any updates yet. Check back later.</p>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {userAnnouncements.map((a) => {
                   const isPinned = a.is_pinned;
                   return (
@@ -4538,35 +4553,36 @@ function UserDashboardContent() {
                       key={a.id}
                       style={{
                         backgroundColor: isPinned ? `${primaryColor}10` : "#fff",
-                        padding: "20px",
-                        borderRadius: "12px",
-                        borderLeft: isPinned ? `4px solid ${primaryColor}` : "none",
+                        padding: "14px",
+                        borderRadius: "10px",
+                        borderLeft: isPinned ? `3px solid ${primaryColor}` : "none",
                         boxShadow: isPinned ? "none" : "0 1px 3px rgba(0,0,0,0.08)",
                       }}
                     >
-                      <div style={{ display: "flex", gap: "16px" }}>
+                      <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
                         <div
                           style={{
-                            width: "48px",
-                            height: "48px",
+                            width: "36px",
+                            height: "36px",
                             backgroundColor: isPinned ? primaryColor : "#f3f4f6",
-                            borderRadius: "12px",
+                            borderRadius: "9px",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             flexShrink: 0,
+                            marginTop: "2px",
                           }}
                         >
-                          <svg width="24" height="24" fill="none" stroke={isPinned ? "#fff" : "#6b7280"} viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                          <svg width="18" height="18" fill="none" stroke={isPinned ? "#fff" : "#6b7280"} viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                             <path d={getIconPath(a.icon)} />
                           </svg>
                         </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                            <h3 style={{ fontSize: "18px", fontWeight: isPinned ? 700 : 600, color: isPinned ? primaryColor : "#1a1a1a", margin: 0 }}>{a.title}</h3>
-                            <span style={{ fontSize: "13px", color: "#9ca3af", whiteSpace: "nowrap", marginLeft: "12px" }}>{formatTimeAgo(a.created_at)}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
+                            <h3 style={{ fontSize: "15px", fontWeight: isPinned ? 700 : 600, color: isPinned ? primaryColor : "#1a1a1a", margin: 0 }}>{a.title}</h3>
+                            <span style={{ fontSize: "12px", color: "#9ca3af", whiteSpace: "nowrap", marginLeft: "10px" }}>{formatTimeAgo(a.created_at)}</span>
                           </div>
-                          <p style={{ fontSize: "15px", color: isPinned ? "#374151" : "#6b7280", lineHeight: "1.5", margin: 0 }}>{a.body}</p>
+                          <p style={{ fontSize: "13px", color: isPinned ? "#374151" : "#6b7280", lineHeight: "1.5", margin: 0 }}>{a.body}</p>
                           {a.link && (
                             <a
                               href={a.link}
@@ -4575,15 +4591,15 @@ function UserDashboardContent() {
                               style={{
                                 display: "inline-flex",
                                 alignItems: "center",
-                                gap: "6px",
-                                marginTop: "10px",
-                                fontSize: "14px",
+                                gap: "5px",
+                                marginTop: "6px",
+                                fontSize: "13px",
                                 fontWeight: 500,
                                 color: primaryColor,
                                 textDecoration: "none",
                               }}
                             >
-                              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
                                 <polyline points="15 3 21 3 21 9" />
                                 <line x1="10" y1="14" x2="21" y2="3" />
@@ -6922,7 +6938,7 @@ function UserDashboardContent() {
           bottom: 0,
           left: 0,
           right: 0,
-          display: "flex",
+          display: keyboardOpen ? "none" : "flex",
           justifyContent: "center",
           zIndex: 1000,
           pointerEvents: "none",

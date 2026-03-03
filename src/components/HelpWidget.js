@@ -13,9 +13,14 @@ export default function HelpWidget({ color = "#6366f1" }) {
     e.preventDefault();
     if (!platform || !description.trim()) return;
 
+    const now = new Date();
+    const timestamp = now.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     const subject = `Bug Report — ${platform}`;
     const body =
       `Platform: ${platform}\n` +
+      `Time: ${timestamp} (${tz})\n` +
       `Page: ${typeof window !== "undefined" ? window.location.href : ""}\n` +
       `User Agent: ${typeof navigator !== "undefined" ? navigator.userAgent : ""}\n\n` +
       `Description:\n${description.trim()}`;
