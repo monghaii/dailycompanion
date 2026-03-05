@@ -25,9 +25,7 @@ function UserDashboardContent() {
   const [activeTab, setActiveTab] = useState(() => {
     return "focus";
   });
-  const [todayKey, setTodayKey] = useState(() =>
-    new Date().toLocaleDateString("en-CA"),
-  );
+  const [todayKey, setTodayKey] = useState("");
   const [dayNotes, setDayNotes] = useState("");
   const [completedTasks, setCompletedTasks] = useState({
     morning: false,
@@ -46,9 +44,7 @@ function UserDashboardContent() {
   const previousCompletedCount = useRef(0);
   const [showModal, setShowModal] = useState(false);
   const [selectedMindfulness, setSelectedMindfulness] = useState(null);
-  const [modalTime, setModalTime] = useState(() =>
-    new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-  );
+  const [modalTime, setModalTime] = useState("");
   const [modalNotes, setModalNotes] = useState("");
   const [showEmotionalModal, setShowEmotionalModal] = useState(false);
   const [selectedEmotions, setSelectedEmotions] = useState([]);
@@ -56,7 +52,7 @@ function UserDashboardContent() {
   const [mindfulnessEntries, setMindfulnessEntries] = useState([]);
   const [isLoadingAwareness, setIsLoadingAwareness] = useState(false);
   const [showSuggestedPractice, setShowSuggestedPractice] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(null);
   const [chatMessage, setChatMessage] = useState("");
   const [showCoachProfile, setShowCoachProfile] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -72,38 +68,37 @@ function UserDashboardContent() {
   const chatEndRef = useRef(null);
   const lastMessageRef = useRef(null);
   const configFetched = useRef(false);
-  const [moreSubpage, setMoreSubpage] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("moreSubpage") || null;
-    }
-    return null;
-  }); // null, 'announcements', 'resources', 'insights', 'library', 'settings'
-  const [selectedAwarenessDate, setSelectedAwarenessDate] = useState(
-    new Date(),
-  );
+  const [moreSubpage, setMoreSubpage] = useState(null);
+  const [selectedAwarenessDate, setSelectedAwarenessDate] = useState(null);
   const [selectedInsightsDate, setSelectedInsightsDate] = useState(null);
-  const [insightsMonth, setInsightsMonth] = useState(new Date());
+  const [insightsMonth, setInsightsMonth] = useState(null);
   const [insightsData, setInsightsData] = useState({});
   const [selectedDayData, setSelectedDayData] = useState(null);
   const [dayNotesEdit, setDayNotesEdit] = useState("");
   const [isSavingDayNotes, setIsSavingDayNotes] = useState(false);
-  const [insightsTab, setInsightsTab] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("insightsTab") || "focus";
-    }
-    return "focus";
-  }); // 'focus' or 'awareness'
+  const [insightsTab, setInsightsTab] = useState("focus");
   const [awarenessTimeframe, setAwarenessTimeframe] = useState(7); // days
   const [awarenessInsightsData, setAwarenessInsightsData] = useState([]);
   const [settingsFirstName, setSettingsFirstName] = useState("");
   const [settingsLastName, setSettingsLastName] = useState("");
   const [settingsEmail, setSettingsEmail] = useState("");
-  const [settingsTimezone, setSettingsTimezone] = useState(
-    Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
-  );
+  const [settingsTimezone, setSettingsTimezone] = useState("America/New_York");
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [coachConfig, setCoachConfig] = useState(null);
   const primaryColor = coachConfig?.branding?.primary_color || "#6366f1";
+
+  useEffect(() => {
+    setTodayKey(new Date().toLocaleDateString("en-CA"));
+    setModalTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+    setSelectedDate(new Date());
+    setSelectedAwarenessDate(new Date());
+    setInsightsMonth(new Date());
+    setSettingsTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York");
+    const savedMoreSubpage = localStorage.getItem("moreSubpage") || null;
+    if (savedMoreSubpage) setMoreSubpage(savedMoreSubpage);
+    const savedInsightsTab = localStorage.getItem("insightsTab");
+    if (savedInsightsTab) setInsightsTab(savedInsightsTab);
+  }, []);
 
   // Currency helper based on coach's Stripe country
   const COUNTRY_CURRENCY = {
@@ -1766,9 +1761,10 @@ function UserDashboardContent() {
     today.toLocaleString("en-US", { timeZone: settingsTimezone }),
   );
   const currentDay = today.getDate();
-  const startOfWeek = new Date(selectedAwarenessDate);
+  const awarenessDate = selectedAwarenessDate || today;
+  const startOfWeek = new Date(awarenessDate);
   startOfWeek.setDate(
-    selectedAwarenessDate.getDate() - selectedAwarenessDate.getDay(),
+    awarenessDate.getDate() - awarenessDate.getDay(),
   );
 
   const weekDays = [];
@@ -1783,8 +1779,8 @@ function UserDashboardContent() {
       isToday:
         day.getDate() === currentDay && day.getMonth() === today.getMonth(),
       isSelected:
-        day.getDate() === selectedAwarenessDate.getDate() &&
-        day.getMonth() === selectedAwarenessDate.getMonth(),
+        day.getDate() === awarenessDate.getDate() &&
+        day.getMonth() === awarenessDate.getMonth(),
       isFuture: isFuture,
     });
   }
@@ -7698,50 +7694,12 @@ function UserDashboardContent() {
                     months access). Select yearly during checkout.
                   </div>
 
-                  <button
-                    onClick={handleLogout}
-                    style={{
-                      width: "100%",
-                      padding: "16px",
-                      backgroundColor: "#fff",
-                      color: user?.role === "coach" ? "#4b5563" : "#dc2626",
-                      border: user?.role === "coach" ? "2px solid #6b7280" : "2px solid #dc2626",
-                      borderRadius: "8px",
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      marginBottom: "90px",
-                    }}
-                  >
-                    {user?.role === "coach" ? "Back to Dashboard" : "Sign Out"}
-                  </button>
                 </>
               )}
             </div>}
 
-            {/* Sign out for coaches (when subscription section is hidden) */}
-            {user?.role === "coach" && (
-              <button
-                onClick={handleLogout}
-                style={{
-                  width: "100%",
-                  padding: "16px",
-                  backgroundColor: "#fff",
-                  color: "#4b5563",
-                  border: "2px solid #6b7280",
-                  borderRadius: "8px",
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  marginBottom: "24px",
-                }}
-              >
-                Back to Dashboard
-              </button>
-            )}
-
             {/* Legal Links */}
-            <div style={{ marginTop: "16px", marginBottom: "90px" }}>
+            <div style={{ marginTop: "32px" }}>
               <h3
                 style={{
                   fontSize: "12px",
@@ -7789,6 +7747,26 @@ function UserDashboardContent() {
                 ))}
               </div>
             </div>
+
+            {/* Sign Out / Back to Dashboard */}
+            <button
+              onClick={handleLogout}
+              style={{
+                width: "100%",
+                padding: "16px",
+                backgroundColor: "#fff",
+                color: user?.role === "coach" ? "#4b5563" : "#dc2626",
+                border: user?.role === "coach" ? "2px solid #6b7280" : "2px solid #dc2626",
+                borderRadius: "8px",
+                fontSize: "16px",
+                fontWeight: 600,
+                cursor: "pointer",
+                marginTop: "24px",
+                marginBottom: "90px",
+              }}
+            >
+              {user?.role === "coach" ? "Back to Dashboard" : "Sign Out"}
+            </button>
           </div>
         )}
       </div>
@@ -8584,23 +8562,45 @@ export default function UserDashboard() {
       fallback={
         <div
           style={{
-            minHeight: "100vh",
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "#f9fafb",
+            backgroundColor: "#ffffff",
+            zIndex: 9999,
           }}
         >
           <div
             style={{
-              width: "40px",
-              height: "40px",
-              border: "3px solid #e5e7eb",
-              borderTop: "3px solid #ef4444",
-              borderRadius: "50%",
-              animation: "spin 1s linear infinite",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "16px",
             }}
-          />
+          >
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                border: "4px solid #f3f4f6",
+                borderTop: "4px solid #6b7280",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+              }}
+            />
+            <style>
+              {`
+                @keyframes spin {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+              `}
+            </style>
+          </div>
         </div>
       }
     >

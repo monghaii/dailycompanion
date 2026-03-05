@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "coach:activate": "node scripts/manage-coach-subscription.js",
-    "coach:list": "node scripts/manage-coach-subscription.js list"
+    "coach:list": "node scripts/manage-coach-subscription.js list",
+    "test": "npx playwright test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
