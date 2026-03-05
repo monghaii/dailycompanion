@@ -323,7 +323,7 @@ function UserDashboardContent() {
       }
     } else if (subscriptionParam === "success") {
       setToastMessage(
-        "🎉 Welcome to Daily Companion! Your subscription is now active.",
+        "Welcome to Daily Companion! Your subscription is now active.",
       );
       setShowToast(true);
       setTimeout(() => setShowToast(false), 5000);
@@ -412,7 +412,7 @@ function UserDashboardContent() {
     const handleMessage = (event) => {
       // Add origin check in production
       if (event.data.type === "PREVIEW_CONFIG_UPDATE") {
-        console.log("📥 Received config update in preview:", event.data.config);
+        console.log("Received config update in preview:", event.data.config);
         setCoachConfig(event.data.config);
         setIsConfigLoading(false);
       }
@@ -7342,7 +7342,7 @@ function UserDashboardContent() {
                         gap: "8px",
                       }}
                     >
-                      <span>🛠️</span>
+                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                       <div>
                         <strong>Test Account Mode:</strong>
                         <div style={{ fontSize: "12px", marginTop: "2px" }}>
@@ -7693,7 +7693,7 @@ function UserDashboardContent() {
                       color: "#1e40af",
                     }}
                   >
-                    💡 <strong>Save with yearly billing:</strong> Get 1 month
+                    <strong>Save with yearly billing:</strong> Get 1 month
                     free when you choose yearly (pay for 11 months, get 12
                     months access). Select yearly during checkout.
                   </div>

@@ -1199,7 +1199,7 @@ export default function ResourceHubSection({ checkAuthResponse, showToast, profi
                               )}
                               {item.link_url && (
                                 <span className="text-xs text-blue-500">
-                                  🔗 Link
+                                  Link
                                 </span>
                               )}
                             </div>

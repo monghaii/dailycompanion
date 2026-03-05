@@ -227,12 +227,12 @@ export async function POST(request) {
     if (usagePercentage >= 90) {
       warning = {
         level: "high",
-        message: `⚠️ You're approaching your monthly AI coach limit. Your usage will reset at the beginning of next month.`,
+        message: `You're approaching your monthly AI coach limit. Your usage will reset at the beginning of next month.`,
       };
     } else if (usagePercentage >= 50) {
       warning = {
         level: "medium",
-        message: `📊 You've used over half of your monthly AI coach limit. Your usage will reset at the beginning of next month. Plan accordingly!`,
+        message: `You've used over half of your monthly AI coach limit. Your usage will reset at the beginning of next month. Plan accordingly!`,
       };
     }
 

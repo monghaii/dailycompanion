@@ -502,7 +502,7 @@ function ClientsSection() {
           {/* Clients List */}
           {clients.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-12 text-center">
-              <div className="text-5xl mb-4">👥</div>
+              <div className="text-5xl mb-4"></div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 No clients yet
               </h3>
@@ -885,7 +885,7 @@ function DashboardContent() {
   const handleSaveProfile = async () => {
     const currentProfile = {
       ...profileConfig,
-      bio: document.getElementById("profile-bio")?.value ?? profileConfig.bio,
+      bio: (document.getElementById("profile-bio")?.value ?? profileConfig.bio)?.slice(0, 375),
       tagline:
         document.getElementById("profile-tagline")?.value ??
         profileConfig.tagline,

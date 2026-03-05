@@ -1,0 +1,18 @@
+---
+description: No emojis allowed in the codebase - use text, glyphs, or icon libraries instead
+alwaysApply: true
+---
+
+# No Emojis
+
+Never use pictographic emojis (the kind found on an iOS keyboard) anywhere in the codebase - UI strings, console logs, comments, or error messages.
+
+## What to avoid
+
+Unicode emoji characters like: 🎉 📊 ⚠️ ✅ 🔗 💡 🎵 ⏳ 👥 🌐 📥 📤 🔧 🚀 ✨ 🔥 etc.
+
+## What's fine to use
+
+- Standard Unicode glyphs/symbols: `×`, `✕`, `←`, `→`, `✓`, `✗`, `▼`, `•`
+- Icon libraries: FontAwesome, Lucide, Heroicons, or any SVG icon component
+- Plain text labels

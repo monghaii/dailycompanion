@@ -1343,7 +1343,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                     ) : logoLoadError && profileConfig.logo_url ? (
                       <div className="relative">
                         <div className="w-24 h-24 border-2 border-red-300 rounded-lg flex flex-col items-center justify-center text-red-500 text-xs p-2 text-center bg-red-50">
-                          <span className="text-lg mb-1">⚠️</span>
+                          <span className="text-lg mb-1">!</span>
                           <span>Failed to load</span>
                         </div>
                         <button
@@ -1879,9 +1879,17 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                         rows={3}
                         id="profile-bio"
                         defaultValue={profileConfig.bio}
+                        maxLength={375}
                         className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
                         placeholder="Tell your clients about yourself..."
+                        onChange={(e) => {
+                          const counter = document.getElementById("profile-bio-count");
+                          if (counter) counter.textContent = `${e.target.value.length}/375`;
+                        }}
                       />
+                      <p id="profile-bio-count" className="text-xs text-gray-400 mt-1 text-right">
+                        {(profileConfig.bio || "").length}/375
+                      </p>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1.5">
@@ -3715,7 +3723,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                           <div className="space-y-1">
                                             <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
                                               <span className="text-green-600">
-                                                🎵
+                                                Audio
                                               </span>
                                               <span className="text-green-700 flex-1 truncate">
                                                 {option.audio_path ? option.audio_path.split("/").pop() : "Audio uploaded"}
@@ -3768,13 +3776,12 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                               `${catIndex}-${optIndex}` ? (
                                                 <>
                                                   <span className="animate-spin">
-                                                    ⏳
+                                                    ...
                                                   </span>
                                                   Uploading...
                                                 </>
                                               ) : (
                                                 <>
-                                                  <span>🎵</span>
                                                   Upload Practice Audio
                                                 </>
                                               )}
@@ -4036,7 +4043,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                     spellCheck={false}
                   />
                   <div className="mt-2 text-xs text-gray-500">
-                    💡 Tip: The system prompt defines the AI's role,
+                    Tip: The system prompt defines the AI's role,
                     personality, and coaching approach. Be specific and
                     clear about the style of responses you want.
                   </div>
@@ -4438,7 +4445,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                   current_day_index: currentDayIndex,
                 };
                 console.log(
-                  "📤 Sending initial config on iframe load:",
+                  "Sending initial config on iframe load:",
                   config,
                 );
                 previewIframeRef.current.contentWindow.postMessage(

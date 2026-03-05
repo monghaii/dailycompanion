@@ -582,7 +582,7 @@ export default function CoachLandingPage() {
                     marginBottom: "32px",
                   }}
                 >
-                  {coach.bio}
+                  {coach.bio.length > 375 ? coach.bio.slice(0, 375) + "..." : coach.bio}
                 </p>
               )}
 

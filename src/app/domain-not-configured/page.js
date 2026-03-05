@@ -39,7 +39,6 @@ export default function DomainNotConfigured() {
             fontSize: '40px',
           }}
         >
-          🌐
         </div>
 
         {/* Title */}

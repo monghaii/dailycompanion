@@ -12,7 +12,7 @@ export default function AnalyticsSection() {
       <div className="p-8">
         <div className="max-w-7xl mx-auto">
           <div className="bg-white rounded-lg shadow p-12 text-center">
-            <div className="text-5xl mb-4">📊</div>
+            <div className="text-5xl mb-4"></div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
               Analytics Coming Soon
             </h3>
