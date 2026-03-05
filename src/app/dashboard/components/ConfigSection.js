@@ -28,6 +28,7 @@ export default function ConfigSection({
   handleSaveProfile,
   markPanelDirty,
   markPanelClean,
+  clearDirtyPanels,
   setUser,
 }) {
   const initialLoadDoneRef = useRef(false);
@@ -542,7 +543,7 @@ const fetchCoachConfig = async () => {
   const gen = loadGenRef.current;
   setTimeout(() => {
     if (gen === loadGenRef.current) {
-      setDirtyPanels(new Set());
+      clearDirtyPanels();
       initialLoadDoneRef.current = true;
     }
   }, 800);

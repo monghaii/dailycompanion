@@ -1361,6 +1361,7 @@ function DashboardContent() {
             handleSaveProfile={handleSaveProfile}
             markPanelDirty={markPanelDirty}
             markPanelClean={markPanelClean}
+            clearDirtyPanels={() => setDirtyPanels(new Set())}
             setUser={setUser}
           />
         )}
@@ -1371,6 +1372,8 @@ function DashboardContent() {
           <ResourceHubSection
             checkAuthResponse={checkAuthResponse}
             showToast={(msg) => { setToastMessage(msg); setShowToast(true); setTimeout(() => setShowToast(false), 3000); }}
+            profileConfig={profileConfig}
+            setActiveSection={setActiveSection}
           />
         )}
 
