@@ -3,6 +3,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 import { posthogIdentifyIfAllowed } from "@/components/PostHogProvider";
+import PolicyFooter from "@/components/PolicyFooter";
 
 function SignupContent({ coachSlug: serverCoachSlug, initialCoachData }) {
   const router = useRouter();
@@ -235,22 +236,29 @@ function SignupContent({ coachSlug: serverCoachSlug, initialCoachData }) {
       style={{
         minHeight: "100vh",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        flexDirection: "column",
         backgroundColor: "#f9fafb",
         padding: "20px",
       }}
     >
       <div
         style={{
-          backgroundColor: "#fff",
-          borderRadius: "16px",
-          padding: "48px",
-          maxWidth: "440px",
-          width: "100%",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
+        <div
+          style={{
+            backgroundColor: "#fff",
+            borderRadius: "16px",
+            padding: "48px",
+            maxWidth: "440px",
+            width: "100%",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+          }}
+        >
         {/* Branding */}
         <div
           style={{
@@ -537,7 +545,9 @@ function SignupContent({ coachSlug: serverCoachSlug, initialCoachData }) {
             Sign in
           </a>
         </div>
+        </div>
       </div>
+      <PolicyFooter />
     </div>
   );
 }

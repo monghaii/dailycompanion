@@ -6,9 +6,21 @@ import html2canvas from "html2canvas";
 import posthog from "posthog-js";
 
 const COUNTRY_CURRENCY_SYMBOL = {
-  US: "$", DE: "\u20ac", FR: "\u20ac", ES: "\u20ac", IT: "\u20ac",
-  NL: "\u20ac", IE: "\u20ac", BE: "\u20ac", AT: "\u20ac",
-  GB: "\u00a3", CA: "CA$", AU: "A$", NZ: "NZ$", CH: "CHF ", SG: "S$",
+  US: "$",
+  DE: "\u20ac",
+  FR: "\u20ac",
+  ES: "\u20ac",
+  IT: "\u20ac",
+  NL: "\u20ac",
+  IE: "\u20ac",
+  BE: "\u20ac",
+  AT: "\u20ac",
+  GB: "\u00a3",
+  CA: "CA$",
+  AU: "A$",
+  NZ: "NZ$",
+  CH: "CHF ",
+  SG: "S$",
 };
 
 export default function ConfigSection({
@@ -34,295 +46,297 @@ export default function ConfigSection({
   const initialLoadDoneRef = useRef(false);
   const loadGenRef = useRef(0);
   const [origin, setOrigin] = useState("");
-  useEffect(() => { setOrigin(window.location.origin); }, []);
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
-const [headerConfig, setHeaderConfig] = useState({
-  title: "BrainPeace",
-  subtitle: "Mental Fitness for Active Minds",
-});
+  const [headerConfig, setHeaderConfig] = useState({
+    title: "BrainPeace",
+    subtitle: "Mental Fitness for Active Minds",
+  });
 
-const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
-const [logoLoadError, setLogoLoadError] = useState(false);
+  const [logoLoadError, setLogoLoadError] = useState(false);
 
-const [uploadingAudio, setUploadingAudio] = useState(false);
+  const [uploadingAudio, setUploadingAudio] = useState(false);
 
-const [brandingConfig, setBrandingConfig] = useState({
-  primary_color: "#7c3aed",
-  background_type: "solid", // "solid" or "gradient"
-  background_color: "#f9fafb",
-  gradient_color_1: "#ff6b9d",
-  gradient_color_2: "#ffa057",
-  gradient_angle: 135,
-  gradient_spread: 50,
-  app_logo_url: null,
-  app_logo_size: "medium", // "small", "medium", "large"
-});
+  const [brandingConfig, setBrandingConfig] = useState({
+    primary_color: "#7c3aed",
+    background_type: "solid", // "solid" or "gradient"
+    background_color: "#f9fafb",
+    gradient_color_1: "#ff6b9d",
+    gradient_color_2: "#ffa057",
+    gradient_angle: 135,
+    gradient_spread: 50,
+    app_logo_url: null,
+    app_logo_size: "medium", // "small", "medium", "large"
+  });
 
-const [uploadingAppLogo, setUploadingAppLogo] = useState(false);
+  const [uploadingAppLogo, setUploadingAppLogo] = useState(false);
 
-const [audioLibrary, setAudioLibrary] = useState(
-  Array.from({ length: 30 }, (_, i) => ({
-    id: i,
-    audio_url: "",
-    audio_path: "",
-    name: "",
-  })),
-);
+  const [audioLibrary, setAudioLibrary] = useState(
+    Array.from({ length: 30 }, (_, i) => ({
+      id: i,
+      audio_url: "",
+      audio_path: "",
+      name: "",
+    })),
+  );
 
-const [currentDayIndex, setCurrentDayIndex] = useState(0);
+  const [currentDayIndex, setCurrentDayIndex] = useState(0);
 
-const [showPreview, setShowPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
-const [previewPosition, setPreviewPosition] = useState({ x: 800, y: 100 });
+  const [previewPosition, setPreviewPosition] = useState({ x: 800, y: 100 });
 
-const [isDragging, setIsDragging] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
-const dragRef = useRef({ offsetX: 0, offsetY: 0 });
+  const dragRef = useRef({ offsetX: 0, offsetY: 0 });
 
-const previewIframeRef = useRef(null);
+  const previewIframeRef = useRef(null);
 
-const focusPreviewRef = useRef(null);
+  const focusPreviewRef = useRef(null);
 
-const [focusConfig, setFocusConfig] = useState({
-  progress_bar: {
-    title: "Today's Focus",
-    subtitle: "Direct your energy intentionally",
-  },
-  task_1: {
-    enabled: true,
-    title: "Morning Meditation",
-    subtitle: "Start your day centered",
-    audio_url: "",
-    icon_url: null,
-  },
-  task_2: {
-    enabled: true,
-    title: "Set Daily Intention",
-    subtitle: "What matters most today?",
-    icon_url: null,
-    intention_modal_title: "Set Your Intention",
-    intention_obstacles_label: "What might get in the way today?",
-    intention_obstacles_placeholder:
-      "Meetings, distractions, fatigue, worry about...",
-    intention_focus_label: "One word to refocus your energy",
-    intention_focus_placeholder: "Peace, Presence, Trust, Joy...",
-  },
-  task_3: {
-    enabled: true,
-    title: "Evening Reflection",
-    subtitle: "Review your day",
-    icon_url: null,
-  },
-  day_notes: {
-    title: "Day Notes",
-    subtitle: "Capture thoughts and reflections",
-    icon_url: null,
-  },
-});
-
-const [awarenessConfig, setAwarenessConfig] = useState({
-  modal_title: "Nice catch!",
-  logs: [
-    {
-      id: "present",
-      label: "Present moment",
-      prompt: "What pattern did you catch? What did you do instead?",
-      placeholder: "I caught myself... and instead I...",
-      color: "#60a5fa",
+  const [focusConfig, setFocusConfig] = useState({
+    progress_bar: {
+      title: "Today's Focus",
+      subtitle: "Direct your energy intentionally",
     },
-    {
-      id: "gratitude",
-      label: "Felt gratitude",
-      prompt: "What are you grateful for? How did it make you feel?",
-      placeholder: "I felt grateful for... because...",
-      color: "#4ade80",
+    task_1: {
+      enabled: true,
+      title: "Morning Meditation",
+      subtitle: "Start your day centered",
+      audio_url: "",
+      icon_url: null,
     },
-    {
-      id: "pattern",
-      label: "Shifted a pattern",
-      prompt: "What pattern did you notice? What did you do differently?",
-      placeholder: "I noticed... and changed by...",
-      color: "#f87171",
+    task_2: {
+      enabled: true,
+      title: "Set Daily Intention",
+      subtitle: "What matters most today?",
+      icon_url: null,
+      intention_modal_title: "Set Your Intention",
+      intention_obstacles_label: "What might get in the way today?",
+      intention_obstacles_placeholder:
+        "Meetings, distractions, fatigue, worry about...",
+      intention_focus_label: "One word to refocus your energy",
+      intention_focus_placeholder: "Peace, Presence, Trust, Joy...",
     },
-  ],
-});
-
-const [emotionalStateConfig, setEmotionalStateConfig] = useState({
-  log_label: "Emotional State",
-  modal_subtitle: "Select all that apply",
-  categories: [
-    {
-      id: "challenging",
-      label: "CHALLENGING",
-      color: "#3b82f6",
-      options: [
-        {
-          name: "Stressed",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Anxious",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Overwhelmed",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Sad",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Angry",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Frustrated",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Restless",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Lonely",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Tired",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Scattered",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-      ],
+    task_3: {
+      enabled: true,
+      title: "Evening Reflection",
+      subtitle: "Review your day",
+      icon_url: null,
     },
-    {
-      id: "positive",
-      label: "POSITIVE",
-      color: "#10b981",
-      options: [
-        {
-          name: "Calm",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Joyful",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Creative",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Energized",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Grateful",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Peaceful",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Hopeful",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Content",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Confident",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-        {
-          name: "Inspired",
-          audio_url: "",
-          audio_path: "",
-          practice_name: "",
-          duration: "",
-        },
-      ],
+    day_notes: {
+      title: "Day Notes",
+      subtitle: "Capture thoughts and reflections",
+      icon_url: null,
     },
-  ],
-});
+  });
 
-const [uploadingEmotionAudio, setUploadingEmotionAudio] = useState(null);
+  const [awarenessConfig, setAwarenessConfig] = useState({
+    modal_title: "Nice catch!",
+    logs: [
+      {
+        id: "present",
+        label: "Present moment",
+        prompt: "What pattern did you catch? What did you do instead?",
+        placeholder: "I caught myself... and instead I...",
+        color: "#60a5fa",
+      },
+      {
+        id: "gratitude",
+        label: "Felt gratitude",
+        prompt: "What are you grateful for? How did it make you feel?",
+        placeholder: "I felt grateful for... because...",
+        color: "#4ade80",
+      },
+      {
+        id: "pattern",
+        label: "Shifted a pattern",
+        prompt: "What pattern did you notice? What did you do differently?",
+        placeholder: "I noticed... and changed by...",
+        color: "#f87171",
+      },
+    ],
+  });
 
-const [draggedEmotionOption, setDraggedEmotionOption] = useState(null);
+  const [emotionalStateConfig, setEmotionalStateConfig] = useState({
+    log_label: "Emotional State",
+    modal_subtitle: "Select all that apply",
+    categories: [
+      {
+        id: "challenging",
+        label: "CHALLENGING",
+        color: "#3b82f6",
+        options: [
+          {
+            name: "Stressed",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Anxious",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Overwhelmed",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Sad",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Angry",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Frustrated",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Restless",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Lonely",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Tired",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Scattered",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+        ],
+      },
+      {
+        id: "positive",
+        label: "POSITIVE",
+        color: "#10b981",
+        options: [
+          {
+            name: "Calm",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Joyful",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Creative",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Energized",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Grateful",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Peaceful",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Hopeful",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Content",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Confident",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+          {
+            name: "Inspired",
+            audio_url: "",
+            audio_path: "",
+            practice_name: "",
+            duration: "",
+          },
+        ],
+      },
+    ],
+  });
 
-const [uploadingBotProfilePicture, setUploadingBotProfilePicture] =
-  useState(false);
+  const [uploadingEmotionAudio, setUploadingEmotionAudio] = useState(null);
 
-const [uploadingTaskIcon, setUploadingTaskIcon] = useState(null); // null or "task_1", "task_2", "task_3", "day_notes"
+  const [draggedEmotionOption, setDraggedEmotionOption] = useState(null);
 
-const systemPromptRef = useRef(null);
+  const [uploadingBotProfilePicture, setUploadingBotProfilePicture] =
+    useState(false);
 
-const [coachTabConfig, setCoachTabConfig] = useState({
-  bot_profile_picture_url: null,
-  system_prompt: `You are a compassionate and insightful life coach. Your role is to:
+  const [uploadingTaskIcon, setUploadingTaskIcon] = useState(null); // null or "task_1", "task_2", "task_3", "day_notes"
+
+  const systemPromptRef = useRef(null);
+
+  const [coachTabConfig, setCoachTabConfig] = useState({
+    bot_profile_picture_url: null,
+    system_prompt: `You are a compassionate and insightful life coach. Your role is to:
 
 1. **Listen deeply** - Pay attention to what the user shares and acknowledge their feelings
 2. **Ask powerful questions** - Help users discover their own insights through thoughtful questions
@@ -354,747 +368,834 @@ Keep responses conversational, concise (2-4 paragraphs), and always end with eit
 - An invitation to share more about what they're experiencing
 
 Remember: You're here to empower them to find their own answers, not to fix their problems for them.`,
-  booking: {
-    enabled: false,
-    button_text: "Book a Call",
-    ai_disclaimer:
-      "Responses in chat are AI-generated and not directly from {coach_name}. This AI is trained on {coach_name}'s coaching style and experiences.",
-    options: [
-      {
-        id: 1,
-        title: "Discovery Call",
-        duration: "30 min",
-        description: "Free introductory session to discuss your goals",
-        url: "",
-      },
-      {
-        id: 2,
-        title: "1:1 Coaching Session",
-        duration: "60 min",
-        description: "Deep-dive coaching session for focused growth",
-        url: "",
-      },
-    ],
-  },
-});
+    booking: {
+      enabled: false,
+      button_text: "Book a Call",
+      ai_disclaimer:
+        "Responses in chat are AI-generated and not directly from {coach_name}. This AI is trained on {coach_name}'s coaching style and experiences.",
+      options: [
+        {
+          id: 1,
+          title: "Discovery Call",
+          duration: "30 min",
+          description: "Free introductory session to discuss your goals",
+          url: "",
+        },
+        {
+          id: 2,
+          title: "1:1 Coaching Session",
+          duration: "60 min",
+          description: "Deep-dive coaching session for focused growth",
+          url: "",
+        },
+      ],
+    },
+  });
 
-const [landingConfig, setLandingConfig] = useState({
-  hero: {
-    headline: "Transform Your Life with Personalized Coaching",
-    subheadline: "Join others on their journey to growth and fulfillment",
-    cta_button_text: "Start Your Journey",
-  },
-  coach_info: {
-    name: "",
-    title: "Life & Wellness Coach",
-    bio: "",
-    photo_url: null,
-  },
-  pricing: {
-    monthly_highlight: true,
-    show_yearly: true,
-    features: [
-      "Daily guided practices",
-      "AI-powered coaching conversations",
-      "Progress tracking & insights",
-      "Unlimited access to all features",
-    ],
-  },
-  testimonials: [],
-  branding: {
-    primary_color: "#7c3aed",
-    background_style: "gradient",
-  },
-  meta_description: "",
-});
+  const [landingConfig, setLandingConfig] = useState({
+    hero: {
+      headline: "Transform Your Life with Personalized Coaching",
+      subheadline: "Join others on their journey to growth and fulfillment",
+      cta_button_text: "Start Your Journey",
+    },
+    coach_info: {
+      name: "",
+      title: "Life & Wellness Coach",
+      bio: "",
+      photo_url: null,
+    },
+    pricing: {
+      monthly_highlight: true,
+      show_yearly: true,
+      features: [
+        "Daily guided practices",
+        "AI-powered coaching conversations",
+        "Progress tracking & insights",
+        "Unlimited access to all features",
+      ],
+    },
+    testimonials: [],
+    branding: {
+      primary_color: "#7c3aed",
+      background_style: "gradient",
+    },
+    meta_description: "",
+  });
 
-const [tokenUsage, setTokenUsage] = useState({
-  totalTokens: 0,
-  subscriberCount: 0,
-  averagePerUser: 0,
-  tokenLimit: 1000000,
-});
+  const [tokenUsage, setTokenUsage] = useState({
+    totalTokens: 0,
+    subscriberCount: 0,
+    averagePerUser: 0,
+    tokenLimit: 1000000,
+  });
 
-useEffect(() => {
-  setPreviewPosition({ x: window.innerWidth - 420, y: 100 });
-}, []);
+  useEffect(() => {
+    setPreviewPosition({ x: window.innerWidth - 420, y: 100 });
+  }, []);
 
   const cs = COUNTRY_CURRENCY_SYMBOL[coach?.stripe_country] || "$";
 
-const fetchCoachConfig = async () => {
-  try {
-    const res = await fetch("/api/coach/config");
-    if (checkAuthResponse(res)) return;
-    const data = await res.json();
+  const fetchCoachConfig = async () => {
+    try {
+      const res = await fetch("/api/coach/config");
+      if (checkAuthResponse(res)) return;
+      const data = await res.json();
 
-    if (res.ok && data.config) {
-      let config = data.config;
+      if (res.ok && data.config) {
+        let config = data.config;
 
-      // Parse sections if they are strings
-      const parseSection = (section) => {
-        if (typeof section === "string") {
-          try {
-            return JSON.parse(section);
-          } catch (e) {
-            return section;
+        // Parse sections if they are strings
+        const parseSection = (section) => {
+          if (typeof section === "string") {
+            try {
+              return JSON.parse(section);
+            } catch (e) {
+              return section;
+            }
+          }
+          return section;
+        };
+
+        if (config.awareness) {
+          setAwarenessConfig((prev) => ({
+            ...prev,
+            ...parseSection(config.awareness),
+          }));
+        }
+
+        if (config.focus_tab) {
+          const focusTabConfig = parseSection(config.focus_tab);
+          setFocusConfig((prev) => ({
+            ...prev,
+            ...focusTabConfig,
+          }));
+
+          // Load audio library if available
+          if (focusTabConfig.audio_library) {
+            setAudioLibrary(focusTabConfig.audio_library);
+          }
+          if (focusTabConfig.current_day_index !== undefined) {
+            setCurrentDayIndex(focusTabConfig.current_day_index);
           }
         }
-        return section;
-      };
 
-      if (config.awareness) {
-        setAwarenessConfig((prev) => ({
-          ...prev,
-          ...parseSection(config.awareness),
-        }));
-      }
-
-      if (config.focus_tab) {
-        const focusTabConfig = parseSection(config.focus_tab);
-        setFocusConfig((prev) => ({
-          ...prev,
-          ...focusTabConfig,
-        }));
-
-        // Load audio library if available
-        if (focusTabConfig.audio_library) {
-          setAudioLibrary(focusTabConfig.audio_library);
+        if (config.awareness_tab) {
+          setAwarenessConfig((prev) => ({
+            ...prev,
+            ...parseSection(config.awareness_tab),
+          }));
         }
-        if (focusTabConfig.current_day_index !== undefined) {
-          setCurrentDayIndex(focusTabConfig.current_day_index);
-        }
-      }
 
-      if (config.awareness_tab) {
-        setAwarenessConfig((prev) => ({
-          ...prev,
-          ...parseSection(config.awareness_tab),
-        }));
-      }
+        if (config.emotional_state_tab) {
+          const emotionalConfig = parseSection(config.emotional_state_tab);
 
-      if (config.emotional_state_tab) {
-        const emotionalConfig = parseSection(config.emotional_state_tab);
-
-        // Migrate old string format to new object format
-        if (emotionalConfig.categories) {
-          emotionalConfig.categories = emotionalConfig.categories.map(
-            (cat) => ({
-              ...cat,
-              options: (cat.options || []).map((opt) => {
-                // If it's already an object, return it
-                if (typeof opt === "object" && opt !== null) {
-                  return opt;
-                }
-                // If it's a string, convert to object
-                return {
-                  name: opt,
-                  audio_url: "",
-                  audio_path: "",
-                  practice_name: "",
-                  duration: "",
-                };
+          // Migrate old string format to new object format
+          if (emotionalConfig.categories) {
+            emotionalConfig.categories = emotionalConfig.categories.map(
+              (cat) => ({
+                ...cat,
+                options: (cat.options || []).map((opt) => {
+                  // If it's already an object, return it
+                  if (typeof opt === "object" && opt !== null) {
+                    return opt;
+                  }
+                  // If it's a string, convert to object
+                  return {
+                    name: opt,
+                    audio_url: "",
+                    audio_path: "",
+                    practice_name: "",
+                    duration: "",
+                  };
+                }),
               }),
-            }),
-          );
+            );
+          }
+
+          setEmotionalStateConfig((prev) => ({
+            ...prev,
+            ...emotionalConfig,
+          }));
         }
 
-        setEmotionalStateConfig((prev) => ({
-          ...prev,
-          ...emotionalConfig,
-        }));
+        if (config.header) {
+          setHeaderConfig((prev) => ({
+            ...prev,
+            ...parseSection(config.header),
+          }));
+        }
+
+        if (config.branding) {
+          setBrandingConfig((prev) => ({
+            ...prev,
+            ...parseSection(config.branding),
+          }));
+        }
+
+        if (config.coach_tab) {
+          setCoachTabConfig((prev) => ({
+            ...prev,
+            ...parseSection(config.coach_tab),
+          }));
+        }
       }
 
-      if (config.header) {
-        setHeaderConfig((prev) => ({
+      // Fetch landing page config (separate table)
+      const landingRes = await fetch("/api/coach/landing-config");
+      if (checkAuthResponse(landingRes)) return;
+      const landingData = await landingRes.json();
+      if (landingRes.ok && landingData.config) {
+        setLandingConfig((prev) => ({
           ...prev,
-          ...parseSection(config.header),
+          ...landingData.config,
         }));
       }
-
-      if (config.branding) {
-        setBrandingConfig((prev) => ({
-          ...prev,
-          ...parseSection(config.branding),
-        }));
+    } catch (error) {
+      console.error("Failed to fetch config:", error);
+    }
+    loadGenRef.current += 1;
+    const gen = loadGenRef.current;
+    setTimeout(() => {
+      if (gen === loadGenRef.current) {
+        clearDirtyPanels();
+        initialLoadDoneRef.current = true;
       }
-
-      if (config.coach_tab) {
-        setCoachTabConfig((prev) => ({
-          ...prev,
-          ...parseSection(config.coach_tab),
-        }));
-      }
-    }
-
-    // Fetch landing page config (separate table)
-    const landingRes = await fetch("/api/coach/landing-config");
-    if (checkAuthResponse(landingRes)) return;
-    const landingData = await landingRes.json();
-    if (landingRes.ok && landingData.config) {
-      setLandingConfig((prev) => ({
-        ...prev,
-        ...landingData.config,
-      }));
-    }
-  } catch (error) {
-    console.error("Failed to fetch config:", error);
-  }
-  loadGenRef.current += 1;
-  const gen = loadGenRef.current;
-  setTimeout(() => {
-    if (gen === loadGenRef.current) {
-      clearDirtyPanels();
-      initialLoadDoneRef.current = true;
-    }
-  }, 800);
-};
-
-const fetchTokenUsage = async () => {
-  try {
-    const res = await fetch("/api/coach/token-usage");
-    if (checkAuthResponse(res)) return;
-    const data = await res.json();
-
-    if (res.ok) {
-      setTokenUsage(data);
-    }
-  } catch (error) {
-    console.error("Failed to fetch token usage:", error);
-  }
-};
-
-const sendConfigToPreview = () => {
-  if (!showPreview || !previewIframeRef.current) return;
-
-  const config = {
-    header: headerConfig,
-    branding: brandingConfig,
-    focus_tab: focusConfig,
-    awareness_tab: awarenessConfig,
-    emotional_state_tab: emotionalStateConfig,
-    coach_tab: coachTabConfig,
-    audio_library: audioLibrary,
-    current_day_index: currentDayIndex,
+    }, 800);
   };
 
-  previewIframeRef.current.contentWindow?.postMessage(
-    {
-      type: "PREVIEW_CONFIG_UPDATE",
-      config: config,
-    },
-    window.location.origin,
-  );
-};
+  const fetchTokenUsage = async () => {
+    try {
+      const res = await fetch("/api/coach/token-usage");
+      if (checkAuthResponse(res)) return;
+      const data = await res.json();
 
-const handleLogoUpload = async (e) => {
-  console.log("handleLogoUpload triggered", e);
-  const file = e.target.files?.[0];
-  console.log("Selected file:", file);
-  if (!file) return;
+      if (res.ok) {
+        setTokenUsage(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch token usage:", error);
+    }
+  };
 
-  // Validate file type
-  const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-  if (!validTypes.includes(file.type)) {
-    showToast(
-      "Please upload a valid image (JPEG, PNG, GIF, or WebP)",
+  const sendConfigToPreview = () => {
+    if (!showPreview || !previewIframeRef.current) return;
+
+    const config = {
+      header: headerConfig,
+      branding: brandingConfig,
+      focus_tab: focusConfig,
+      awareness_tab: awarenessConfig,
+      emotional_state_tab: emotionalStateConfig,
+      coach_tab: coachTabConfig,
+      audio_library: audioLibrary,
+      current_day_index: currentDayIndex,
+    };
+
+    previewIframeRef.current.contentWindow?.postMessage(
+      {
+        type: "PREVIEW_CONFIG_UPDATE",
+        config: config,
+      },
+      window.location.origin,
     );
-    return;
-  }
-
-  // Validate file size (5MB)
-  if (file.size > 5 * 1024 * 1024) {
-    showToast("Image must be under 5MB. Please resize or compress it.");
-    return;
-  }
-
-  setUploadingLogo(true);
-  try {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("type", "logo");
-
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-    });
-
-    let data;
-    try { data = await res.json(); } catch { data = {}; }
-
-    if (res.ok && data.url) {
-      setProfileConfig((prev) => ({ ...prev, logo_url: data.url }));
-      setLogoLoadError(false);
-      showToast("Logo uploaded! Remember to save your profile.");
-    } else if (res.status === 401) {
-      handleSessionExpired();
-    } else {
-      showToast(data.error || "Failed to upload logo");
-    }
-  } catch (error) {
-    console.error("Upload error:", error);
-    showToast("Failed to upload logo. Check your connection and try again.");
-  } finally {
-    setUploadingLogo(false);
-  }
-};
-
-const handleAudioUpload = async (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-
-  // Validate file type
-  const validTypes = [
-    "audio/mpeg",
-    "audio/wav",
-    "audio/mp3",
-    "audio/mp4",
-    "audio/x-m4a",
-  ];
-  if (!validTypes.includes(file.type)) {
-    showToast("Please upload a valid audio file (MP3, WAV, M4A)");
-    return;
-  }
-
-  // Validate file size (50MB)
-  if (file.size > 50 * 1024 * 1024) {
-    showToast("File size must be less than 50MB");
-    return;
-  }
-
-  setUploadingAudio(true);
-  try {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("type", "audio");
-
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-    });
-
-    let data;
-    try { data = await res.json(); } catch { data = {}; }
-
-    if (res.ok && data.url) {
-      setFocusConfig((prev) => ({
-        ...prev,
-        task_1: {
-          ...prev.task_1,
-          audio_url: data.url,
-          audio_path: data.path,
-        },
-      }));
-      showToast(
-        "Audio uploaded! Remember to save your configuration.",
-      );
-    } else if (res.status === 401) {
-      handleSessionExpired();
-    } else {
-      showToast(data.error || "Failed to upload audio");
-    }
-  } catch (error) {
-    console.error("Upload error:", error);
-    showToast("Failed to upload audio. Check your connection and try again.");
-  } finally {
-    setUploadingAudio(false);
-  }
-};
-
-const handleRemoveAudio = () => {
-  setFocusConfig((prev) => ({
-    ...prev,
-    task_1: {
-      ...prev.task_1,
-      audio_url: "",
-      audio_path: "",
-    },
-  }));
-  showToast("Audio removed. Remember to save your configuration.");
-};
-
-const handleAddEmotionOption = (catIndex) => {
-  const newCategories = [...emotionalStateConfig.categories];
-
-  // Limit to 10 options per category
-  if (newCategories[catIndex].options.length >= 10) {
-    alert("Maximum of 10 emotion options per category reached.");
-    return;
-  }
-
-  newCategories[catIndex].options.push({
-    name: "",
-    audio_url: "",
-    audio_path: "",
-    practice_name: "",
-    duration: "",
-  });
-  setEmotionalStateConfig({
-    ...emotionalStateConfig,
-    categories: newCategories,
-  });
-};
-
-const handleRemoveEmotionOption = (catIndex, optIndex) => {
-  const newCategories = [...emotionalStateConfig.categories];
-  newCategories[catIndex].options.splice(optIndex, 1);
-  setEmotionalStateConfig({
-    ...emotionalStateConfig,
-    categories: newCategories,
-  });
-};
-
-const handleDragStartEmotionOption = (catIndex, optIndex) => {
-  setDraggedEmotionOption({ catIndex, optIndex });
-};
-
-const handleDragOverEmotionOption = (e) => {
-  e.preventDefault();
-};
-
-const handleDropEmotionOption = (catIndex, optIndex) => {
-  if (!draggedEmotionOption || draggedEmotionOption.catIndex !== catIndex) {
-    setDraggedEmotionOption(null);
-    return;
-  }
-
-  const newCategories = [...emotionalStateConfig.categories];
-  const category = newCategories[catIndex];
-  const draggedItem = category.options[draggedEmotionOption.optIndex];
-
-  // Remove from old position
-  category.options.splice(draggedEmotionOption.optIndex, 1);
-
-  // Insert at new position
-  category.options.splice(optIndex, 0, draggedItem);
-
-  setEmotionalStateConfig({
-    ...emotionalStateConfig,
-    categories: newCategories,
-  });
-
-  setDraggedEmotionOption(null);
-};
-
-const handleUpdateEmotionOption = (catIndex, optIndex, field, value) => {
-  if (field === "name" && value.length > 17) return;
-  const newCategories = [...emotionalStateConfig.categories];
-  newCategories[catIndex].options[optIndex][field] = value;
-  setEmotionalStateConfig({
-    ...emotionalStateConfig,
-    categories: newCategories,
-  });
-};
-
-const handleEmotionAudioUpload = async (e, catIndex, optIndex) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-
-  // Validate file type
-  const validTypes = [
-    "audio/mpeg",
-    "audio/wav",
-    "audio/mp3",
-    "audio/mp4",
-    "audio/x-m4a",
-  ];
-  if (!validTypes.includes(file.type)) {
-    showToast("Please upload a valid audio file (MP3, WAV, M4A)");
-    return;
-  }
-
-  // Validate file size (50MB)
-  if (file.size > 50 * 1024 * 1024) {
-    showToast("File size must be less than 50MB");
-    return;
-  }
-
-  setUploadingEmotionAudio(`${catIndex}-${optIndex}`);
-
-  // Get audio duration from file
-  const getAudioDuration = (file) => {
-    return new Promise((resolve) => {
-      const audio = document.createElement("audio");
-      const objectUrl = URL.createObjectURL(file);
-      audio.src = objectUrl;
-      audio.addEventListener("loadedmetadata", () => {
-        const duration = audio.duration;
-        URL.revokeObjectURL(objectUrl);
-        const minutes = Math.floor(duration / 60);
-        const seconds = Math.floor(duration % 60);
-        resolve(`${minutes} min${seconds > 0 ? ` ${seconds} sec` : ""}`);
-      });
-      audio.addEventListener("error", () => {
-        URL.revokeObjectURL(objectUrl);
-        resolve("");
-      });
-    });
   };
 
-  try {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("type", "audio");
+  const handleLogoUpload = async (e) => {
+    console.log("handleLogoUpload triggered", e);
+    const file = e.target.files?.[0];
+    console.log("Selected file:", file);
+    if (!file) return;
 
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-    });
-
-    let data;
-    try { data = await res.json(); } catch { data = {}; }
-
-    if (res.ok && data.url) {
-      const audioDuration = await getAudioDuration(file);
-
-      const newCategories = [...emotionalStateConfig.categories];
-      newCategories[catIndex].options[optIndex].audio_url = data.url;
-      newCategories[catIndex].options[optIndex].audio_path = data.path;
-      newCategories[catIndex].options[optIndex].duration = audioDuration;
-      setEmotionalStateConfig({
-        ...emotionalStateConfig,
-        categories: newCategories,
-      });
-      showToast(
-        "Audio uploaded! Remember to save your configuration.",
-      );
-    } else if (res.status === 401) {
-      handleSessionExpired();
-    } else {
-      showToast(data.error || "Failed to upload audio");
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      showToast("Please upload a valid image (JPEG, PNG, GIF, or WebP)");
+      return;
     }
-  } catch (error) {
-    console.error("Upload error:", error);
-    showToast("Failed to upload audio. Check your connection and try again.");
-  } finally {
-    setUploadingEmotionAudio(null);
-  }
-};
 
-const handleRemoveEmotionAudio = (catIndex, optIndex) => {
-  const newCategories = [...emotionalStateConfig.categories];
-  newCategories[catIndex].options[optIndex].audio_url = "";
-  newCategories[catIndex].options[optIndex].audio_path = "";
-  newCategories[catIndex].options[optIndex].duration = "";
-  setEmotionalStateConfig({
-    ...emotionalStateConfig,
-    categories: newCategories,
-  });
-  showToast("Audio removed. Remember to save your configuration.");
-};
+    if (file.size > 4.5 * 1024 * 1024) {
+      showToast("Image must be under 4.5MB. Please resize or compress it.");
+      return;
+    }
 
-const handleRemoveLogo = () => {
-  setProfileConfig((prev) => ({ ...prev, logo_url: null }));
-  setLogoLoadError(false);
-  showToast("Logo removed. Remember to save your profile.");
-};
+    setUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", "logo");
 
-const getLogoWidth = (size) => {
-  switch (size) {
-    case "small":
-      return "80px";
-    case "large":
-      return "320px";
-    case "medium":
-    default:
-      return "200px";
-  }
-};
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
 
-const handleSaveConfig = async (section, data, successMessage) => {
-  setIsSavingConfig(true);
-  setSavingSection(section);
-  try {
-    const res = await fetch("/api/coach/config", {
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
+
+      if (res.ok && data.url) {
+        setProfileConfig((prev) => ({ ...prev, logo_url: data.url }));
+        setLogoLoadError(false);
+        await handleSaveProfile({ logo_url: data.url });
+        showToast("Logo uploaded and saved!");
+      } else if (res.status === 401) {
+        handleSessionExpired();
+      } else {
+        showToast(data.error || "Failed to upload logo");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      showToast("Failed to upload logo. Check your connection and try again.");
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const uploadFileDirect = async (file, fileType) => {
+    const presignRes = await fetch("/api/upload/presign", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        path: [section],
-        value: data,
+        fileName: file.name,
+        fileType,
+        fileSize: file.size,
+        contentType: file.type,
       }),
     });
 
-    if (checkAuthResponse(res)) return;
-
-    const resData = await res.json();
-
-    if (res.ok) {
-      showToast(successMessage || "Config saved successfully!");
-      setTimeout(() => sendConfigToPreview(), 100);
-      posthog.capture("coach_config_saved", { section });
-      if (section === "branding") markPanelClean("branding");
-      else if (section === "header") markPanelClean("header");
-      else if (section === "focus_tab") markPanelClean("focus");
-      else if (section === "awareness_tab" || section === "emotional_state_tab") markPanelClean("awareness");
-      else if (section === "coach_tab") markPanelClean("coach_tab");
-
-      if (["branding", "header", "focus_tab"].includes(section)) {
-        setTimeout(() => captureFocusScreenshot(), 500);
-      }
-    } else {
-      showToast(
-        "Failed to save config: " + (resData.error || "Unknown error"),
-      );
+    if (presignRes.status === 401) {
+      handleSessionExpired();
+      return null;
     }
-  } catch (error) {
-    console.error("Save config error:", error);
-    showToast("Failed to save config");
-  } finally {
-    setIsSavingConfig(false);
-    setSavingSection(null);
-  }
-};
 
-const captureFocusScreenshot = async () => {
-  if (!focusPreviewRef.current) return;
-  try {
-    const canvas = await html2canvas(focusPreviewRef.current, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: null,
-      width: 393,
-      height: 852,
-      windowWidth: 393,
+    const presignData = await presignRes.json();
+    if (!presignRes.ok) {
+      throw new Error(presignData.error || "Failed to prepare upload");
+    }
+
+    const uploadRes = await fetch(presignData.signedUrl, {
+      method: "PUT",
+      headers: { "Content-Type": file.type },
+      body: file,
     });
-    const blob = await new Promise((resolve) =>
-      canvas.toBlob(resolve, "image/png"),
-    );
-    if (!blob) return;
-    const formData = new FormData();
-    formData.append(
-      "file",
-      new File([blob], "focus-screenshot.png", { type: "image/png" }),
-    );
-    formData.append("type", "screenshot");
-    formData.append("bucket", "public");
-    const res = await fetch("/api/upload", {
+
+    if (!uploadRes.ok) {
+      throw new Error("Failed to upload file to storage");
+    }
+
+    const completeRes = await fetch("/api/upload/complete", {
       method: "POST",
-      body: formData,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filePath: presignData.filePath,
+        bucketName: presignData.bucketName,
+      }),
     });
-    const data = await res.json();
-    if (res.ok && data.url) {
-      await fetch("/api/coach/config", {
+
+    if (completeRes.status === 401) {
+      handleSessionExpired();
+      return null;
+    }
+
+    const completeData = await completeRes.json();
+    if (!completeRes.ok) {
+      throw new Error(completeData.error || "Failed to finalize upload");
+    }
+
+    return { url: completeData.url, path: presignData.filePath };
+  };
+
+  const handleAudioUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = [
+      "audio/mpeg",
+      "audio/wav",
+      "audio/mp3",
+      "audio/mp4",
+      "audio/x-m4a",
+    ];
+    if (!validTypes.includes(file.type)) {
+      showToast("Please upload a valid audio file (MP3, WAV, M4A)");
+      return;
+    }
+
+    if (file.size > 4.5 * 1024 * 1024) {
+      showToast("Audio file must be under 4.5MB. Please compress it first.");
+      return;
+    }
+
+    setUploadingAudio(true);
+    try {
+      const result = await uploadFileDirect(file, "audio");
+      if (result) {
+        const updatedFocusConfig = {
+          ...focusConfig,
+          task_1: {
+            ...focusConfig.task_1,
+            audio_url: result.url,
+            audio_path: result.path,
+          },
+        };
+        setFocusConfig(updatedFocusConfig);
+
+        await handleSaveConfig(
+          "focus_tab",
+          {
+            ...updatedFocusConfig,
+            audio_library: audioLibrary.filter((a) => a.audio_url),
+            current_day_index: currentDayIndex,
+            library_start_date:
+              updatedFocusConfig.library_start_date || new Date().toISOString(),
+          },
+          "Audio uploaded and saved!",
+        );
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      showToast("Failed to upload audio. Check your connection and try again.");
+    } finally {
+      setUploadingAudio(false);
+    }
+  };
+
+  const handleRemoveAudio = async () => {
+    const updatedFocusConfig = {
+      ...focusConfig,
+      task_1: {
+        ...focusConfig.task_1,
+        audio_url: "",
+        audio_path: "",
+      },
+    };
+    setFocusConfig(updatedFocusConfig);
+    await handleSaveConfig(
+      "focus_tab",
+      {
+        ...updatedFocusConfig,
+        audio_library: audioLibrary.filter((a) => a.audio_url),
+        current_day_index: currentDayIndex,
+        library_start_date:
+          updatedFocusConfig.library_start_date || new Date().toISOString(),
+      },
+      "Audio removed and saved!",
+    );
+  };
+
+  const handleAddEmotionOption = (catIndex) => {
+    const newCategories = [...emotionalStateConfig.categories];
+
+    // Limit to 10 options per category
+    if (newCategories[catIndex].options.length >= 10) {
+      alert("Maximum of 10 emotion options per category reached.");
+      return;
+    }
+
+    newCategories[catIndex].options.push({
+      name: "",
+      audio_url: "",
+      audio_path: "",
+      practice_name: "",
+      duration: "",
+    });
+    setEmotionalStateConfig({
+      ...emotionalStateConfig,
+      categories: newCategories,
+    });
+  };
+
+  const handleRemoveEmotionOption = (catIndex, optIndex) => {
+    const newCategories = [...emotionalStateConfig.categories];
+    newCategories[catIndex].options.splice(optIndex, 1);
+    setEmotionalStateConfig({
+      ...emotionalStateConfig,
+      categories: newCategories,
+    });
+  };
+
+  const handleDragStartEmotionOption = (catIndex, optIndex) => {
+    setDraggedEmotionOption({ catIndex, optIndex });
+  };
+
+  const handleDragOverEmotionOption = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDropEmotionOption = (catIndex, optIndex) => {
+    if (!draggedEmotionOption || draggedEmotionOption.catIndex !== catIndex) {
+      setDraggedEmotionOption(null);
+      return;
+    }
+
+    const newCategories = [...emotionalStateConfig.categories];
+    const category = newCategories[catIndex];
+    const draggedItem = category.options[draggedEmotionOption.optIndex];
+
+    // Remove from old position
+    category.options.splice(draggedEmotionOption.optIndex, 1);
+
+    // Insert at new position
+    category.options.splice(optIndex, 0, draggedItem);
+
+    setEmotionalStateConfig({
+      ...emotionalStateConfig,
+      categories: newCategories,
+    });
+
+    setDraggedEmotionOption(null);
+  };
+
+  const handleUpdateEmotionOption = (catIndex, optIndex, field, value) => {
+    if (field === "name" && value.length > 17) return;
+    const newCategories = [...emotionalStateConfig.categories];
+    newCategories[catIndex].options[optIndex][field] = value;
+    setEmotionalStateConfig({
+      ...emotionalStateConfig,
+      categories: newCategories,
+    });
+  };
+
+  const handleEmotionAudioUpload = async (e, catIndex, optIndex) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = [
+      "audio/mpeg",
+      "audio/wav",
+      "audio/mp3",
+      "audio/mp4",
+      "audio/x-m4a",
+    ];
+    if (!validTypes.includes(file.type)) {
+      showToast("Please upload a valid audio file (MP3, WAV, M4A)");
+      return;
+    }
+
+    if (file.size > 4.5 * 1024 * 1024) {
+      showToast("Audio file must be under 4.5MB. Please compress it first.");
+      return;
+    }
+
+    setUploadingEmotionAudio(`${catIndex}-${optIndex}`);
+
+    const getAudioDuration = (file) => {
+      return new Promise((resolve) => {
+        const audio = document.createElement("audio");
+        const objectUrl = URL.createObjectURL(file);
+        audio.src = objectUrl;
+        audio.addEventListener("loadedmetadata", () => {
+          const duration = audio.duration;
+          URL.revokeObjectURL(objectUrl);
+          const minutes = Math.floor(duration / 60);
+          const seconds = Math.floor(duration % 60);
+          resolve(`${minutes} min${seconds > 0 ? ` ${seconds} sec` : ""}`);
+        });
+        audio.addEventListener("error", () => {
+          URL.revokeObjectURL(objectUrl);
+          resolve("");
+        });
+      });
+    };
+
+    try {
+      const result = await uploadFileDirect(file, "audio");
+      if (result) {
+        const audioDuration = await getAudioDuration(file);
+
+        const newCategories = [...emotionalStateConfig.categories];
+        newCategories[catIndex].options[optIndex].audio_url = result.url;
+        newCategories[catIndex].options[optIndex].audio_path = result.path;
+        newCategories[catIndex].options[optIndex].duration = audioDuration;
+        const updatedConfig = {
+          ...emotionalStateConfig,
+          categories: newCategories,
+        };
+        setEmotionalStateConfig(updatedConfig);
+
+        const cleanedConfig = {
+          ...updatedConfig,
+          categories: updatedConfig.categories.map((cat) => ({
+            ...cat,
+            options: cat.options.filter(
+              (opt) => opt.name && opt.name.trim() !== "",
+            ),
+          })),
+        };
+        await handleSaveConfig(
+          "emotional_state_tab",
+          cleanedConfig,
+          "Audio uploaded and saved!",
+        );
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      showToast("Failed to upload audio. Check your connection and try again.");
+    } finally {
+      setUploadingEmotionAudio(null);
+    }
+  };
+
+  const handleRemoveEmotionAudio = async (catIndex, optIndex) => {
+    const newCategories = [...emotionalStateConfig.categories];
+    newCategories[catIndex].options[optIndex].audio_url = "";
+    newCategories[catIndex].options[optIndex].audio_path = "";
+    newCategories[catIndex].options[optIndex].duration = "";
+    const updatedConfig = {
+      ...emotionalStateConfig,
+      categories: newCategories,
+    };
+    setEmotionalStateConfig(updatedConfig);
+    const cleanedConfig = {
+      ...updatedConfig,
+      categories: updatedConfig.categories.map((cat) => ({
+        ...cat,
+        options: cat.options.filter(
+          (opt) => opt.name && opt.name.trim() !== "",
+        ),
+      })),
+    };
+    await handleSaveConfig(
+      "emotional_state_tab",
+      cleanedConfig,
+      "Audio removed and saved!",
+    );
+  };
+
+  const handleRemoveLogo = async () => {
+    setProfileConfig((prev) => ({ ...prev, logo_url: null }));
+    setLogoLoadError(false);
+    await handleSaveProfile({ logo_url: null });
+    showToast("Logo removed and saved!");
+  };
+
+  const getLogoWidth = (size) => {
+    switch (size) {
+      case "small":
+        return "80px";
+      case "large":
+        return "320px";
+      case "medium":
+      default:
+        return "200px";
+    }
+  };
+
+  const handleSaveConfig = async (section, data, successMessage) => {
+    setIsSavingConfig(true);
+    setSavingSection(section);
+    try {
+      const res = await fetch("/api/coach/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          path: ["focus_screenshot_url"],
-          value: data.url,
+          path: [section],
+          value: data,
         }),
       });
+
+      if (checkAuthResponse(res)) return;
+
+      const resData = await res.json();
+
+      if (res.ok) {
+        showToast(successMessage || "Config saved successfully!");
+        setTimeout(() => sendConfigToPreview(), 100);
+        posthog.capture("coach_config_saved", { section });
+        if (section === "branding") markPanelClean("branding");
+        else if (section === "header") markPanelClean("header");
+        else if (section === "focus_tab") markPanelClean("focus");
+        else if (
+          section === "awareness_tab" ||
+          section === "emotional_state_tab"
+        )
+          markPanelClean("awareness");
+        else if (section === "coach_tab") markPanelClean("coach_tab");
+
+        if (["branding", "header", "focus_tab"].includes(section)) {
+          setTimeout(() => captureFocusScreenshot(), 500);
+        }
+      } else {
+        showToast(
+          "Failed to save config: " + (resData.error || "Unknown error"),
+        );
+      }
+    } catch (error) {
+      console.error("Save config error:", error);
+      showToast("Failed to save config");
+    } finally {
+      setIsSavingConfig(false);
+      setSavingSection(null);
     }
-  } catch (err) {
-    console.error("Screenshot capture error:", err);
-  }
-};
-
-const handleSaveLandingConfig = async () => {
-  const currentConfig = {
-    hero: landingConfig.hero,
-    coach_info: {
-      ...landingConfig.coach_info,
-      name:
-        document.getElementById("landing-coach-name")?.value ||
-        landingConfig.coach_info.name,
-      title:
-        document.getElementById("landing-coach-title")?.value ||
-        landingConfig.coach_info.title,
-      bio:
-        document.getElementById("landing-coach-bio")?.value ||
-        landingConfig.coach_info.bio,
-    },
-    pricing: {
-      ...landingConfig.pricing,
-      monthly_highlight:
-        document.getElementById("landing-pricing-monthly")?.checked ??
-        landingConfig.pricing.monthly_highlight,
-      show_yearly:
-        document.getElementById("landing-pricing-yearly")?.checked ??
-        landingConfig.pricing.show_yearly,
-      features: (
-        document.getElementById("landing-pricing-features")?.value || ""
-      )
-        .split("\n")
-        .filter((f) => f.trim()),
-    },
-    testimonials: landingConfig.testimonials,
-    branding: landingConfig.branding,
-    meta_description:
-      document.getElementById("landing-meta-description")?.value ||
-      landingConfig.meta_description ||
-      "",
   };
 
-  setLandingConfig(currentConfig);
-
-  const res = await fetch("/api/coach/landing-config", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ config: currentConfig }),
-  });
-
-  if (checkAuthResponse(res)) return;
-  const resData = await res.json();
-  if (!res.ok) throw new Error(resData.error || "Failed to save landing config");
-};
-
-const handleSaveAll = async () => {
-  setIsSavingConfig(true);
-  setSavingSection("all");
-  try {
-    await handleSaveProfile();
-    await handleSaveLandingConfig();
-    await captureFocusScreenshot();
-    markPanelClean("landing");
-    showToast("Landing page saved successfully!");
-  } catch (error) {
-    console.error("Save error:", error);
-    showToast("Failed to save: " + (error.message || "Unknown error"));
-  } finally {
-    setIsSavingConfig(false);
-    setSavingSection(null);
-  }
-};
-
-const handlePreviewMouseDown = (e) => {
-  dragRef.current = {
-    offsetX: e.clientX - previewPosition.x,
-    offsetY: e.clientY - previewPosition.y,
-  };
-  setIsDragging(true);
-};
-
-useEffect(() => {
-  if (!isDragging) return;
-
-  let rafId = null;
-  const handlePreviewMouseMove = (e) => {
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = requestAnimationFrame(() => {
-      setPreviewPosition({
-        x: e.clientX - dragRef.current.offsetX,
-        y: e.clientY - dragRef.current.offsetY,
+  const captureFocusScreenshot = async () => {
+    if (!focusPreviewRef.current) return;
+    try {
+      const canvas = await html2canvas(focusPreviewRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: null,
+        width: 393,
+        height: 852,
+        windowWidth: 393,
       });
+      const blob = await new Promise((resolve) =>
+        canvas.toBlob(resolve, "image/png"),
+      );
+      if (!blob) return;
+      const formData = new FormData();
+      formData.append(
+        "file",
+        new File([blob], "focus-screenshot.png", { type: "image/png" }),
+      );
+      formData.append("type", "screenshot");
+      formData.append("bucket", "public");
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        await fetch("/api/coach/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            path: ["focus_screenshot_url"],
+            value: data.url,
+          }),
+        });
+      }
+    } catch (err) {
+      console.error("Screenshot capture error:", err);
+    }
+  };
+
+  const handleSaveLandingConfig = async () => {
+    const currentConfig = {
+      hero: landingConfig.hero,
+      coach_info: {
+        ...landingConfig.coach_info,
+        name:
+          document.getElementById("landing-coach-name")?.value ||
+          landingConfig.coach_info.name,
+        title:
+          document.getElementById("landing-coach-title")?.value ||
+          landingConfig.coach_info.title,
+        bio:
+          document.getElementById("landing-coach-bio")?.value ||
+          landingConfig.coach_info.bio,
+      },
+      pricing: {
+        ...landingConfig.pricing,
+        monthly_highlight:
+          document.getElementById("landing-pricing-monthly")?.checked ??
+          landingConfig.pricing.monthly_highlight,
+        show_yearly:
+          document.getElementById("landing-pricing-yearly")?.checked ??
+          landingConfig.pricing.show_yearly,
+        features: (
+          document.getElementById("landing-pricing-features")?.value || ""
+        )
+          .split("\n")
+          .filter((f) => f.trim()),
+      },
+      testimonials: landingConfig.testimonials,
+      branding: landingConfig.branding,
+      meta_description:
+        document.getElementById("landing-meta-description")?.value ||
+        landingConfig.meta_description ||
+        "",
+    };
+
+    setLandingConfig(currentConfig);
+
+    const res = await fetch("/api/coach/landing-config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ config: currentConfig }),
     });
+
+    if (checkAuthResponse(res)) return;
+    const resData = await res.json();
+    if (!res.ok)
+      throw new Error(resData.error || "Failed to save landing config");
   };
 
-  const handlePreviewMouseUp = () => {
-    if (rafId) cancelAnimationFrame(rafId);
-    setIsDragging(false);
+  const handleSaveAll = async () => {
+    setIsSavingConfig(true);
+    setSavingSection("all");
+    try {
+      await handleSaveProfile();
+      await handleSaveLandingConfig();
+      await captureFocusScreenshot();
+      markPanelClean("landing");
+      showToast("Landing page saved successfully!");
+    } catch (error) {
+      console.error("Save error:", error);
+      showToast("Failed to save: " + (error.message || "Unknown error"));
+    } finally {
+      setIsSavingConfig(false);
+      setSavingSection(null);
+    }
   };
 
-  document.addEventListener("mousemove", handlePreviewMouseMove);
-  document.addEventListener("mouseup", handlePreviewMouseUp);
-  return () => {
-    document.removeEventListener("mousemove", handlePreviewMouseMove);
-    document.removeEventListener("mouseup", handlePreviewMouseUp);
+  const handlePreviewMouseDown = (e) => {
+    dragRef.current = {
+      offsetX: e.clientX - previewPosition.x,
+      offsetY: e.clientY - previewPosition.y,
+    };
+    setIsDragging(true);
   };
-}, [isDragging]);
 
-useEffect(() => { markPanelDirty("landing"); }, [profileConfig, landingConfig]);
-useEffect(() => { markPanelDirty("branding"); }, [brandingConfig]);
-useEffect(() => { markPanelDirty("header"); }, [headerConfig]);
-useEffect(() => { markPanelDirty("focus"); }, [focusConfig, audioLibrary]);
-useEffect(() => { markPanelDirty("awareness"); }, [awarenessConfig, emotionalStateConfig]);
-useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
+  useEffect(() => {
+    if (!isDragging) return;
+
+    let rafId = null;
+    const handlePreviewMouseMove = (e) => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        setPreviewPosition({
+          x: e.clientX - dragRef.current.offsetX,
+          y: e.clientY - dragRef.current.offsetY,
+        });
+      });
+    };
+
+    const handlePreviewMouseUp = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      setIsDragging(false);
+    };
+
+    document.addEventListener("mousemove", handlePreviewMouseMove);
+    document.addEventListener("mouseup", handlePreviewMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handlePreviewMouseMove);
+      document.removeEventListener("mouseup", handlePreviewMouseUp);
+    };
+  }, [isDragging]);
+
+  useEffect(() => {
+    markPanelDirty("landing");
+  }, [profileConfig, landingConfig]);
+  useEffect(() => {
+    markPanelDirty("branding");
+  }, [brandingConfig]);
+  useEffect(() => {
+    markPanelDirty("header");
+  }, [headerConfig]);
+  useEffect(() => {
+    markPanelDirty("focus");
+  }, [focusConfig, audioLibrary]);
+  useEffect(() => {
+    markPanelDirty("awareness");
+  }, [awarenessConfig, emotionalStateConfig]);
+  useEffect(() => {
+    markPanelDirty("coach_tab");
+  }, [coachTabConfig]);
 
   useEffect(() => {
     fetchCoachConfig();
@@ -1107,9 +1208,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
       <div className="bg-white border-b border-gray-200 px-8 py-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Configuration
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-900">Configuration</h1>
             <p className="text-gray-600 mt-1">
               Customize your Daily Companion instance
             </p>
@@ -1128,18 +1227,11 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <rect
-                x="2"
-                y="3"
-                width="20"
-                height="14"
-                rx="2"
-                ry="2"
-              ></rect>
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
               <line x1="8" y1="21" x2="16" y2="21"></line>
               <line x1="12" y1="17" x2="12" y2="21"></line>
             </svg>
-            Preview
+            Companion Preview
           </button>
         </div>
       </div>
@@ -1166,8 +1258,8 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
               Direct Signup Links
             </h3>
             <p className="text-xs text-gray-600 mb-4">
-              Share these links to allow users to sign up directly for
-              free or premium
+              Share these links to allow users to sign up directly for free or
+              premium
             </p>
             <div className="space-y-3">
               <div>
@@ -1237,7 +1329,9 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
               {profileConfig.tier3_enabled && (
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    {profileConfig.tier3_name || "Premium Plus"} Signup Link ({cs}{tier3PriceInput}/month)
+                    {profileConfig.tier3_name || "Premium Plus"} Signup Link (
+                    {cs}
+                    {tier3PriceInput}/month)
                   </label>
                   <div className="flex items-center gap-2">
                     <input
@@ -1313,8 +1407,8 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                     Business Logo
                   </label>
                   <p className="text-xs text-gray-400 mb-2">
-                    This also serves as the favicon (browser tab icon) for
-                    your companion app and landing page.
+                    This also serves as the favicon (browser tab icon) for your
+                    companion app and landing page.
                   </p>
                   <div className="flex items-start gap-4">
                     {profileConfig.logo_url && !logoLoadError ? (
@@ -1359,8 +1453,18 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                         {uploadingLogo ? (
                           <div className="w-6 h-6 border-2 border-gray-300 border-t-purple-500 rounded-full animate-spin" />
                         ) : (
-                          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                          <svg
+                            className="w-8 h-8"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            strokeWidth={1.5}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"
+                            />
                           </svg>
                         )}
                       </div>
@@ -1386,7 +1490,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                         {uploadingLogo ? "Uploading..." : "Choose Image"}
                       </label>
                       <p className="text-xs text-gray-500 mt-2">
-                        JPEG, PNG, GIF, or WebP. Max 5MB.
+                        JPEG, PNG, GIF, or WebP. Max 4.5MB.
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
                         Recommended: Square image, at least 200x200px
@@ -1497,7 +1601,9 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                         <div className="space-y-3">
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <label className="block text-xs text-gray-500 mb-1">Color 1</label>
+                              <label className="block text-xs text-gray-500 mb-1">
+                                Color 1
+                              </label>
                               <div className="flex items-center gap-1.5">
                                 <input
                                   type="color"
@@ -1524,7 +1630,9 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                               </div>
                             </div>
                             <div>
-                              <label className="block text-xs text-gray-500 mb-1">Color 2</label>
+                              <label className="block text-xs text-gray-500 mb-1">
+                                Color 2
+                              </label>
                               <div className="flex items-center gap-1.5">
                                 <input
                                   type="color"
@@ -1607,7 +1715,8 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                     App Logo
                   </h3>
                   <p className="text-xs text-gray-400 mb-2">
-                    Replaces the title text in your client&apos;s in-app header only. Does not appear on your landing page.
+                    Replaces the title text in your client&apos;s in-app header
+                    only. Does not appear on your landing page.
                   </p>
 
                   {brandingConfig.app_logo_url && (
@@ -1616,15 +1725,10 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                         className="rounded-lg overflow-hidden border border-gray-200"
                         style={{
                           background: (() => {
-                            if (
-                              brandingConfig.background_type ===
-                              "gradient"
-                            ) {
+                            if (brandingConfig.background_type === "gradient") {
                               return `linear-gradient(${brandingConfig.gradient_angle}deg, ${brandingConfig.gradient_color_1} 0%, ${brandingConfig.gradient_color_2} ${brandingConfig.gradient_spread}%, ${brandingConfig.gradient_color_2} 100%)`;
                             }
-                            return (
-                              brandingConfig.background_color || "#f9fafb"
-                            );
+                            return brandingConfig.background_color || "#f9fafb";
                           })(),
                           padding: "20px 16px",
                           textAlign: "center",
@@ -1634,9 +1738,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           src={brandingConfig.app_logo_url}
                           alt="App Logo Preview"
                           style={{
-                            width: getLogoWidth(
-                              brandingConfig.app_logo_size,
-                            ),
+                            width: getLogoWidth(brandingConfig.app_logo_size),
                             maxWidth: "90%",
                             height: "auto",
                             objectFit: "contain",
@@ -1701,13 +1803,22 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                       const file = e.target.files?.[0];
                       if (!file) return;
 
-                      const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+                      const validTypes = [
+                        "image/jpeg",
+                        "image/png",
+                        "image/gif",
+                        "image/webp",
+                      ];
                       if (!validTypes.includes(file.type)) {
-                        showToast("Please upload a valid image (JPEG, PNG, GIF, or WebP)");
+                        showToast(
+                          "Please upload a valid image (JPEG, PNG, GIF, or WebP)",
+                        );
                         return;
                       }
-                      if (file.size > 5 * 1024 * 1024) {
-                        showToast("Image must be under 5MB. Please resize or compress it.");
+                      if (file.size > 4.5 * 1024 * 1024) {
+                        showToast(
+                          "Image must be under 4.5MB. Please resize or compress it.",
+                        );
                         return;
                       }
 
@@ -1722,13 +1833,23 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           body: formData,
                         });
                         let data;
-                        try { data = await res.json(); } catch { data = {}; }
+                        try {
+                          data = await res.json();
+                        } catch {
+                          data = {};
+                        }
 
                         if (res.ok && data.url) {
-                          setBrandingConfig({
+                          const updatedBranding = {
                             ...brandingConfig,
                             app_logo_url: data.url,
-                          });
+                          };
+                          setBrandingConfig(updatedBranding);
+                          await handleSaveConfig(
+                            "branding",
+                            updatedBranding,
+                            "App logo uploaded and saved!",
+                          );
                         } else if (res.status === 401) {
                           handleSessionExpired();
                         } else {
@@ -1736,7 +1857,9 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                         }
                       } catch (error) {
                         console.error("Upload error:", error);
-                        showToast("Failed to upload logo. Check your connection and try again.");
+                        showToast(
+                          "Failed to upload logo. Check your connection and try again.",
+                        );
                       } finally {
                         setUploadingAppLogo(false);
                       }
@@ -1745,9 +1868,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                     disabled={uploadingAppLogo}
                   />
                   {uploadingAppLogo && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Uploading...
-                    </p>
+                    <p className="text-xs text-gray-500 mt-1">Uploading...</p>
                   )}
                 </div>
 
@@ -1761,9 +1882,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                         "Branding saved successfully!",
                       )
                     }
-                    disabled={
-                      isSavingConfig && savingSection === "branding"
-                    }
+                    disabled={isSavingConfig && savingSection === "branding"}
                     className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSavingConfig && savingSection === "branding"
@@ -1883,11 +2002,16 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                         className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
                         placeholder="Tell your clients about yourself..."
                         onChange={(e) => {
-                          const counter = document.getElementById("profile-bio-count");
-                          if (counter) counter.textContent = `${e.target.value.length}/375`;
+                          const counter =
+                            document.getElementById("profile-bio-count");
+                          if (counter)
+                            counter.textContent = `${e.target.value.length}/375`;
                         }}
                       />
-                      <p id="profile-bio-count" className="text-xs text-gray-400 mt-1 text-right">
+                      <p
+                        id="profile-bio-count"
+                        className="text-xs text-gray-400 mt-1 text-right"
+                      >
                         {(profileConfig.bio || "").length}/375
                       </p>
                     </div>
@@ -1924,7 +2048,8 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                     Coach Info
                   </h3>
                   <p className="text-xs text-gray-400 mb-3">
-                    Shown in the &ldquo;Made by&rdquo; section on your landing page
+                    Shown in the &ldquo;Made by&rdquo; section on your landing
+                    page
                   </p>
                   <div className="space-y-4">
                     <div>
@@ -1976,9 +2101,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                       <input
                         type="checkbox"
                         id="landing-pricing-monthly"
-                        defaultChecked={
-                          landingConfig.pricing.monthly_highlight
-                        }
+                        defaultChecked={landingConfig.pricing.monthly_highlight}
                         className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                       />
                       <label className="text-xs font-medium text-gray-700">
@@ -1990,9 +2113,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                       <input
                         type="checkbox"
                         id="landing-pricing-yearly"
-                        defaultChecked={
-                          landingConfig.pricing.show_yearly
-                        }
+                        defaultChecked={landingConfig.pricing.show_yearly}
                         className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                       />
                       <label className="text-xs font-medium text-gray-700">
@@ -2005,9 +2126,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                       </label>
                       <textarea
                         id="landing-pricing-features"
-                        defaultValue={landingConfig.pricing.features.join(
-                          "\n",
-                        )}
+                        defaultValue={landingConfig.pricing.features.join("\n")}
                         rows={5}
                         className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent font-mono"
                         placeholder="Daily guided practices&#10;AI-powered coaching&#10;Progress tracking"
@@ -2027,17 +2146,15 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                     </label>
                     <textarea
                       id="landing-meta-description"
-                      defaultValue={
-                        landingConfig.meta_description || ""
-                      }
+                      defaultValue={landingConfig.meta_description || ""}
                       rows={3}
                       maxLength={160}
                       className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                       placeholder="A short description for search results and social media previews (max 160 characters)"
                     />
                     <p className="text-xs text-gray-400 mt-1">
-                      Appears in Google search results and social media
-                      previews when someone shares your landing page.
+                      Appears in Google search results and social media previews
+                      when someone shares your landing page.
                     </p>
                   </div>
                 </div>
@@ -2077,8 +2194,8 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
               <div className="p-6 space-y-6">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    App Title (Replaced by App Logo under Branding
-                    Section, if present)
+                    App Title (Replaced by App Logo under Branding Section, if
+                    present)
                   </label>
                   <input
                     type="text"
@@ -2121,9 +2238,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                         "Header config saved!",
                       )
                     }
-                    disabled={
-                      isSavingConfig && savingSection === "header"
-                    }
+                    disabled={isSavingConfig && savingSection === "header"}
                     className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSavingConfig && savingSection === "header"
@@ -2235,9 +2350,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           }
                           className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                         />
-                        <span className="text-xs text-gray-600">
-                          Enabled
-                        </span>
+                        <span className="text-xs text-gray-600">Enabled</span>
                       </label>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -2288,8 +2401,8 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           Custom Icon
                         </label>
                         <p className="text-xs text-gray-500 mb-2">
-                          Upload a custom icon to replace the default.
-                          Leave empty to use the default icon.
+                          Upload a custom icon to replace the default. Leave
+                          empty to use the default icon.
                         </p>
 
                         {focusConfig.task_1.icon_url && (
@@ -2301,15 +2414,30 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                             />
                             <button
                               type="button"
-                              onClick={() =>
-                                setFocusConfig({
+                              onClick={async () => {
+                                const updatedFocusConfig = {
                                   ...focusConfig,
                                   task_1: {
                                     ...focusConfig.task_1,
                                     icon_url: null,
                                   },
-                                })
-                              }
+                                };
+                                setFocusConfig(updatedFocusConfig);
+                                await handleSaveConfig(
+                                  "focus_tab",
+                                  {
+                                    ...updatedFocusConfig,
+                                    audio_library: audioLibrary.filter(
+                                      (a) => a.audio_url,
+                                    ),
+                                    current_day_index: currentDayIndex,
+                                    library_start_date:
+                                      updatedFocusConfig.library_start_date ||
+                                      new Date().toISOString(),
+                                  },
+                                  "Icon removed and saved!",
+                                );
+                              }}
                               className="text-xs text-red-600 hover:text-red-700"
                             >
                               Remove Icon
@@ -2323,6 +2451,12 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
+                            if (file.size > 4.5 * 1024 * 1024) {
+                              showToast(
+                                "Image must be under 4.5MB. Please resize or compress it.",
+                              );
+                              return;
+                            }
 
                             setUploadingTaskIcon("task_1");
                             const formData = new FormData();
@@ -2337,19 +2471,34 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                               const data = await res.json();
 
                               if (res.ok) {
-                                setFocusConfig({
+                                const updatedFocusConfig = {
                                   ...focusConfig,
                                   task_1: {
                                     ...focusConfig.task_1,
                                     icon_url: data.url,
                                   },
-                                });
+                                };
+                                setFocusConfig(updatedFocusConfig);
+                                await handleSaveConfig(
+                                  "focus_tab",
+                                  {
+                                    ...updatedFocusConfig,
+                                    audio_library: audioLibrary.filter(
+                                      (a) => a.audio_url,
+                                    ),
+                                    current_day_index: currentDayIndex,
+                                    library_start_date:
+                                      updatedFocusConfig.library_start_date ||
+                                      new Date().toISOString(),
+                                  },
+                                  "Icon uploaded and saved!",
+                                );
                               } else {
-                                alert("Failed to upload icon");
+                                showToast("Failed to upload icon");
                               }
                             } catch (error) {
                               console.error("Upload error:", error);
-                              alert("Failed to upload icon");
+                              showToast("Failed to upload icon");
                             } finally {
                               setUploadingTaskIcon(null);
                             }
@@ -2372,8 +2521,8 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           </span>
                         </label>
                         <p className="text-xs text-gray-500 mb-3">
-                          Upload multiple audio files. Each day uses the
-                          next audio in sequence.
+                          Upload multiple audio files. Each day uses the next
+                          audio in sequence.
                         </p>
 
                         <div className="space-y-2 max-h-[500px] overflow-y-auto border border-gray-200 rounded-lg p-3">
@@ -2388,7 +2537,10 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                   key={audio.id}
                                   draggable
                                   onDragStart={(e) => {
-                                    e.dataTransfer.setData("text/plain", String(index));
+                                    e.dataTransfer.setData(
+                                      "text/plain",
+                                      String(index),
+                                    );
                                     e.currentTarget.style.opacity = "0.5";
                                   }}
                                   onDragEnd={(e) => {
@@ -2396,7 +2548,8 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                   }}
                                   onDragOver={(e) => {
                                     e.preventDefault();
-                                    e.currentTarget.style.borderTopColor = "#7c3aed";
+                                    e.currentTarget.style.borderTopColor =
+                                      "#7c3aed";
                                   }}
                                   onDragLeave={(e) => {
                                     e.currentTarget.style.borderTopColor = "";
@@ -2404,18 +2557,36 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                   onDrop={(e) => {
                                     e.preventDefault();
                                     e.currentTarget.style.borderTopColor = "";
-                                    const fromIdx = parseInt(e.dataTransfer.getData("text/plain"), 10);
+                                    const fromIdx = parseInt(
+                                      e.dataTransfer.getData("text/plain"),
+                                      10,
+                                    );
                                     const toIdx = index;
                                     if (fromIdx === toIdx) return;
-                                    const filled = audioLibrary.filter((a) => a.audio_url);
+                                    const filled = audioLibrary.filter(
+                                      (a) => a.audio_url,
+                                    );
                                     const moved = [...filled];
                                     const [item] = moved.splice(fromIdx, 1);
                                     moved.splice(toIdx, 0, item);
-                                    const reindexed = moved.map((a, i) => ({ ...a, id: i }));
+                                    const reindexed = moved.map((a, i) => ({
+                                      ...a,
+                                      id: i,
+                                    }));
                                     const oldToday = filled[currentDayIndex];
-                                    const newTodayIdx = oldToday ? reindexed.findIndex((a) => a.audio_url === oldToday.audio_url && a.audio_path === oldToday.audio_path) : 0;
+                                    const newTodayIdx = oldToday
+                                      ? reindexed.findIndex(
+                                          (a) =>
+                                            a.audio_url ===
+                                              oldToday.audio_url &&
+                                            a.audio_path ===
+                                              oldToday.audio_path,
+                                        )
+                                      : 0;
                                     setAudioLibrary(reindexed);
-                                    setCurrentDayIndex(newTodayIdx >= 0 ? newTodayIdx : 0);
+                                    setCurrentDayIndex(
+                                      newTodayIdx >= 0 ? newTodayIdx : 0,
+                                    );
                                   }}
                                   className={`p-3 rounded-lg border-2 transition-colors ${
                                     actualIndex === currentDayIndex
@@ -2425,7 +2596,18 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                   style={{ cursor: "grab" }}
                                 >
                                   <div className="flex items-center gap-2 mb-2">
-                                    <svg className="w-4 h-4 text-gray-300 shrink-0 cursor-grab" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+                                    <svg
+                                      className="w-4 h-4 text-gray-300 shrink-0 cursor-grab"
+                                      viewBox="0 0 24 24"
+                                      fill="currentColor"
+                                    >
+                                      <circle cx="9" cy="6" r="1.5" />
+                                      <circle cx="15" cy="6" r="1.5" />
+                                      <circle cx="9" cy="12" r="1.5" />
+                                      <circle cx="15" cy="12" r="1.5" />
+                                      <circle cx="9" cy="18" r="1.5" />
+                                      <circle cx="15" cy="18" r="1.5" />
+                                    </svg>
                                     <span className="text-xs font-medium text-gray-400 shrink-0">
                                       {index + 1}
                                     </span>
@@ -2434,10 +2616,19 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                       value={audio.name || ""}
                                       onChange={(e) => {
                                         const newLib = [...audioLibrary];
-                                        newLib[actualIndex] = { ...newLib[actualIndex], name: e.target.value };
+                                        newLib[actualIndex] = {
+                                          ...newLib[actualIndex],
+                                          name: e.target.value,
+                                        };
                                         setAudioLibrary(newLib);
                                       }}
-                                      placeholder={audio.audio_path?.split("/").pop()?.replace(/\.[^.]+$/, "") || `Day ${index + 1}`}
+                                      placeholder={
+                                        audio.audio_path
+                                          ?.split("/")
+                                          .pop()
+                                          ?.replace(/\.[^.]+$/, "") ||
+                                        `Day ${index + 1}`
+                                      }
                                       className="flex-1 min-w-0 px-2 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-purple-400 focus:border-transparent outline-none bg-transparent"
                                     />
                                     {actualIndex === currentDayIndex && (
@@ -2455,14 +2646,11 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                       style={{ height: "32px" }}
                                     />
                                     <div className="flex gap-2">
-                                      {actualIndex !==
-                                        currentDayIndex && (
+                                      {actualIndex !== currentDayIndex && (
                                         <button
                                           type="button"
                                           onClick={() =>
-                                            setCurrentDayIndex(
-                                              actualIndex,
-                                            )
+                                            setCurrentDayIndex(actualIndex)
                                           }
                                           className="text-xs text-purple-600 hover:text-purple-700 font-medium cursor-pointer"
                                         >
@@ -2472,16 +2660,32 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                       <button
                                         type="button"
                                         onClick={() => {
-                                          const filled = audioLibrary.filter((a) => a.audio_url);
-                                          const newFilled = filled.filter((_, i) => i !== index);
-                                          const reindexed = newFilled.map((a, i) => ({ ...a, id: i }));
-                                          const oldToday = filled[currentDayIndex];
+                                          const filled = audioLibrary.filter(
+                                            (a) => a.audio_url,
+                                          );
+                                          const newFilled = filled.filter(
+                                            (_, i) => i !== index,
+                                          );
+                                          const reindexed = newFilled.map(
+                                            (a, i) => ({ ...a, id: i }),
+                                          );
+                                          const oldToday =
+                                            filled[currentDayIndex];
                                           let newTodayIdx = 0;
-                                          if (oldToday && index !== currentDayIndex) {
-                                            newTodayIdx = reindexed.findIndex((a) => a.audio_url === oldToday.audio_url);
+                                          if (
+                                            oldToday &&
+                                            index !== currentDayIndex
+                                          ) {
+                                            newTodayIdx = reindexed.findIndex(
+                                              (a) =>
+                                                a.audio_url ===
+                                                oldToday.audio_url,
+                                            );
                                           }
                                           setAudioLibrary(reindexed);
-                                          setCurrentDayIndex(Math.max(0, newTodayIdx));
+                                          setCurrentDayIndex(
+                                            Math.max(0, newTodayIdx),
+                                          );
                                         }}
                                         className="text-xs text-red-600 hover:text-red-700 font-medium ml-auto cursor-pointer"
                                       >
@@ -2494,8 +2698,8 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                             })}
 
                           {/* Add Day Button */}
-                          {audioLibrary.filter((a) => a.audio_url)
-                            .length < 30 && (
+                          {audioLibrary.filter((a) => a.audio_url).length <
+                            30 && (
                             <div>
                               <input
                                 type="file"
@@ -2505,7 +2709,6 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                   const file = e.target.files?.[0];
                                   if (!file) return;
 
-                                  // Validate file type
                                   const validTypes = [
                                     "audio/mpeg",
                                     "audio/wav",
@@ -2514,60 +2717,60 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                     "audio/x-m4a",
                                   ];
                                   if (!validTypes.includes(file.type)) {
-                                    showToast("Please upload a valid audio file (MP3, WAV, M4A)");
+                                    showToast(
+                                      "Please upload a valid audio file (MP3, WAV, M4A)",
+                                    );
                                     return;
                                   }
 
-                                  // Validate file size (50MB)
-                                  if (file.size > 50 * 1024 * 1024) {
-                                    showToast("File size must be less than 50MB");
+                                  if (file.size > 4.5 * 1024 * 1024) {
+                                    showToast(
+                                      "Audio file must be under 4.5MB. Please compress it first.",
+                                    );
                                     return;
                                   }
 
                                   setUploadingAudio(true);
                                   try {
-                                    const formData = new FormData();
-                                    formData.append("file", file);
-                                    formData.append("type", "audio");
-
-                                    const res = await fetch(
-                                      "/api/upload",
-                                      {
-                                        method: "POST",
-                                        body: formData,
-                                      },
+                                    const result = await uploadFileDirect(
+                                      file,
+                                      "audio",
                                     );
-
-                                    let data;
-                                    try {
-                                      data = await res.json();
-                                    } catch {
-                                      data = {};
-                                    }
-
-                                    if (res.ok && data.url) {
+                                    if (result) {
                                       const newAudio = {
                                         id: audioLibrary.length,
-                                        audio_url: data.url,
-                                        audio_path: data.path,
+                                        audio_url: result.url,
+                                        audio_path: result.path,
                                         name: file.name,
                                       };
-                                      setAudioLibrary([
+                                      const updatedLibrary = [
                                         ...audioLibrary,
                                         newAudio,
-                                      ]);
-                                      showToast("Audio uploaded! Remember to save your configuration.");
-                                    } else if (res.status === 401) {
-                                      handleSessionExpired();
-                                    } else {
-                                      showToast(data.error || "Failed to upload audio. Please try again.");
+                                      ];
+                                      setAudioLibrary(updatedLibrary);
+
+                                      await handleSaveConfig(
+                                        "focus_tab",
+                                        {
+                                          ...focusConfig,
+                                          audio_library: updatedLibrary.filter(
+                                            (a) => a.audio_url,
+                                          ),
+                                          current_day_index: currentDayIndex,
+                                          library_start_date:
+                                            focusConfig.library_start_date ||
+                                            new Date().toISOString(),
+                                        },
+                                        "Audio uploaded and saved!",
+                                      );
                                     }
                                   } catch (error) {
                                     console.error("Upload error:", error);
-                                    showToast("Failed to upload audio. Check your connection and try again.");
+                                    showToast(
+                                      "Failed to upload audio. Check your connection and try again.",
+                                    );
                                   } finally {
                                     setUploadingAudio(false);
-                                    // Reset file input
                                     e.target.value = "";
                                   }
                                 }}
@@ -2588,11 +2791,22 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                   </>
                                 ) : (
                                   <>
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+                                    <svg
+                                      className="w-4 h-4"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                      strokeWidth={2}
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M12 4v16m8-8H4"
+                                      />
+                                    </svg>
                                     Add Day (
-                                    {audioLibrary.filter(
-                                      (a) => a.audio_url,
-                                    ).length + 1}
+                                    {audioLibrary.filter((a) => a.audio_url)
+                                      .length + 1}
                                     /30)
                                   </>
                                 )}
@@ -2601,7 +2815,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           )}
                         </div>
                         <p className="text-xs text-gray-500 mt-2">
-                          MP3, WAV, or M4A • Max 50MB per file
+                          MP3, WAV, or M4A • Max 4.5MB per file
                         </p>
                       </div>
                     </div>
@@ -2635,9 +2849,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           }
                           className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                         />
-                        <span className="text-xs text-gray-600">
-                          Enabled
-                        </span>
+                        <span className="text-xs text-gray-600">Enabled</span>
                       </label>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -2688,8 +2900,8 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           Custom Icon
                         </label>
                         <p className="text-xs text-gray-500 mb-2">
-                          Upload a custom icon to replace the default.
-                          Leave empty to use the default icon.
+                          Upload a custom icon to replace the default. Leave
+                          empty to use the default icon.
                         </p>
 
                         {focusConfig.task_2.icon_url && (
@@ -2701,15 +2913,30 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                             />
                             <button
                               type="button"
-                              onClick={() =>
-                                setFocusConfig({
+                              onClick={async () => {
+                                const updatedFocusConfig = {
                                   ...focusConfig,
                                   task_2: {
                                     ...focusConfig.task_2,
                                     icon_url: null,
                                   },
-                                })
-                              }
+                                };
+                                setFocusConfig(updatedFocusConfig);
+                                await handleSaveConfig(
+                                  "focus_tab",
+                                  {
+                                    ...updatedFocusConfig,
+                                    audio_library: audioLibrary.filter(
+                                      (a) => a.audio_url,
+                                    ),
+                                    current_day_index: currentDayIndex,
+                                    library_start_date:
+                                      updatedFocusConfig.library_start_date ||
+                                      new Date().toISOString(),
+                                  },
+                                  "Icon removed and saved!",
+                                );
+                              }}
                               className="text-xs text-red-600 hover:text-red-700"
                             >
                               Remove Icon
@@ -2723,6 +2950,12 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
+                            if (file.size > 4.5 * 1024 * 1024) {
+                              showToast(
+                                "Image must be under 4.5MB. Please resize or compress it.",
+                              );
+                              return;
+                            }
 
                             setUploadingTaskIcon("task_2");
                             const formData = new FormData();
@@ -2737,19 +2970,34 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                               const data = await res.json();
 
                               if (res.ok) {
-                                setFocusConfig({
+                                const updatedFocusConfig = {
                                   ...focusConfig,
                                   task_2: {
                                     ...focusConfig.task_2,
                                     icon_url: data.url,
                                   },
-                                });
+                                };
+                                setFocusConfig(updatedFocusConfig);
+                                await handleSaveConfig(
+                                  "focus_tab",
+                                  {
+                                    ...updatedFocusConfig,
+                                    audio_library: audioLibrary.filter(
+                                      (a) => a.audio_url,
+                                    ),
+                                    current_day_index: currentDayIndex,
+                                    library_start_date:
+                                      updatedFocusConfig.library_start_date ||
+                                      new Date().toISOString(),
+                                  },
+                                  "Icon uploaded and saved!",
+                                );
                               } else {
-                                alert("Failed to upload icon");
+                                showToast("Failed to upload icon");
                               }
                             } catch (error) {
                               console.error("Upload error:", error);
-                              alert("Failed to upload icon");
+                              showToast("Failed to upload icon");
                             } finally {
                               setUploadingTaskIcon(null);
                             }
@@ -2777,8 +3025,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                             <input
                               type="text"
                               value={
-                                focusConfig.task_2
-                                  .intention_modal_title || ""
+                                focusConfig.task_2.intention_modal_title || ""
                               }
                               onChange={(e) =>
                                 setFocusConfig({
@@ -2809,8 +3056,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                     ...focusConfig,
                                     task_2: {
                                       ...focusConfig.task_2,
-                                      intention_obstacles_label:
-                                        e.target.value,
+                                      intention_obstacles_label: e.target.value,
                                     },
                                   })
                                 }
@@ -2851,16 +3097,14 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                               <input
                                 type="text"
                                 value={
-                                  focusConfig.task_2
-                                    .intention_focus_label || ""
+                                  focusConfig.task_2.intention_focus_label || ""
                                 }
                                 onChange={(e) =>
                                   setFocusConfig({
                                     ...focusConfig,
                                     task_2: {
                                       ...focusConfig.task_2,
-                                      intention_focus_label:
-                                        e.target.value,
+                                      intention_focus_label: e.target.value,
                                     },
                                   })
                                 }
@@ -2926,9 +3170,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           }
                           className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                         />
-                        <span className="text-xs text-gray-600">
-                          Enabled
-                        </span>
+                        <span className="text-xs text-gray-600">Enabled</span>
                       </label>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -2979,8 +3221,8 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           Custom Icon
                         </label>
                         <p className="text-xs text-gray-500 mb-2">
-                          Upload a custom icon to replace the default.
-                          Leave empty to use the default icon.
+                          Upload a custom icon to replace the default. Leave
+                          empty to use the default icon.
                         </p>
 
                         {focusConfig.task_3.icon_url && (
@@ -2992,15 +3234,30 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                             />
                             <button
                               type="button"
-                              onClick={() =>
-                                setFocusConfig({
+                              onClick={async () => {
+                                const updatedFocusConfig = {
                                   ...focusConfig,
                                   task_3: {
                                     ...focusConfig.task_3,
                                     icon_url: null,
                                   },
-                                })
-                              }
+                                };
+                                setFocusConfig(updatedFocusConfig);
+                                await handleSaveConfig(
+                                  "focus_tab",
+                                  {
+                                    ...updatedFocusConfig,
+                                    audio_library: audioLibrary.filter(
+                                      (a) => a.audio_url,
+                                    ),
+                                    current_day_index: currentDayIndex,
+                                    library_start_date:
+                                      updatedFocusConfig.library_start_date ||
+                                      new Date().toISOString(),
+                                  },
+                                  "Icon removed and saved!",
+                                );
+                              }}
                               className="text-xs text-red-600 hover:text-red-700"
                             >
                               Remove Icon
@@ -3014,6 +3271,12 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
+                            if (file.size > 4.5 * 1024 * 1024) {
+                              showToast(
+                                "Image must be under 4.5MB. Please resize or compress it.",
+                              );
+                              return;
+                            }
 
                             setUploadingTaskIcon("task_3");
                             const formData = new FormData();
@@ -3028,19 +3291,34 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                               const data = await res.json();
 
                               if (res.ok) {
-                                setFocusConfig({
+                                const updatedFocusConfig = {
                                   ...focusConfig,
                                   task_3: {
                                     ...focusConfig.task_3,
                                     icon_url: data.url,
                                   },
-                                });
+                                };
+                                setFocusConfig(updatedFocusConfig);
+                                await handleSaveConfig(
+                                  "focus_tab",
+                                  {
+                                    ...updatedFocusConfig,
+                                    audio_library: audioLibrary.filter(
+                                      (a) => a.audio_url,
+                                    ),
+                                    current_day_index: currentDayIndex,
+                                    library_start_date:
+                                      updatedFocusConfig.library_start_date ||
+                                      new Date().toISOString(),
+                                  },
+                                  "Icon uploaded and saved!",
+                                );
                               } else {
-                                alert("Failed to upload icon");
+                                showToast("Failed to upload icon");
                               }
                             } catch (error) {
                               console.error("Upload error:", error);
-                              alert("Failed to upload icon");
+                              showToast("Failed to upload icon");
                             } finally {
                               setUploadingTaskIcon(null);
                             }
@@ -3118,8 +3396,8 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                         Custom Icon
                       </label>
                       <p className="text-xs text-gray-500 mb-2">
-                        Upload a custom icon to replace the default. Leave
-                        empty to use the default icon.
+                        Upload a custom icon to replace the default. Leave empty
+                        to use the default icon.
                       </p>
 
                       {focusConfig.day_notes.icon_url && (
@@ -3131,15 +3409,30 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           />
                           <button
                             type="button"
-                            onClick={() =>
-                              setFocusConfig({
+                            onClick={async () => {
+                              const updatedFocusConfig = {
                                 ...focusConfig,
                                 day_notes: {
                                   ...focusConfig.day_notes,
                                   icon_url: null,
                                 },
-                              })
-                            }
+                              };
+                              setFocusConfig(updatedFocusConfig);
+                              await handleSaveConfig(
+                                "focus_tab",
+                                {
+                                  ...updatedFocusConfig,
+                                  audio_library: audioLibrary.filter(
+                                    (a) => a.audio_url,
+                                  ),
+                                  current_day_index: currentDayIndex,
+                                  library_start_date:
+                                    updatedFocusConfig.library_start_date ||
+                                    new Date().toISOString(),
+                                },
+                                "Icon removed and saved!",
+                              );
+                            }}
                             className="text-xs text-red-600 hover:text-red-700"
                           >
                             Remove Icon
@@ -3153,6 +3446,12 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
+                          if (file.size > 4.5 * 1024 * 1024) {
+                            showToast(
+                              "Image must be under 4.5MB. Please resize or compress it.",
+                            );
+                            return;
+                          }
 
                           setUploadingTaskIcon("day_notes");
                           const formData = new FormData();
@@ -3167,19 +3466,34 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                             const data = await res.json();
 
                             if (res.ok) {
-                              setFocusConfig({
+                              const updatedFocusConfig = {
                                 ...focusConfig,
                                 day_notes: {
                                   ...focusConfig.day_notes,
                                   icon_url: data.url,
                                 },
-                              });
+                              };
+                              setFocusConfig(updatedFocusConfig);
+                              await handleSaveConfig(
+                                "focus_tab",
+                                {
+                                  ...updatedFocusConfig,
+                                  audio_library: audioLibrary.filter(
+                                    (a) => a.audio_url,
+                                  ),
+                                  current_day_index: currentDayIndex,
+                                  library_start_date:
+                                    updatedFocusConfig.library_start_date ||
+                                    new Date().toISOString(),
+                                },
+                                "Icon uploaded and saved!",
+                              );
                             } else {
-                              alert("Failed to upload icon");
+                              showToast("Failed to upload icon");
                             }
                           } catch (error) {
                             console.error("Upload error:", error);
-                            alert("Failed to upload icon");
+                            showToast("Failed to upload icon");
                           } finally {
                             setUploadingTaskIcon(null);
                           }
@@ -3200,7 +3514,6 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                 <div className="flex justify-end pt-4 border-t border-gray-100 mt-6">
                   <button
                     onClick={async () => {
-                      const existingStartDate = coachConfig?.focus_tab?.library_start_date;
                       await handleSaveConfig(
                         "focus_tab",
                         {
@@ -3209,15 +3522,14 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                             (a) => a.audio_url,
                           ),
                           current_day_index: currentDayIndex,
-                          library_start_date: existingStartDate || new Date().toISOString(),
+                          library_start_date:
+                            focusConfig.library_start_date || new Date().toISOString(),
                         },
                         "Focus tab config saved successfully!",
                       );
                       setTimeout(() => captureFocusScreenshot(), 300);
                     }}
-                    disabled={
-                      isSavingConfig && savingSection === "focus_tab"
-                    }
+                    disabled={isSavingConfig && savingSection === "focus_tab"}
                     className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSavingConfig && savingSection === "focus_tab"
@@ -3238,8 +3550,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                     Awareness Tab Configuration
                   </h2>
                   <p className="text-sm text-gray-500 mt-1">
-                    Customize mindfulness logs and emotional state
-                    tracking
+                    Customize mindfulness logs and emotional state tracking
                   </p>
                 </div>
                 <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
@@ -3311,9 +3622,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                 type="text"
                                 value={log.label}
                                 onChange={(e) => {
-                                  const newLogs = [
-                                    ...awarenessConfig.logs,
-                                  ];
+                                  const newLogs = [...awarenessConfig.logs];
                                   newLogs[index].label = e.target.value;
                                   setAwarenessConfig({
                                     ...awarenessConfig,
@@ -3341,9 +3650,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                 type="text"
                                 value={log.prompt}
                                 onChange={(e) => {
-                                  const newLogs = [
-                                    ...awarenessConfig.logs,
-                                  ];
+                                  const newLogs = [...awarenessConfig.logs];
                                   newLogs[index].prompt = e.target.value;
                                   setAwarenessConfig({
                                     ...awarenessConfig,
@@ -3371,11 +3678,8 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                 rows={2}
                                 value={log.placeholder}
                                 onChange={(e) => {
-                                  const newLogs = [
-                                    ...awarenessConfig.logs,
-                                  ];
-                                  newLogs[index].placeholder =
-                                    e.target.value;
+                                  const newLogs = [...awarenessConfig.logs];
+                                  newLogs[index].placeholder = e.target.value;
                                   setAwarenessConfig({
                                     ...awarenessConfig,
                                     logs: newLogs,
@@ -3473,10 +3777,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           key={category.id}
                           className="pb-4 border-b border-gray-100 last:border-0 last:pb-0"
                         >
-                          <details
-                            className="group"
-                            open={catIndex === 0}
-                          >
+                          <details className="group" open={catIndex === 0}>
                             <summary className="flex items-center justify-between cursor-pointer list-none">
                               <div className="flex items-center gap-2">
                                 <div
@@ -3486,8 +3787,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                   }}
                                 />
                                 <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
-                                  Category {catIndex + 1}:{" "}
-                                  {category.label}
+                                  Category {catIndex + 1}: {category.label}
                                 </h3>
                               </div>
                               <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
@@ -3587,9 +3887,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                     onClick={() =>
                                       handleAddEmotionOption(catIndex)
                                     }
-                                    disabled={
-                                      category.options.length >= 10
-                                    }
+                                    disabled={category.options.length >= 10}
                                     className={`text-xs font-medium flex items-center gap-1 ${
                                       category.options.length >= 10
                                         ? "text-gray-400 cursor-not-allowed"
@@ -3602,195 +3900,171 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                   </button>
                                 </div>
                                 <div className="space-y-2">
-                                  {category.options.map(
-                                    (option, optIndex) => (
-                                      <div
-                                        key={optIndex}
-                                        draggable
-                                        onDragStart={() =>
-                                          handleDragStartEmotionOption(
-                                            catIndex,
-                                            optIndex,
-                                          )
-                                        }
-                                        onDragOver={
-                                          handleDragOverEmotionOption
-                                        }
-                                        onDrop={() =>
-                                          handleDropEmotionOption(
-                                            catIndex,
-                                            optIndex,
-                                          )
-                                        }
-                                        className="border border-gray-200 rounded-lg p-3 space-y-2 cursor-move hover:border-purple-300 transition-colors"
-                                      >
-                                        <div className="flex gap-2 items-start">
-                                          {/* Drag Handle */}
-                                          <div className="flex items-center justify-center text-gray-400 hover:text-purple-600 cursor-grab active:cursor-grabbing pt-1">
-                                            <svg
-                                              width="16"
-                                              height="16"
-                                              viewBox="0 0 16 16"
-                                              fill="currentColor"
-                                            >
-                                              <circle
-                                                cx="5"
-                                                cy="3"
-                                                r="1"
-                                              />
-                                              <circle
-                                                cx="5"
-                                                cy="8"
-                                                r="1"
-                                              />
-                                              <circle
-                                                cx="5"
-                                                cy="13"
-                                                r="1"
-                                              />
-                                              <circle
-                                                cx="11"
-                                                cy="3"
-                                                r="1"
-                                              />
-                                              <circle
-                                                cx="11"
-                                                cy="8"
-                                                r="1"
-                                              />
-                                              <circle
-                                                cx="11"
-                                                cy="13"
-                                                r="1"
-                                              />
-                                            </svg>
-                                          </div>
-                                          <div className="flex-1 relative">
-                                            <input
-                                              type="text"
-                                              value={option.name}
-                                              maxLength={17}
-                                              onChange={(e) =>
-                                                handleUpdateEmotionOption(
-                                                  catIndex,
-                                                  optIndex,
-                                                  "name",
-                                                  e.target.value,
-                                                )
-                                              }
-                                              placeholder="Emotion name"
-                                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                            />
-                                            <span className={`absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] ${option.name.length >= 17 ? "text-red-400" : "text-gray-300"}`}>{option.name.length}/17</span>
-                                          </div>
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              handleRemoveEmotionOption(
-                                                catIndex,
-                                                optIndex,
-                                              )
-                                            }
-                                            className="text-red-600 hover:text-red-700 text-xs px-2"
-                                            title="Remove"
+                                  {category.options.map((option, optIndex) => (
+                                    <div
+                                      key={optIndex}
+                                      draggable
+                                      onDragStart={() =>
+                                        handleDragStartEmotionOption(
+                                          catIndex,
+                                          optIndex,
+                                        )
+                                      }
+                                      onDragOver={handleDragOverEmotionOption}
+                                      onDrop={() =>
+                                        handleDropEmotionOption(
+                                          catIndex,
+                                          optIndex,
+                                        )
+                                      }
+                                      className="border border-gray-200 rounded-lg p-3 space-y-2 cursor-move hover:border-purple-300 transition-colors"
+                                    >
+                                      <div className="flex gap-2 items-start">
+                                        {/* Drag Handle */}
+                                        <div className="flex items-center justify-center text-gray-400 hover:text-purple-600 cursor-grab active:cursor-grabbing pt-1">
+                                          <svg
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 16 16"
+                                            fill="currentColor"
                                           >
-                                            ✕
-                                          </button>
+                                            <circle cx="5" cy="3" r="1" />
+                                            <circle cx="5" cy="8" r="1" />
+                                            <circle cx="5" cy="13" r="1" />
+                                            <circle cx="11" cy="3" r="1" />
+                                            <circle cx="11" cy="8" r="1" />
+                                            <circle cx="11" cy="13" r="1" />
+                                          </svg>
                                         </div>
-
-                                        {/* Practice Details */}
-                                        <div>
+                                        <div className="flex-1 relative">
                                           <input
                                             type="text"
-                                            value={
-                                              option.practice_name || ""
-                                            }
+                                            value={option.name}
+                                            maxLength={17}
                                             onChange={(e) =>
                                               handleUpdateEmotionOption(
                                                 catIndex,
                                                 optIndex,
-                                                "practice_name",
+                                                "name",
                                                 e.target.value,
                                               )
                                             }
-                                            placeholder="Recommended Practice Name (e.g., Breath Reset)"
-                                            className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                            placeholder="Emotion name"
+                                            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
                                           />
+                                          <span
+                                            className={`absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] ${option.name.length >= 17 ? "text-red-400" : "text-gray-300"}`}
+                                          >
+                                            {option.name.length}/17
+                                          </span>
                                         </div>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleRemoveEmotionOption(
+                                              catIndex,
+                                              optIndex,
+                                            )
+                                          }
+                                          className="text-red-600 hover:text-red-700 text-xs px-2"
+                                          title="Remove"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
 
-                                        {/* Audio Upload */}
-                                        {option.audio_url ? (
-                                          <div className="space-y-1">
-                                            <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
-                                              <span className="text-green-600">
-                                                Audio
-                                              </span>
-                                              <span className="text-green-700 flex-1 truncate">
-                                                {option.audio_path ? option.audio_path.split("/").pop() : "Audio uploaded"}
-                                              </span>
-                                              <button
-                                                type="button"
-                                                onClick={() =>
-                                                  handleRemoveEmotionAudio(
-                                                    catIndex,
-                                                    optIndex,
-                                                  )
-                                                }
-                                                className="text-red-600 hover:text-red-700 font-medium"
-                                              >
-                                                Remove
-                                              </button>
-                                            </div>
-                                            <audio
-                                              controls
-                                              src={option.audio_url}
-                                              className="w-full"
-                                              style={{ height: "32px" }}
-                                            />
-                                          </div>
-                                        ) : (
-                                          <div>
-                                            <input
-                                              type="file"
-                                              id={`emotion-audio-${catIndex}-${optIndex}`}
-                                              accept="audio/mpeg,audio/wav,audio/mp3,audio/mp4,audio/x-m4a"
-                                              onChange={(e) =>
-                                                handleEmotionAudioUpload(
-                                                  e,
+                                      {/* Practice Details */}
+                                      <div>
+                                        <input
+                                          type="text"
+                                          value={option.practice_name || ""}
+                                          onChange={(e) =>
+                                            handleUpdateEmotionOption(
+                                              catIndex,
+                                              optIndex,
+                                              "practice_name",
+                                              e.target.value,
+                                            )
+                                          }
+                                          placeholder="Recommended Practice Name (e.g., Breath Reset)"
+                                          className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        />
+                                      </div>
+
+                                      {/* Audio Upload */}
+                                      {option.audio_url ? (
+                                        <div className="space-y-1">
+                                          <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                                            <span className="text-green-600">
+                                              Audio
+                                            </span>
+                                            <span className="text-green-700 flex-1 truncate">
+                                              {option.audio_path
+                                                ? option.audio_path
+                                                    .split("/")
+                                                    .pop()
+                                                : "Audio uploaded"}
+                                            </span>
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                handleRemoveEmotionAudio(
                                                   catIndex,
                                                   optIndex,
                                                 )
                                               }
-                                              className="hidden"
-                                            />
-                                            <label
-                                              htmlFor={`emotion-audio-${catIndex}-${optIndex}`}
-                                              className={`flex items-center justify-center gap-1 w-full px-3 py-2 border border-dashed border-gray-300 rounded text-xs text-gray-600 hover:border-purple-400 hover:text-purple-600 cursor-pointer transition-colors ${
-                                                uploadingEmotionAudio ===
-                                                `${catIndex}-${optIndex}`
-                                                  ? "opacity-50 cursor-not-allowed"
-                                                  : ""
-                                              }`}
+                                              className="text-red-600 hover:text-red-700 font-medium"
                                             >
-                                              {uploadingEmotionAudio ===
-                                              `${catIndex}-${optIndex}` ? (
-                                                <>
-                                                  <span className="animate-spin">
-                                                    ...
-                                                  </span>
-                                                  Uploading...
-                                                </>
-                                              ) : (
-                                                <>
-                                                  Upload Practice Audio
-                                                </>
-                                              )}
-                                            </label>
+                                              Remove
+                                            </button>
                                           </div>
-                                        )}
-                                      </div>
-                                    ),
-                                  )}
+                                          <audio
+                                            controls
+                                            src={option.audio_url}
+                                            className="w-full"
+                                            style={{ height: "32px" }}
+                                          />
+                                        </div>
+                                      ) : (
+                                        <div>
+                                          <input
+                                            type="file"
+                                            id={`emotion-audio-${catIndex}-${optIndex}`}
+                                            accept="audio/mpeg,audio/wav,audio/mp3,audio/mp4,audio/x-m4a"
+                                            onChange={(e) =>
+                                              handleEmotionAudioUpload(
+                                                e,
+                                                catIndex,
+                                                optIndex,
+                                              )
+                                            }
+                                            className="hidden"
+                                          />
+                                          <label
+                                            htmlFor={`emotion-audio-${catIndex}-${optIndex}`}
+                                            className={`flex items-center justify-center gap-1 w-full px-3 py-2 border border-dashed border-gray-300 rounded text-xs text-gray-600 hover:border-purple-400 hover:text-purple-600 cursor-pointer transition-colors ${
+                                              uploadingEmotionAudio ===
+                                              `${catIndex}-${optIndex}`
+                                                ? "opacity-50 cursor-not-allowed"
+                                                : ""
+                                            }`}
+                                          >
+                                            {uploadingEmotionAudio ===
+                                            `${catIndex}-${optIndex}` ? (
+                                              <>
+                                                <span className="animate-spin">
+                                                  ...
+                                                </span>
+                                                Uploading...
+                                              </>
+                                            ) : (
+                                              <>Upload Practice Audio</>
+                                            )}
+                                          </label>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
                             </div>
@@ -3905,17 +4179,13 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           Avg. per User
                         </div>
                         <div className="text-2xl font-bold text-gray-900">
-                          {(
-                            tokenUsage?.averagePerUser || 0
-                          ).toLocaleString()}
+                          {(tokenUsage?.averagePerUser || 0).toLocaleString()}
                         </div>
                       </div>
                     </div>
                     <p className="text-xs text-gray-500 mt-2">
                       Each user has a limit of{" "}
-                      {(
-                        tokenUsage?.tokenLimit || 1000000
-                      ).toLocaleString()}{" "}
+                      {(tokenUsage?.tokenLimit || 1000000).toLocaleString()}{" "}
                       tokens per month. Usage resets automatically at the
                       beginning of each month.
                     </p>
@@ -3928,8 +4198,8 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                     AI Coach Profile Picture
                   </h3>
                   <p className="text-xs text-gray-500 mb-3">
-                    Upload a profile picture for the AI coach that will
-                    appear in chat messages instead of initials.
+                    Upload a profile picture for the AI coach that will appear
+                    in chat messages instead of initials.
                   </p>
 
                   {coachTabConfig.bot_profile_picture_url && (
@@ -3960,13 +4230,22 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                       const file = e.target.files?.[0];
                       if (!file) return;
 
-                      const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+                      const validTypes = [
+                        "image/jpeg",
+                        "image/png",
+                        "image/gif",
+                        "image/webp",
+                      ];
                       if (!validTypes.includes(file.type)) {
-                        showToast("Please upload a valid image (JPEG, PNG, GIF, or WebP)");
+                        showToast(
+                          "Please upload a valid image (JPEG, PNG, GIF, or WebP)",
+                        );
                         return;
                       }
-                      if (file.size > 5 * 1024 * 1024) {
-                        showToast("Image must be under 5MB. Please resize or compress it.");
+                      if (file.size > 4.5 * 1024 * 1024) {
+                        showToast(
+                          "Image must be under 4.5MB. Please resize or compress it.",
+                        );
                         return;
                       }
 
@@ -3981,13 +4260,23 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           body: formData,
                         });
                         let data;
-                        try { data = await res.json(); } catch { data = {}; }
+                        try {
+                          data = await res.json();
+                        } catch {
+                          data = {};
+                        }
 
                         if (res.ok && data.url) {
-                          setCoachTabConfig({
+                          const updatedCoachTabConfig = {
                             ...coachTabConfig,
                             bot_profile_picture_url: data.url,
-                          });
+                          };
+                          setCoachTabConfig(updatedCoachTabConfig);
+                          await handleSaveConfig(
+                            "coach_tab",
+                            updatedCoachTabConfig,
+                            "Profile picture uploaded and saved!",
+                          );
                         } else if (res.status === 401) {
                           handleSessionExpired();
                         } else {
@@ -3995,7 +4284,9 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                         }
                       } catch (error) {
                         console.error("Upload error:", error);
-                        showToast("Failed to upload picture. Check your connection and try again.");
+                        showToast(
+                          "Failed to upload picture. Check your connection and try again.",
+                        );
                       } finally {
                         setUploadingBotProfilePicture(false);
                       }
@@ -4004,9 +4295,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                     disabled={uploadingBotProfilePicture}
                   />
                   {uploadingBotProfilePicture && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      Uploading...
-                    </p>
+                    <p className="text-xs text-gray-500 mt-2">Uploading...</p>
                   )}
                 </div>
 
@@ -4016,9 +4305,9 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                     AI System Prompt (Tuning Script)
                   </h3>
                   <p className="text-xs text-gray-500 mb-3">
-                    Edit this prompt to customize how the AI coach
-                    responds to your users. This controls the AI's
-                    personality, tone, and coaching style.
+                    Edit this prompt to customize how the AI coach responds to
+                    your users. This controls the AI's personality, tone, and
+                    coaching style.
                   </p>
                   <textarea
                     ref={systemPromptRef}
@@ -4043,9 +4332,9 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                     spellCheck={false}
                   />
                   <div className="mt-2 text-xs text-gray-500">
-                    Tip: The system prompt defines the AI's role,
-                    personality, and coaching approach. Be specific and
-                    clear about the style of responses you want.
+                    Tip: The system prompt defines the AI's role, personality,
+                    and coaching approach. Be specific and clear about the style
+                    of responses you want.
                   </div>
                 </div>
 
@@ -4057,8 +4346,8 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                         "Book a Call" Feature
                       </h3>
                       <p className="text-xs text-gray-500 mt-1">
-                        Allow users to book calls with you directly from
-                        the Coach tab
+                        Allow users to book calls with you directly from the
+                        Coach tab
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -4089,9 +4378,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                         </label>
                         <input
                           type="text"
-                          value={
-                            coachTabConfig.booking?.button_text || ""
-                          }
+                          value={coachTabConfig.booking?.button_text || ""}
                           onChange={(e) =>
                             setCoachTabConfig({
                               ...coachTabConfig,
@@ -4112,9 +4399,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                           AI Disclaimer Text
                         </label>
                         <textarea
-                          value={
-                            coachTabConfig.booking?.ai_disclaimer || ""
-                          }
+                          value={coachTabConfig.booking?.ai_disclaimer || ""}
                           onChange={(e) =>
                             setCoachTabConfig({
                               ...coachTabConfig,
@@ -4152,8 +4437,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                     const newOptions = [
                                       ...coachTabConfig.booking.options,
                                     ];
-                                    newOptions[index].title =
-                                      e.target.value;
+                                    newOptions[index].title = e.target.value;
                                     setCoachTabConfig({
                                       ...coachTabConfig,
                                       booking: {
@@ -4172,8 +4456,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                     const newOptions = [
                                       ...coachTabConfig.booking.options,
                                     ];
-                                    newOptions[index].duration =
-                                      e.target.value;
+                                    newOptions[index].duration = e.target.value;
                                     setCoachTabConfig({
                                       ...coachTabConfig,
                                       booking: {
@@ -4273,7 +4556,9 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                       </div>
 
                       {/* Suggest Booking During Long Sessions */}
-                      {(coachTabConfig.booking?.options || []).some(o => o.url) && (
+                      {(coachTabConfig.booking?.options || []).some(
+                        (o) => o.url,
+                      ) && (
                         <div className="border-t border-gray-200 pt-4">
                           <div className="flex items-center justify-between">
                             <div>
@@ -4281,19 +4566,25 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                                 Suggest Booking During Long Sessions
                               </label>
                               <p className="text-xs text-gray-500 mt-0.5">
-                                When a session enters "Wrap Up Soon" status, the AI will suggest booking a call and a booking button will appear in the chat
+                                When a session enters "Wrap Up Soon" status, the
+                                AI will suggest booking a call and a booking
+                                button will appear in the chat
                               </p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer ml-4 flex-shrink-0">
                               <input
                                 type="checkbox"
-                                checked={coachTabConfig.booking?.suggest_booking_in_session || false}
+                                checked={
+                                  coachTabConfig.booking
+                                    ?.suggest_booking_in_session || false
+                                }
                                 onChange={(e) =>
                                   setCoachTabConfig({
                                     ...coachTabConfig,
                                     booking: {
                                       ...coachTabConfig.booking,
-                                      suggest_booking_in_session: e.target.checked,
+                                      suggest_booking_in_session:
+                                        e.target.checked,
                                     },
                                   })
                                 }
@@ -4318,9 +4609,7 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                         "Coach Tab configuration saved successfully!",
                       )
                     }
-                    disabled={
-                      isSavingConfig && savingSection === "coach_tab"
-                    }
+                    disabled={isSavingConfig && savingSection === "coach_tab"}
                     className="px-6 py-2.5 bg-[#fbbf24] text-black font-semibold rounded-lg hover:bg-[#f59e0b] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSavingConfig && savingSection === "coach_tab"
@@ -4331,314 +4620,434 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
               </div>
             </details>
           </div>
-
         </div>
       </div>
 
-    {/* Draggable Preview Modal */}
-    {showPreview && (
+      {/* Draggable Preview Modal */}
+      {showPreview && (
+        <div
+          style={{
+            position: "fixed",
+            left: `${previewPosition.x}px`,
+            top: `${previewPosition.y}px`,
+            width: "375px",
+            backgroundColor: "#ffffff",
+            borderRadius: "16px",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            zIndex: 9999,
+            overflow: "hidden",
+            border: "1px solid #e5e7eb",
+          }}
+        >
+          {/* Grab Bar */}
+          <div
+            onMouseDown={handlePreviewMouseDown}
+            style={{
+              padding: "12px 16px",
+              backgroundColor: "#f9fafb",
+              borderBottom: "1px solid #e5e7eb",
+              cursor: isDragging ? "grabbing" : "grab",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              userSelect: "none",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#6b7280"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="5" r="1"></circle>
+                <circle cx="12" cy="12" r="1"></circle>
+                <circle cx="12" cy="19" r="1"></circle>
+              </svg>
+              <span
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "#374151",
+                }}
+              >
+                Test Preview
+              </span>
+            </div>
+            <button
+              onClick={() => setShowPreview(false)}
+              style={{
+                padding: "4px",
+                backgroundColor: "transparent",
+                border: "none",
+                cursor: "pointer",
+                color: "#6b7280",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+
+          {/* iPhone-style Preview Frame */}
+          <div
+            style={{
+              height: "667px",
+              backgroundColor: "#ffffff",
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            <iframe
+              ref={previewIframeRef}
+              src="/user/dashboard?preview=true"
+              onLoad={() => {
+                // Send initial config when iframe loads
+                if (previewIframeRef.current) {
+                  const config = {
+                    header: headerConfig,
+                    branding: brandingConfig,
+                    focus_tab: focusConfig,
+                    awareness_tab: awarenessConfig,
+                    emotional_state_tab: emotionalStateConfig,
+                    coach_tab: coachTabConfig,
+                    audio_library: audioLibrary,
+                    current_day_index: currentDayIndex,
+                  };
+                  console.log("Sending initial config on iframe load:", config);
+                  previewIframeRef.current.contentWindow.postMessage(
+                    {
+                      type: "PREVIEW_CONFIG_UPDATE",
+                      config: config,
+                    },
+                    window.location.origin,
+                  );
+                }
+              }}
+              style={{
+                width: "100%",
+                height: "100%",
+                border: "none",
+                pointerEvents: isDragging ? "none" : "auto",
+              }}
+              title="Mobile Preview"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Focus Preview for Screenshot Capture — iPhone 15 aspect ratio */}
       <div
         style={{
           position: "fixed",
-          left: `${previewPosition.x}px`,
-          top: `${previewPosition.y}px`,
-          width: "375px",
-          backgroundColor: "#ffffff",
-          borderRadius: "16px",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-          zIndex: 9999,
-          overflow: "hidden",
-          border: "1px solid #e5e7eb",
+          left: "-9999px",
+          top: 0,
+          width: "393px",
+          pointerEvents: "none",
+          zIndex: -1,
         }}
       >
-        {/* Grab Bar */}
         <div
-          onMouseDown={handlePreviewMouseDown}
+          ref={focusPreviewRef}
           style={{
-            padding: "12px 16px",
-            backgroundColor: "#f9fafb",
-            borderBottom: "1px solid #e5e7eb",
-            cursor: isDragging ? "grabbing" : "grab",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            userSelect: "none",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#6b7280"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="5" r="1"></circle>
-              <circle cx="12" cy="12" r="1"></circle>
-              <circle cx="12" cy="19" r="1"></circle>
-            </svg>
-            <span
-              style={{
-                fontSize: "14px",
-                fontWeight: "600",
-                color: "#374151",
-              }}
-            >
-              Test Preview
-            </span>
-          </div>
-          <button
-            onClick={() => setShowPreview(false)}
-            style={{
-              padding: "4px",
-              backgroundColor: "transparent",
-              border: "none",
-              cursor: "pointer",
-              color: "#6b7280",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-
-        {/* iPhone-style Preview Frame */}
-        <div
-          style={{
-            height: "667px",
-            backgroundColor: "#ffffff",
+            width: "393px",
+            height: "852px",
             overflow: "hidden",
             position: "relative",
+            backgroundColor: "#f9fafb",
+            fontFamily:
+              '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
           }}
         >
-          <iframe
-            ref={previewIframeRef}
-            src="/user/dashboard?preview=true"
-            onLoad={() => {
-              // Send initial config when iframe loads
-              if (previewIframeRef.current) {
-                const config = {
-                  header: headerConfig,
-                  branding: brandingConfig,
-                  focus_tab: focusConfig,
-                  awareness_tab: awarenessConfig,
-                  emotional_state_tab: emotionalStateConfig,
-                  coach_tab: coachTabConfig,
-                  audio_library: audioLibrary,
-                  current_day_index: currentDayIndex,
-                };
-                console.log(
-                  "Sending initial config on iframe load:",
-                  config,
-                );
-                previewIframeRef.current.contentWindow.postMessage(
-                  {
-                    type: "PREVIEW_CONFIG_UPDATE",
-                    config: config,
-                  },
-                  window.location.origin,
-                );
-              }
-            }}
-            style={{
-              width: "100%",
-              height: "100%",
-              border: "none",
-              pointerEvents: isDragging ? "none" : "auto",
-            }}
-            title="Mobile Preview"
-          />
-        </div>
-      </div>
-    )}
-
-    {/* Hidden Focus Preview for Screenshot Capture — iPhone 15 aspect ratio */}
-    <div
-      style={{
-        position: "fixed",
-        left: "-9999px",
-        top: 0,
-        width: "393px",
-        pointerEvents: "none",
-        zIndex: -1,
-      }}
-    >
-      <div
-        ref={focusPreviewRef}
-        style={{
-          width: "393px",
-          height: "852px",
-          overflow: "hidden",
-          position: "relative",
-          backgroundColor: "#f9fafb",
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        }}
-      >
-        {/* App Header — gradient only here */}
-        <div
-          style={{
-            padding: "56px 24px 64px",
-            textAlign: "center",
-            background:
-              brandingConfig.background_type === "gradient"
-                ? `linear-gradient(${brandingConfig.gradient_angle || 135}deg, ${brandingConfig.gradient_color_1 || "#ff6b9d"} 0%, ${brandingConfig.gradient_color_2 || "#ffa057"} ${brandingConfig.gradient_spread || 50}%, ${brandingConfig.gradient_color_2 || "#ffa057"} 100%)`
-                : brandingConfig.background_color ||
-                  "linear-gradient(135deg, #ff6b9d 0%, #ffa057 50%, #ffd96a 100%)",
-          }}
-        >
-          {brandingConfig.app_logo_url ? (
-            <img
-              src={brandingConfig.app_logo_url}
-              alt="Logo"
-              style={{
-                height:
-                  brandingConfig.app_logo_size === "small"
-                    ? "36px"
-                    : brandingConfig.app_logo_size === "large"
-                      ? "64px"
-                      : "48px",
-                objectFit: "contain",
-                margin: "0 auto 6px",
-                display: "block",
-              }}
-            />
-          ) : (
-            <h1
-              style={{
-                fontSize: "32px",
-                fontWeight: 700,
-                color: "#1a1a1a",
-                marginBottom: "6px",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              {headerConfig.title || "BrainPeace"}
-            </h1>
-          )}
-          <p
-            style={{
-              fontSize: "16px",
-              color: "#1a1a1a",
-              opacity: 0.7,
-            }}
-          >
-            {headerConfig.subtitle || "Mental Fitness for Active Minds"}
-          </p>
-        </div>
-
-        {/* Focus Content */}
-        <div style={{ padding: "0 24px" }}>
-          {/* Today's Focus — overlaps header like the real app */}
+          {/* App Header — gradient only here */}
           <div
             style={{
-              backgroundColor: "#fffbf0",
-              padding: "24px",
-              borderRadius: "12px",
-              marginTop: "-24px",
-              marginBottom: "20px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              position: "relative",
-              zIndex: 1,
+              padding: "56px 24px 64px",
+              textAlign: "center",
+              background:
+                brandingConfig.background_type === "gradient"
+                  ? `linear-gradient(${brandingConfig.gradient_angle || 135}deg, ${brandingConfig.gradient_color_1 || "#ff6b9d"} 0%, ${brandingConfig.gradient_color_2 || "#ffa057"} ${brandingConfig.gradient_spread || 50}%, ${brandingConfig.gradient_color_2 || "#ffa057"} 100%)`
+                  : brandingConfig.background_color ||
+                    "linear-gradient(135deg, #ff6b9d 0%, #ffa057 50%, #ffd96a 100%)",
             }}
           >
-            <div
+            {brandingConfig.app_logo_url ? (
+              <img
+                src={brandingConfig.app_logo_url}
+                alt="Logo"
+                style={{
+                  height:
+                    brandingConfig.app_logo_size === "small"
+                      ? "36px"
+                      : brandingConfig.app_logo_size === "large"
+                        ? "64px"
+                        : "48px",
+                  objectFit: "contain",
+                  margin: "0 auto 6px",
+                  display: "block",
+                }}
+              />
+            ) : (
+              <h1
+                style={{
+                  fontSize: "32px",
+                  fontWeight: 700,
+                  color: "#1a1a1a",
+                  marginBottom: "6px",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {headerConfig.title || "BrainPeace"}
+              </h1>
+            )}
+            <p
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                marginBottom: "12px",
+                fontSize: "16px",
+                color: "#1a1a1a",
+                opacity: 0.7,
               }}
             >
-              <div>
-                <h2
-                  style={{
-                    fontSize: "24px",
-                    fontWeight: 700,
-                    color: "#1a1a1a",
-                    marginBottom: "4px",
-                  }}
-                >
-                  {focusConfig.progress_bar?.title || "Today's Focus"}
-                </h2>
-                <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                  {focusConfig.progress_bar?.subtitle ||
-                    "Direct your energy intentionally"}
-                </p>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div
-                  style={{
-                    fontSize: "40px",
-                    fontWeight: 700,
-                    lineHeight: 1,
-                    color: brandingConfig.primary_color || "#ef4444",
-                  }}
-                >
-                  0
-                </div>
-                <div
-                  style={{
-                    fontSize: "14px",
-                    color: "#6b7280",
-                    marginTop: "4px",
-                  }}
-                >
-                  of 3
-                </div>
-              </div>
-            </div>
-            <div
-              style={{
-                width: "100%",
-                height: "8px",
-                backgroundColor: "#fef3c7",
-                borderRadius: "4px",
-              }}
-            />
+              {headerConfig.subtitle || "Mental Fitness for Active Minds"}
+            </p>
           </div>
 
-          {/* Task 1 - Morning Practice */}
-          {focusConfig.task_1?.enabled !== false && (
+          {/* Focus Content */}
+          <div style={{ padding: "0 24px" }}>
+            {/* Today's Focus — overlaps header like the real app */}
             <div
               style={{
-                backgroundColor: "#fff",
-                padding: "20px",
+                backgroundColor: "#fffbf0",
+                padding: "24px",
                 borderRadius: "12px",
-                marginBottom: "16px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                marginTop: "-24px",
+                marginBottom: "20px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                position: "relative",
+                zIndex: 1,
               }}
             >
               <div
                 style={{
                   display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  marginBottom: "12px",
+                }}
+              >
+                <div>
+                  <h2
+                    style={{
+                      fontSize: "24px",
+                      fontWeight: 700,
+                      color: "#1a1a1a",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    {focusConfig.progress_bar?.title || "Today's Focus"}
+                  </h2>
+                  <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                    {focusConfig.progress_bar?.subtitle ||
+                      "Direct your energy intentionally"}
+                  </p>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div
+                    style={{
+                      fontSize: "40px",
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      color: brandingConfig.primary_color || "#ef4444",
+                    }}
+                  >
+                    0
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#6b7280",
+                      marginTop: "4px",
+                    }}
+                  >
+                    of 3
+                  </div>
+                </div>
+              </div>
+              <div
+                style={{
+                  width: "100%",
+                  height: "8px",
+                  backgroundColor: "#fef3c7",
+                  borderRadius: "4px",
+                }}
+              />
+            </div>
+
+            {/* Task 1 - Morning Practice */}
+            {focusConfig.task_1?.enabled !== false && (
+              <div
+                style={{
+                  backgroundColor: "#fff",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  marginBottom: "16px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "56px",
+                      height: "56px",
+                      backgroundColor: "#fff9e6",
+                      borderRadius: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {focusConfig.task_1?.icon_url ? (
+                      <img
+                        src={focusConfig.task_1.icon_url}
+                        alt=""
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          objectFit: "contain",
+                        }}
+                      />
+                    ) : (
+                      <svg
+                        width="28"
+                        height="28"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#f59e0b"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="4" />
+                        <path d="M12 2v2" />
+                        <path d="M12 20v2" />
+                        <path d="m4.93 4.93 1.41 1.41" />
+                        <path d="m17.66 17.66 1.41 1.41" />
+                        <path d="M2 12h2" />
+                        <path d="M20 12h2" />
+                        <path d="m6.34 17.66-1.41 1.41" />
+                        <path d="m19.07 4.93-1.41 1.41" />
+                      </svg>
+                    )}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      <h3
+                        style={{
+                          fontSize: "18px",
+                          fontWeight: 600,
+                          color: "#1a1a1a",
+                        }}
+                      >
+                        {focusConfig.task_1?.title || "Morning Practice"}
+                      </h3>
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="#f59e0b"
+                        stroke="#f59e0b"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                    </div>
+                    <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                      {focusConfig.task_1?.subtitle ||
+                        "Follow Your Spark • 7:00"}
+                    </p>
+                  </div>
+                  <div
+                    style={{
+                      width: "28px",
+                      height: "28px",
+                      borderRadius: "50%",
+                      border: "2px solid #d1d5db",
+                      flexShrink: 0,
+                    }}
+                  />
+                </div>
+                {/* Listen Now button - plain padding, no tricks */}
+                <div
+                  style={{
+                    width: "100%",
+                    padding: "5px 0 22px",
+                    backgroundColor: brandingConfig.primary_color || "#ef4444",
+                    color: "#fff",
+                    borderRadius: "8px",
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    textAlign: "center",
+                  }}
+                >
+                  Listen Now
+                </div>
+              </div>
+            )}
+
+            {/* Task 2 - Daily Intention */}
+            {focusConfig.task_2?.enabled !== false && (
+              <div
+                style={{
+                  backgroundColor: "#fff",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  marginBottom: "16px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                  display: "flex",
                   alignItems: "center",
                   gap: "16px",
-                  marginBottom: "16px",
                 }}
               >
                 <div
                   style={{
                     width: "56px",
                     height: "56px",
-                    backgroundColor: "#fff9e6",
+                    backgroundColor: "#f3e8ff",
                     borderRadius: "12px",
                     display: "flex",
                     alignItems: "center",
@@ -4647,9 +5056,9 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                     overflow: "hidden",
                   }}
                 >
-                  {focusConfig.task_1?.icon_url ? (
+                  {focusConfig.task_2?.icon_url ? (
                     <img
-                      src={focusConfig.task_1.icon_url}
+                      src={focusConfig.task_2.icon_url}
                       alt=""
                       style={{
                         width: "36px",
@@ -4661,59 +5070,27 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                     <svg
                       width="28"
                       height="28"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#f59e0b"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                      viewBox="0 0 20 20"
+                      fill="#a855f7"
                     >
-                      <circle cx="12" cy="12" r="4" />
-                      <path d="M12 2v2" />
-                      <path d="M12 20v2" />
-                      <path d="m4.93 4.93 1.41 1.41" />
-                      <path d="m17.66 17.66 1.41 1.41" />
-                      <path d="M2 12h2" />
-                      <path d="M20 12h2" />
-                      <path d="m6.34 17.66-1.41 1.41" />
-                      <path d="m19.07 4.93-1.41 1.41" />
+                      <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
                     </svg>
                   )}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div
+                  <h3
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
+                      fontSize: "18px",
+                      fontWeight: 600,
+                      color: "#1a1a1a",
                       marginBottom: "4px",
                     }}
                   >
-                    <h3
-                      style={{
-                        fontSize: "18px",
-                        fontWeight: 600,
-                        color: "#1a1a1a",
-                      }}
-                    >
-                      {focusConfig.task_1?.title || "Morning Practice"}
-                    </h3>
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="#f59e0b"
-                      stroke="#f59e0b"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                    </svg>
-                  </div>
+                    {focusConfig.task_2?.title || "Daily Intention"}
+                  </h3>
                   <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                    {focusConfig.task_1?.subtitle ||
-                      "Follow Your Spark • 7:00"}
+                    {focusConfig.task_2?.subtitle ||
+                      "Set your focus for the day"}
                   </p>
                 </div>
                 <div
@@ -4726,399 +5103,307 @@ useEffect(() => { markPanelDirty("coach_tab"); }, [coachTabConfig]);
                   }}
                 />
               </div>
-              {/* Listen Now button - plain padding, no tricks */}
-              <div
-                style={{
-                  width: "100%",
-                  padding: "5px 0 22px",
-                  backgroundColor: brandingConfig.primary_color || "#ef4444",
-                  color: "#fff",
-                  borderRadius: "8px",
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  textAlign: "center",
-                }}
-              >
-                Listen Now
-              </div>
-            </div>
-          )}
+            )}
 
-          {/* Task 2 - Daily Intention */}
-          {focusConfig.task_2?.enabled !== false && (
-            <div
-              style={{
-                backgroundColor: "#fff",
-                padding: "20px",
-                borderRadius: "12px",
-                marginBottom: "16px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
-              }}
-            >
+            {/* Task 3 - Evening Review */}
+            {focusConfig.task_3?.enabled !== false && (
               <div
                 style={{
-                  width: "56px",
-                  height: "56px",
-                  backgroundColor: "#f3e8ff",
+                  backgroundColor: "#fff",
+                  padding: "20px",
                   borderRadius: "12px",
+                  marginBottom: "20px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  overflow: "hidden",
+                  gap: "16px",
                 }}
               >
-                {focusConfig.task_2?.icon_url ? (
-                  <img
-                    src={focusConfig.task_2.icon_url}
-                    alt=""
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      objectFit: "contain",
-                    }}
-                  />
-                ) : (
-                  <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 20 20"
-                    fill="#a855f7"
-                  >
-                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                  </svg>
-                )}
-              </div>
-              <div style={{ flex: 1 }}>
-                <h3
+                <div
                   style={{
-                    fontSize: "18px",
-                    fontWeight: 600,
-                    color: "#1a1a1a",
-                    marginBottom: "4px",
+                    width: "56px",
+                    height: "56px",
+                    backgroundColor: "#e0e7ff",
+                    borderRadius: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    overflow: "hidden",
                   }}
                 >
-                  {focusConfig.task_2?.title || "Daily Intention"}
-                </h3>
-                <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                  {focusConfig.task_2?.subtitle ||
-                    "Set your focus for the day"}
-                </p>
-              </div>
-              <div
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  border: "2px solid #d1d5db",
-                  flexShrink: 0,
-                }}
-              />
-            </div>
-          )}
-
-          {/* Task 3 - Evening Review */}
-          {focusConfig.task_3?.enabled !== false && (
-            <div
-              style={{
-                backgroundColor: "#fff",
-                padding: "20px",
-                borderRadius: "12px",
-                marginBottom: "20px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
-              }}
-            >
-              <div
-                style={{
-                  width: "56px",
-                  height: "56px",
-                  backgroundColor: "#e0e7ff",
-                  borderRadius: "12px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  overflow: "hidden",
-                }}
-              >
-                {focusConfig.task_3?.icon_url ? (
-                  <img
-                    src={focusConfig.task_3.icon_url}
-                    alt=""
+                  {focusConfig.task_3?.icon_url ? (
+                    <img
+                      src={focusConfig.task_3.icon_url}
+                      alt=""
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        objectFit: "contain",
+                      }}
+                    />
+                  ) : (
+                    <svg
+                      width="28"
+                      height="28"
+                      viewBox="0 0 20 20"
+                      fill="#6366f1"
+                    >
+                      <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                    </svg>
+                  )}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3
                     style={{
-                      width: "36px",
-                      height: "36px",
-                      objectFit: "contain",
+                      fontSize: "18px",
+                      fontWeight: 600,
+                      color: "#1a1a1a",
+                      marginBottom: "4px",
                     }}
-                  />
-                ) : (
-                  <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 20 20"
-                    fill="#6366f1"
                   >
-                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                  </svg>
-                )}
-              </div>
-              <div style={{ flex: 1 }}>
-                <h3
+                    {focusConfig.task_3?.title || "Evening Review"}
+                  </h3>
+                  <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                    {focusConfig.task_3?.subtitle ||
+                      "Log your awareness tonight"}
+                  </p>
+                </div>
+                <div
                   style={{
-                    fontSize: "18px",
-                    fontWeight: 600,
-                    color: "#1a1a1a",
-                    marginBottom: "4px",
-                  }}
-                >
-                  {focusConfig.task_3?.title || "Evening Review"}
-                </h3>
-                <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                  {focusConfig.task_3?.subtitle ||
-                    "Log your awareness tonight"}
-                </p>
-              </div>
-              <div
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  border: "2px solid #d1d5db",
-                  flexShrink: 0,
-                }}
-              />
-            </div>
-          )}
-
-          {/* Day Notes preview */}
-          <div
-            style={{
-              backgroundColor: "#fff",
-              padding: "20px",
-              borderRadius: "12px",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-            }}
-          >
-            <div
-              style={{
-                width: "48px",
-                height: "48px",
-                backgroundColor: "#10b981",
-                borderRadius: "12px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                overflow: "hidden",
-              }}
-            >
-              {focusConfig.day_notes?.icon_url ? (
-                <img
-                  src={focusConfig.day_notes.icon_url}
-                  alt=""
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    objectFit: "contain",
+                    width: "28px",
+                    height: "28px",
+                    borderRadius: "50%",
+                    border: "2px solid #d1d5db",
+                    flexShrink: 0,
                   }}
                 />
-              ) : (
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#ffffff"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              )}
-            </div>
-            <div>
-              <h3
-                style={{
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  color: "#1a1a1a",
-                  marginBottom: "2px",
-                }}
-              >
-                {focusConfig.day_notes?.title || "Day Notes"}
-              </h3>
-              <p style={{ fontSize: "14px", color: "#6b7280" }}>
-                {focusConfig.day_notes?.subtitle ||
-                  "Log observations to spot patterns"}
-              </p>
-            </div>
-          </div>
-        </div>
+              </div>
+            )}
 
-        {/* Bottom Tab Bar */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: "#fff",
-            borderTop: "1px solid #e5e7eb",
-            borderTopLeftRadius: "16px",
-            borderTopRightRadius: "16px",
-            display: "flex",
-            justifyContent: "space-around",
-            padding: "12px 0 28px",
-            boxShadow: "0 -2px 10px rgba(0,0,0,0.05)",
-          }}
-        >
-          {/* Focus - Compass icon */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "4px",
-              flex: 1,
-            }}
-          >
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={brandingConfig.primary_color || "#ef4444"}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <polygon
-                points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"
-                fill={brandingConfig.primary_color || "#ef4444"}
-                stroke={brandingConfig.primary_color || "#ef4444"}
-              />
-            </svg>
-            <span
+            {/* Day Notes preview */}
+            <div
               style={{
-                fontSize: "12px",
-                color: brandingConfig.primary_color || "#ef4444",
-                fontWeight: 600,
+                backgroundColor: "#fff",
+                padding: "20px",
+                borderRadius: "12px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
               }}
             >
-              Focus
-            </span>
+              <div
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  backgroundColor: "#10b981",
+                  borderRadius: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  overflow: "hidden",
+                }}
+              >
+                {focusConfig.day_notes?.icon_url ? (
+                  <img
+                    src={focusConfig.day_notes.icon_url}
+                    alt=""
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      objectFit: "contain",
+                    }}
+                  />
+                ) : (
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#ffffff"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                )}
+              </div>
+              <div>
+                <h3
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    color: "#1a1a1a",
+                    marginBottom: "2px",
+                  }}
+                >
+                  {focusConfig.day_notes?.title || "Day Notes"}
+                </h3>
+                <p style={{ fontSize: "14px", color: "#6b7280" }}>
+                  {focusConfig.day_notes?.subtitle ||
+                    "Log observations to spot patterns"}
+                </p>
+              </div>
+            </div>
           </div>
-          {/* Awareness - Sun icon */}
+
+          {/* Bottom Tab Bar */}
           <div
             style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: "#fff",
+              borderTop: "1px solid #e5e7eb",
+              borderTopLeftRadius: "16px",
+              borderTopRightRadius: "16px",
               display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "4px",
-              flex: 1,
+              justifyContent: "space-around",
+              padding: "12px 0 28px",
+              boxShadow: "0 -2px 10px rgba(0,0,0,0.05)",
             }}
           >
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#9ca3af"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              opacity="0.5"
+            {/* Focus - Compass icon */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "4px",
+                flex: 1,
+              }}
             >
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2" />
-              <path d="M12 20v2" />
-              <path d="m4.93 4.93 1.41 1.41" />
-              <path d="m17.66 17.66 1.41 1.41" />
-              <path d="M2 12h2" />
-              <path d="M20 12h2" />
-              <path d="m6.34 17.66-1.41 1.41" />
-              <path d="m19.07 4.93-1.41 1.41" />
-            </svg>
-            <span
-              style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 400 }}
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={brandingConfig.primary_color || "#ef4444"}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polygon
+                  points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"
+                  fill={brandingConfig.primary_color || "#ef4444"}
+                  stroke={brandingConfig.primary_color || "#ef4444"}
+                />
+              </svg>
+              <span
+                style={{
+                  fontSize: "12px",
+                  color: brandingConfig.primary_color || "#ef4444",
+                  fontWeight: 600,
+                }}
+              >
+                Focus
+              </span>
+            </div>
+            {/* Awareness - Sun icon */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "4px",
+                flex: 1,
+              }}
             >
-              Awareness
-            </span>
-          </div>
-          {/* Coach - MessageCircle icon */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "4px",
-              flex: 1,
-            }}
-          >
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#9ca3af"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              opacity="0.5"
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#9ca3af"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity="0.5"
+              >
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2" />
+                <path d="M12 20v2" />
+                <path d="m4.93 4.93 1.41 1.41" />
+                <path d="m17.66 17.66 1.41 1.41" />
+                <path d="M2 12h2" />
+                <path d="M20 12h2" />
+                <path d="m6.34 17.66-1.41 1.41" />
+                <path d="m19.07 4.93-1.41 1.41" />
+              </svg>
+              <span
+                style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 400 }}
+              >
+                Awareness
+              </span>
+            </div>
+            {/* Coach - MessageCircle icon */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "4px",
+                flex: 1,
+              }}
             >
-              <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" />
-            </svg>
-            <span
-              style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 400 }}
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#9ca3af"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity="0.5"
+              >
+                <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" />
+              </svg>
+              <span
+                style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 400 }}
+              >
+                Coach
+              </span>
+            </div>
+            {/* More - Menu icon */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "4px",
+                flex: 1,
+              }}
             >
-              Coach
-            </span>
-          </div>
-          {/* More - Menu icon */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "4px",
-              flex: 1,
-            }}
-          >
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#9ca3af"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              opacity="0.5"
-            >
-              <line x1="4" x2="20" y1="12" y2="12" />
-              <line x1="4" x2="20" y1="6" y2="6" />
-              <line x1="4" x2="20" y1="18" y2="18" />
-            </svg>
-            <span
-              style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 400 }}
-            >
-              More
-            </span>
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#9ca3af"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity="0.5"
+              >
+                <line x1="4" x2="20" y1="12" y2="12" />
+                <line x1="4" x2="20" y1="6" y2="6" />
+                <line x1="4" x2="20" y1="18" y2="18" />
+              </svg>
+              <span
+                style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 400 }}
+              >
+                More
+              </span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
     </>
   );
 }

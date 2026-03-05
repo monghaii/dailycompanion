@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import PolicyFooter from "@/components/PolicyFooter";
 
 function GradientCTA({ href, children, large }) {
   return (
@@ -932,6 +933,8 @@ export default function Home() {
           </GradientCTA>
         </div>
       </section>
+
+      <PolicyFooter />
     </div>
   );
 }

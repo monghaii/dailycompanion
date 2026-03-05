@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import PolicyFooter from "@/components/PolicyFooter";
 
 export default function CoachLandingPage() {
   const params = useParams();
@@ -1172,6 +1173,8 @@ export default function CoachLandingPage() {
             </a>
           </p>
         </section>
+
+        <PolicyFooter />
       </div>
     </>
   );

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 import { posthogIdentifyIfAllowed } from "@/components/PostHogProvider";
+import PolicyFooter from "@/components/PolicyFooter";
 
 function LoginContent({ coachSlug, initialCoachData }) {
   const router = useRouter();
@@ -206,12 +207,19 @@ function LoginContent({ coachSlug, initialCoachData }) {
         minHeight: "100vh",
         backgroundColor: "#f9fafb",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        flexDirection: "column",
         padding: "24px",
       }}
     >
-      <div style={{ width: "100%", maxWidth: "420px" }}>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div style={{ width: "100%", maxWidth: "420px" }}>
         <div
           style={{
             textAlign: "center",
@@ -382,7 +390,9 @@ function LoginContent({ coachSlug, initialCoachData }) {
             </Link>
           </p>
         </form>
+        </div>
       </div>
+      <PolicyFooter />
     </div>
   );
 }

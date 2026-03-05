@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import PolicyFooter from "@/components/PolicyFooter";
 
 export default function CoachSignup() {
   const router = useRouter();
@@ -84,12 +85,19 @@ export default function CoachSignup() {
         minHeight: "100vh",
         backgroundColor: "#ffffff",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        flexDirection: "column",
         padding: "40px 24px",
       }}
     >
-      <div style={{ width: "100%", maxWidth: "540px" }}>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div style={{ width: "100%", maxWidth: "540px" }}>
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
           <Link href="/" style={{ display: "inline-block" }}>
@@ -315,7 +323,9 @@ export default function CoachSignup() {
           <br />
           After signup, you'll be asked to subscribe ($50/mo or $500/yr).
         </p>
+        </div>
       </div>
+      <PolicyFooter />
     </div>
   );
 }

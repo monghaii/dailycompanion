@@ -7733,12 +7733,62 @@ function UserDashboardContent() {
                   fontSize: "16px",
                   fontWeight: 600,
                   cursor: "pointer",
-                  marginBottom: "90px",
+                  marginBottom: "24px",
                 }}
               >
                 Back to Dashboard
               </button>
             )}
+
+            {/* Legal Links */}
+            <div style={{ marginTop: "16px", marginBottom: "90px" }}>
+              <h3
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  color: "#6b7280",
+                  letterSpacing: "0.05em",
+                  marginBottom: "16px",
+                }}
+              >
+                LEGAL
+              </h3>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
+                {[
+                  { label: "Privacy Policy", href: "/privacy" },
+                  { label: "Terms of Use", href: "/terms" },
+                  { label: "Cookie Policy", href: "/cookies" },
+                ].map((link) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "14px 16px",
+                      backgroundColor: "#fff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                      textDecoration: "none",
+                      color: "#1a1a1a",
+                      fontSize: "15px",
+                    }}
+                  >
+                    {link.label}
+                    <span style={{ color: "#9ca3af", fontSize: "18px" }}>→</span>
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -8085,10 +8135,10 @@ function UserDashboardContent() {
             bottom: 0,
             backgroundColor: "rgba(0, 0, 0, 0.5)",
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-end",
             justifyContent: "center",
-            zIndex: 1000,
-            padding: "24px",
+            zIndex: 1100,
+            padding: "24px 16px calc(env(safe-area-inset-bottom, 0px) + 70px) 16px",
           }}
           onClick={() => setShowEmotionalModal(false)}
         >
@@ -8099,7 +8149,8 @@ function UserDashboardContent() {
               borderRadius: "16px",
               width: "100%",
               maxWidth: "500px",
-              maxHeight: "90vh",
+              maxHeight: "80dvh",
+              position: "relative",
               display: "flex",
               flexDirection: "column",
               overflow: "hidden",
@@ -8138,13 +8189,13 @@ function UserDashboardContent() {
             </div>
 
             {/* Scrollable content */}
-            <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
+            <div style={{ overflowY: "auto", padding: "0 20px", flex: 1, minHeight: 0, WebkitOverflowScrolling: "touch" }}>
               <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr",
                   gap: "10px",
-                  paddingBottom: "16px",
+                  paddingBottom: "80px",
                 }}
               >
               {(
@@ -8211,8 +8262,17 @@ function UserDashboardContent() {
             </div>
             </div>
 
-            {/* Sticky footer */}
-            <div style={{ padding: "12px 20px 20px", flexShrink: 0 }}>
+            {/* Sticky Done button pinned to bottom of modal */}
+            <div style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              padding: "12px 20px 20px",
+              background: "linear-gradient(to top, #f3f4f6 70%, transparent)",
+              borderRadius: "0 0 16px 16px",
+              pointerEvents: "none",
+            }}>
               <button
                 onClick={handleEmotionalDone}
                 style={{
@@ -8225,6 +8285,8 @@ function UserDashboardContent() {
                   fontSize: "16px",
                   fontWeight: 600,
                   cursor: "pointer",
+                  pointerEvents: "auto",
+                  boxShadow: "0 -2px 8px rgba(0,0,0,0.06)",
                 }}
               >
                 Done

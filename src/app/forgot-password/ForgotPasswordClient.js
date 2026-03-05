@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import PolicyFooter from "@/components/PolicyFooter";
 
 export default function ForgotPasswordClient({ coachSlug, initialCoachData }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -108,12 +109,19 @@ export default function ForgotPasswordClient({ coachSlug, initialCoachData }) {
         minHeight: "100vh",
         backgroundColor: "#f9fafb",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        flexDirection: "column",
         padding: "24px",
       }}
     >
-      <div style={{ width: "100%", maxWidth: "420px" }}>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div style={{ width: "100%", maxWidth: "420px" }}>
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
             <Link
                 href={coachSlug ? `/login?coach=${coachSlug}` : "/"}
@@ -312,7 +320,9 @@ export default function ForgotPasswordClient({ coachSlug, initialCoachData }) {
             )}
           </form>
         )}
+        </div>
       </div>
+      <PolicyFooter />
     </div>
   );
 }

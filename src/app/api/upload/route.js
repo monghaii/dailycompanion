@@ -33,15 +33,8 @@ export async function POST(request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Validate file size based on type
-    const sizeLimits = {
-      logo: 5 * 1024 * 1024,
-      screenshot: 5 * 1024 * 1024,
-      audio: 50 * 1024 * 1024,
-      video: 100 * 1024 * 1024,
-      pdf: 20 * 1024 * 1024,
-    };
-    const maxSize = sizeLimits[fileType] || 5 * 1024 * 1024;
+    // Validate file size (4.5MB hard limit due to Vercel serverless body size)
+    const maxSize = 4.5 * 1024 * 1024;
     if (file.size > maxSize) {
       const sizeLabel = maxSize >= 1024 * 1024 ? `${maxSize / (1024 * 1024)}MB` : `${maxSize / 1024}KB`;
       return NextResponse.json(
