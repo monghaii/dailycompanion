@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { adjustAudioFavoriteCount, adjustResourceFavoriteCount } from "@/lib/analytics-aggregates";
 
 // GET /api/user/favorites?item_type=daily_practice_audio
 export async function GET(request) {
@@ -94,6 +95,13 @@ export async function POST(request) {
 
     if (existing) {
       await supabase.from("user_favorites").delete().eq("id", existing.id);
+
+      if (item_type === "daily_practice_audio") {
+        adjustAudioFavoriteCount(coachId, item_identifier, -1).catch(() => {});
+      } else if (item_type === "resource_hub_content") {
+        adjustResourceFavoriteCount(coachId, item_identifier, -1).catch(() => {});
+      }
+
       return NextResponse.json({ favorited: false });
     }
 
@@ -110,6 +118,12 @@ export async function POST(request) {
         { error: "Failed to toggle favorite" },
         { status: 500 },
       );
+    }
+
+    if (item_type === "daily_practice_audio") {
+      adjustAudioFavoriteCount(coachId, item_identifier, 1).catch(() => {});
+    } else if (item_type === "resource_hub_content") {
+      adjustResourceFavoriteCount(coachId, item_identifier, 1).catch(() => {});
     }
 
     return NextResponse.json({ favorited: true });

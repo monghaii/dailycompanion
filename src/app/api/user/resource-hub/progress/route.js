@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { incrementResourceViewCount } from "@/lib/analytics-aggregates";
 
 // POST - Mark a content item as viewed
 export async function POST(request) {
@@ -34,6 +35,10 @@ export async function POST(request) {
     if (error) {
       console.error("Error saving progress:", error);
       return NextResponse.json({ error: "Failed to save progress" }, { status: 500 });
+    }
+
+    if (user.role !== "coach") {
+      incrementResourceViewCount(user.id, content_item_id).catch(() => {});
     }
 
     return NextResponse.json({ success: true });

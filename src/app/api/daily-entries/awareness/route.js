@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { incrementEmotionCounts } from "@/lib/analytics-aggregates";
 
 // PATCH /api/daily-entries/awareness - Update awareness tab data
 export async function PATCH(request) {
@@ -101,6 +102,13 @@ export async function PATCH(request) {
         );
       }
 
+      if (log_2_entry?.emotions?.length > 0 && profile?.role !== "coach") {
+        const labels = log_2_entry.emotions.map((e) =>
+          e.includes("-") ? e.split("-").slice(1).join("-") : e
+        );
+        incrementEmotionCounts(user.id, labels).catch(() => {});
+      }
+
       return NextResponse.json({ entry: updatedEntry });
     }
 
@@ -138,6 +146,13 @@ export async function PATCH(request) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (log_2_entry?.emotions?.length > 0 && profile?.role !== "coach") {
+      const labels = log_2_entry.emotions.map((e) =>
+        e.includes("-") ? e.split("-").slice(1).join("-") : e
+      );
+      incrementEmotionCounts(user.id, labels).catch(() => {});
     }
 
     return NextResponse.json({ entry });

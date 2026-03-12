@@ -423,14 +423,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     meta_description: "",
   });
 
-  const [tokenUsage, setTokenUsage] = useState({
-    totalTokens: 0,
-    subscriberCount: 0,
-    averagePerUser: 0,
-    tokenLimit: 1000000,
-  });
-
-
   const cs = COUNTRY_CURRENCY_SYMBOL[coach?.stripe_country] || "$";
 
   const fetchCoachConfig = async () => {
@@ -560,21 +552,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
       }
     }, 800);
   };
-
-  const fetchTokenUsage = async () => {
-    try {
-      const res = await fetch("/api/coach/token-usage");
-      if (checkAuthResponse(res)) return;
-      const data = await res.json();
-
-      if (res.ok) {
-        setTokenUsage(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch token usage:", error);
-    }
-  };
-
 
   const handleGeneratePrompt = async () => {
     setIsGeneratingPrompt(true);
@@ -1170,7 +1147,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
   useEffect(() => {
     fetchCoachConfig();
-    fetchTokenUsage();
   }, []);
 
   return (
@@ -4124,7 +4100,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     Coach Tab Configuration
                   </h2>
                   <p className="text-sm text-gray-500 mt-1">
-                    Customize AI coaching behavior and monitor token usage
+                    Customize AI coaching behavior and personality
                   </p>
                 </div>
                 <span className="text-gray-400 group-open:rotate-180 transition-transform text-xl">
@@ -4132,61 +4108,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 </span>
               </summary>
               <div className="p-6 space-y-6">
-                {/* Token Usage Meter */}
-                <div className="border-b border-gray-100 pb-6">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-4">
-                    Token Usage
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">
-                        Total tokens used this month
-                      </span>
-                      <span className="font-semibold text-gray-900">
-                        {(tokenUsage?.totalTokens || 0).toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500"
-                        style={{
-                          width: `${Math.min(
-                            ((tokenUsage?.totalTokens || 0) /
-                              ((tokenUsage?.subscriberCount || 1) *
-                                (tokenUsage?.tokenLimit || 1000000))) *
-                              100,
-                            100,
-                          )}%`,
-                        }}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <div className="text-xs text-gray-500 mb-1">
-                          Active Subscribers
-                        </div>
-                        <div className="text-2xl font-bold text-gray-900">
-                          {tokenUsage?.subscriberCount || 0}
-                        </div>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <div className="text-xs text-gray-500 mb-1">
-                          Avg. per User
-                        </div>
-                        <div className="text-2xl font-bold text-gray-900">
-                          {(tokenUsage?.averagePerUser || 0).toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Each user has a limit of{" "}
-                      {(tokenUsage?.tokenLimit || 1000000).toLocaleString()}{" "}
-                      tokens per month. Usage resets automatically at the
-                      beginning of each month.
-                    </p>
-                  </div>
-                </div>
-
                 {/* Bot Profile Picture */}
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">

@@ -25,8 +25,7 @@ export async function GET(request) {
       );
     }
 
-    // Get all users linked to this coach via subscriptions OR direct coach_id
-    // First, get users from subscriptions
+    // Only count users with active paid subscriptions (Premium or higher)
     const { data: subscriptions, error: subError } = await supabase
       .from("user_subscriptions")
       .select("user_id")
@@ -37,27 +36,7 @@ export async function GET(request) {
       console.error("Error fetching subscriptions:", subError);
     }
 
-    // Then get users directly linked via coach_id in profiles
-    const { data: directUsers, error: directError } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("coach_id", coach.id)
-      .eq("role", "user");
-
-    if (directError) {
-      console.error("Error fetching direct users:", directError);
-    }
-
-    // Combine and deduplicate user IDs
-    const userIdsSet = new Set();
-    if (subscriptions) {
-      subscriptions.forEach((sub) => userIdsSet.add(sub.user_id));
-    }
-    if (directUsers) {
-      directUsers.forEach((user) => userIdsSet.add(user.id));
-    }
-
-    const userIds = Array.from(userIdsSet);
+    const userIds = (subscriptions || []).map((sub) => sub.user_id);
 
     // If no users, return zero
     if (userIds.length === 0) {

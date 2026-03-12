@@ -88,6 +88,11 @@ function UserDashboardContent() {
   const [coachConfig, setCoachConfig] = useState(null);
   const primaryColor = coachConfig?.branding?.primary_color || "#6366f1";
 
+  const trackEvent = (event, properties) => {
+    if (user?.role === "coach") return;
+    trackEvent(event, properties);
+  };
+
   useEffect(() => {
     setTodayKey(new Date().toLocaleDateString("en-CA"));
     setModalTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
@@ -540,7 +545,7 @@ function UserDashboardContent() {
       localStorage.setItem("activeTab", activeTab);
     }
     if (prevTabRef.current !== activeTab && user) {
-      posthog.capture("tab_switched", {
+      trackEvent("tab_switched", {
         tab_name: activeTab,
         previous_tab: prevTabRef.current,
       });
@@ -624,15 +629,17 @@ function UserDashboardContent() {
 
       setUser(data.user);
 
-      posthogIdentifyIfAllowed(data.user.id, {
-        email: data.user.email,
-        role: "user",
-        coach_id: data.user.coach_id,
-        first_name: data.user.first_name,
-        last_name: data.user.last_name,
-        subscription_tier: data.user.subscription?.subscription_tier,
-        subscription_status: data.user.subscription?.status,
-      });
+      if (data.user.role !== "coach") {
+        posthogIdentifyIfAllowed(data.user.id, {
+          email: data.user.email,
+          role: "user",
+          coach_id: data.user.coach_id,
+          first_name: data.user.first_name,
+          last_name: data.user.last_name,
+          subscription_tier: data.user.subscription?.subscription_tier,
+          subscription_status: data.user.subscription?.status,
+        });
+      }
 
       // Set timezone from user profile
       if (data.user.timezone) {
@@ -788,7 +795,7 @@ function UserDashboardContent() {
         setToastMessage("Day notes saved");
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
-        posthog.capture("day_notes_saved", {
+        trackEvent("day_notes_saved", {
           date: selectedInsightsDate,
           word_count: dayNotesEdit
             ? dayNotesEdit.split(/\s+/).filter(Boolean).length
@@ -942,7 +949,7 @@ function UserDashboardContent() {
         const data = await res.json();
         setRhActiveCollection(data.collection);
         setRhCollectionItems(data.items || []);
-        posthog.capture("resource_hub_collection_opened", {
+        trackEvent("resource_hub_collection_opened", {
           collection_id: data.collection?.id || collectionId,
           collection_name: data.collection?.name,
         });
@@ -974,7 +981,7 @@ function UserDashboardContent() {
 
     await markContentViewed(content.id, collection.id);
 
-    posthog.capture("resource_hub_content_viewed", {
+    trackEvent("resource_hub_content_viewed", {
       content_type: content.type,
       collection_id: collection.id,
       is_external_link: !!content.link_url,
@@ -1235,7 +1242,7 @@ function UserDashboardContent() {
         const data = await res.json();
         setFocusEntry(data.entry);
         if (newValue) {
-          posthog.capture("focus_task_completed", {
+          trackEvent("focus_task_completed", {
             task_name: task,
             date: todayStr,
           });
@@ -1279,7 +1286,7 @@ function UserDashboardContent() {
         setIntentionObstacles(obstacles);
         setIntentionFocusWord(focusWord);
         setShowIntentionModal(false);
-        posthog.capture("intention_set", {
+        trackEvent("intention_set", {
           has_obstacles: !!obstacles,
           has_focus_word: !!focusWord,
           date: getLocalToday(),
@@ -1313,9 +1320,17 @@ function UserDashboardContent() {
         console.error("Audio play failed:", err);
         setIsPlaying(false);
       });
-      posthog.capture("morning_practice_audio_played", {
+      trackEvent("morning_practice_audio_played", {
         date: getLocalToday(),
       });
+      const todayPath = getTodaysAudioPath();
+      if (todayPath) {
+        fetch("/api/track/audio-play", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ audio_path: todayPath }),
+        }).catch(() => {});
+      }
     }
   };
 
@@ -1513,7 +1528,7 @@ function UserDashboardContent() {
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
 
-        posthog.capture("awareness_moment_logged", {
+        trackEvent("awareness_moment_logged", {
           mindfulness_type: entry.label,
           date: dateStr,
         });
@@ -1669,7 +1684,7 @@ function UserDashboardContent() {
 
         setSelectedEmotions([]);
 
-        posthog.capture("emotional_state_logged", {
+        trackEvent("emotional_state_logged", {
           emotion_count: formattedEmotions.length,
           date: dateStr,
         });
@@ -7004,6 +7019,14 @@ function UserDashboardContent() {
                                     setLibCurrentTime(0);
                                     setLibDuration(0);
                                     setLibIsPlaying(true);
+                                    fetch("/api/track/audio-play", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({
+                                        audio_path: audio.audio_path,
+                                        audio_name: audio.name || "",
+                                      }),
+                                    }).catch(() => {});
                                     setTimeout(() => {
                                       if (libraryAudioRef.current) {
                                         libraryAudioRef.current.src =
