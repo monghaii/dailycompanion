@@ -86,15 +86,16 @@ export default function ConfigSection({
 
   const [currentDayIndex, setCurrentDayIndex] = useState(0);
 
-  const [showPreview, setShowPreview] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+  const [onboardingAnswers, setOnboardingAnswers] = useState({
+    credentials: "",
+    openSession: "",
+    closeSession: "",
+  });
+  const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
+  const [generatedPromptDraft, setGeneratedPromptDraft] = useState("");
 
-  const [previewPosition, setPreviewPosition] = useState({ x: 800, y: 100 });
-
-  const [isDragging, setIsDragging] = useState(false);
-
-  const dragRef = useRef({ offsetX: 0, offsetY: 0 });
-
-  const previewIframeRef = useRef(null);
 
   const focusPreviewRef = useRef(null);
 
@@ -429,9 +430,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     tokenLimit: 1000000,
   });
 
-  useEffect(() => {
-    setPreviewPosition({ x: window.innerWidth - 420, y: 100 });
-  }, []);
 
   const cs = COUNTRY_CURRENCY_SYMBOL[coach?.stripe_country] || "$";
 
@@ -577,27 +575,34 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     }
   };
 
-  const sendConfigToPreview = () => {
-    if (!showPreview || !previewIframeRef.current) return;
 
-    const config = {
-      header: headerConfig,
-      branding: brandingConfig,
-      focus_tab: focusConfig,
-      awareness_tab: awarenessConfig,
-      emotional_state_tab: emotionalStateConfig,
-      coach_tab: coachTabConfig,
-      audio_library: audioLibrary,
-      current_day_index: currentDayIndex,
-    };
+  const handleGeneratePrompt = async () => {
+    setIsGeneratingPrompt(true);
+    try {
+      const res = await fetch("/api/coach/generate-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(onboardingAnswers),
+      });
 
-    previewIframeRef.current.contentWindow?.postMessage(
-      {
-        type: "PREVIEW_CONFIG_UPDATE",
-        config: config,
-      },
-      window.location.origin,
-    );
+      if (!res.ok) throw new Error("Failed to generate prompt");
+
+      const data = await res.json();
+      setGeneratedPromptDraft(data.prompt);
+      setOnboardingStep(5);
+    } catch (error) {
+      console.error(error);
+      showToast("Error generating prompt. Please try again.");
+    } finally {
+      setIsGeneratingPrompt(false);
+    }
+  };
+
+  const handleConfirmGeneratedPrompt = () => {
+    setCoachTabConfig((prev) => ({ ...prev, system_prompt: generatedPromptDraft }));
+    markPanelDirty("coach_tab");
+    showToast("AI Coach prompt saved! Head to the Coach Tab configuration section to edit further.");
+    setShowOnboarding(false);
   };
 
   const handleLogoUpload = async (e) => {
@@ -1003,7 +1008,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
       if (res.ok) {
         showToast(successMessage || "Config saved successfully!");
-        setTimeout(() => sendConfigToPreview(), 100);
+
         posthog.capture("coach_config_saved", { section });
         if (section === "branding") markPanelClean("branding");
         else if (section === "header") markPanelClean("header");
@@ -1143,40 +1148,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     }
   };
 
-  const handlePreviewMouseDown = (e) => {
-    dragRef.current = {
-      offsetX: e.clientX - previewPosition.x,
-      offsetY: e.clientY - previewPosition.y,
-    };
-    setIsDragging(true);
-  };
-
-  useEffect(() => {
-    if (!isDragging) return;
-
-    let rafId = null;
-    const handlePreviewMouseMove = (e) => {
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        setPreviewPosition({
-          x: e.clientX - dragRef.current.offsetX,
-          y: e.clientY - dragRef.current.offsetY,
-        });
-      });
-    };
-
-    const handlePreviewMouseUp = () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      setIsDragging(false);
-    };
-
-    document.addEventListener("mousemove", handlePreviewMouseMove);
-    document.addEventListener("mouseup", handlePreviewMouseUp);
-    return () => {
-      document.removeEventListener("mousemove", handlePreviewMouseMove);
-      document.removeEventListener("mouseup", handlePreviewMouseUp);
-    };
-  }, [isDragging]);
 
   useEffect(() => {
     markPanelDirty("landing");
@@ -1213,26 +1184,49 @@ Remember: You're here to empower them to find their own answers, not to fix thei
               Customize your Daily Companion instance
             </p>
           </div>
-          <button
-            onClick={() => setShowPreview(!showPreview)}
-            className="px-4 py-2 bg-[#fbbf24] hover:bg-[#f59e0b] text-black rounded-lg text-sm font-semibold transition-colors cursor-pointer flex items-center gap-2 shrink-0"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setShowOnboarding(true);
+                setOnboardingStep(0);
+              }}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors cursor-pointer flex items-center gap-2 shrink-0"
             >
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-              <line x1="8" y1="21" x2="16" y2="21"></line>
-              <line x1="12" y1="17" x2="12" y2="21"></line>
-            </svg>
-            Companion Preview
-          </button>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Start Onboarding
+            </button>
+            <button
+              onClick={() => window.open("/user/dashboard", "_blank")}
+              className="px-4 py-2 bg-[#fbbf24] hover:bg-[#f59e0b] text-black rounded-lg text-sm font-semibold transition-colors cursor-pointer flex items-center gap-2 shrink-0"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+              Try Your Companion
+            </button>
+          </div>
         </div>
       </div>
 
@@ -3523,7 +3517,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           ),
                           current_day_index: currentDayIndex,
                           library_start_date:
-                            focusConfig.library_start_date || new Date().toISOString(),
+                            focusConfig.library_start_date ||
+                            new Date().toISOString(),
                         },
                         "Focus tab config saved successfully!",
                       );
@@ -4623,137 +4618,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         </div>
       </div>
 
-      {/* Draggable Preview Modal */}
-      {showPreview && (
-        <div
-          style={{
-            position: "fixed",
-            left: `${previewPosition.x}px`,
-            top: `${previewPosition.y}px`,
-            width: "375px",
-            backgroundColor: "#ffffff",
-            borderRadius: "16px",
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-            zIndex: 9999,
-            overflow: "hidden",
-            border: "1px solid #e5e7eb",
-          }}
-        >
-          {/* Grab Bar */}
-          <div
-            onMouseDown={handlePreviewMouseDown}
-            style={{
-              padding: "12px 16px",
-              backgroundColor: "#f9fafb",
-              borderBottom: "1px solid #e5e7eb",
-              cursor: isDragging ? "grabbing" : "grab",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              userSelect: "none",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#6b7280"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="5" r="1"></circle>
-                <circle cx="12" cy="12" r="1"></circle>
-                <circle cx="12" cy="19" r="1"></circle>
-              </svg>
-              <span
-                style={{
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: "#374151",
-                }}
-              >
-                Test Preview
-              </span>
-            </div>
-            <button
-              onClick={() => setShowPreview(false)}
-              style={{
-                padding: "4px",
-                backgroundColor: "transparent",
-                border: "none",
-                cursor: "pointer",
-                color: "#6b7280",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          </div>
-
-          {/* iPhone-style Preview Frame */}
-          <div
-            style={{
-              height: "667px",
-              backgroundColor: "#ffffff",
-              overflow: "hidden",
-              position: "relative",
-            }}
-          >
-            <iframe
-              ref={previewIframeRef}
-              src="/user/dashboard?preview=true"
-              onLoad={() => {
-                // Send initial config when iframe loads
-                if (previewIframeRef.current) {
-                  const config = {
-                    header: headerConfig,
-                    branding: brandingConfig,
-                    focus_tab: focusConfig,
-                    awareness_tab: awarenessConfig,
-                    emotional_state_tab: emotionalStateConfig,
-                    coach_tab: coachTabConfig,
-                    audio_library: audioLibrary,
-                    current_day_index: currentDayIndex,
-                  };
-                  console.log("Sending initial config on iframe load:", config);
-                  previewIframeRef.current.contentWindow.postMessage(
-                    {
-                      type: "PREVIEW_CONFIG_UPDATE",
-                      config: config,
-                    },
-                    window.location.origin,
-                  );
-                }
-              }}
-              style={{
-                width: "100%",
-                height: "100%",
-                border: "none",
-                pointerEvents: isDragging ? "none" : "auto",
-              }}
-              title="Mobile Preview"
-            />
-          </div>
-        </div>
-      )}
-
       {/* Hidden Focus Preview for Screenshot Capture — iPhone 15 aspect ratio */}
       <div
         style={{
@@ -5404,6 +5268,253 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           </div>
         </div>
       </div>
+
+      {/* Onboarding Modal */}
+      {showOnboarding && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+              <h3 className="font-semibold text-gray-900">
+                {onboardingStep === 0 && "Welcome to Your Dashboard"}
+                {onboardingStep === 1 && "Credentials & Training"}
+                {onboardingStep === 2 && "Opening a Session"}
+                {onboardingStep === 3 && "Closing a Session"}
+                {onboardingStep === 4 && "Review & Generate"}
+                {onboardingStep === 5 && "Edit Your AI Prompt"}
+              </h3>
+              <button
+                onClick={() => setShowOnboarding(false)}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto">
+              {onboardingStep === 0 && (
+                <div className="text-center py-4">
+                  <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600">
+                    <svg
+                      className="w-8 h-8"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                  </div>
+                  <h4 className="text-xl font-bold text-gray-900 mb-2">
+                    Let's Get You Set Up
+                  </h4>
+                  <p className="text-gray-600 mb-4">
+                    We'll walk you through a few quick steps to personalize your
+                    experience and configure your dashboard.
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    First up: we'll create an AI-powered coaching persona based on
+                    your style, so your clients get a consistent experience.
+                  </p>
+                </div>
+              )}
+
+              {onboardingStep === 1 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    What certifications or modalities inform your practice?
+                  </label>
+                  <textarea
+                    value={onboardingAnswers.credentials}
+                    onChange={(e) =>
+                      setOnboardingAnswers({
+                        ...onboardingAnswers,
+                        credentials: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., ICF PCC, CBT, Somatic Experiencing, IFS, Mindfulness-based Stress Reduction..."
+                    className="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    This helps the AI understand the frameworks and techniques it
+                    should draw from.
+                  </p>
+                </div>
+              )}
+
+              {onboardingStep === 2 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    How do you typically open a session?
+                  </label>
+                  <textarea
+                    value={onboardingAnswers.openSession}
+                    onChange={(e) =>
+                      setOnboardingAnswers({
+                        ...onboardingAnswers,
+                        openSession: e.target.value,
+                      })
+                    }
+                    placeholder='e.g., "What would make this session a success for you?", "How are you arriving today?", "Let&apos;s take a breath together first..."'
+                    className="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Add example questions or phrases you use to start. The AI will
+                    mimic this opening style.
+                  </p>
+                </div>
+              )}
+
+              {onboardingStep === 3 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    How do you typically close a session?
+                  </label>
+                  <textarea
+                    value={onboardingAnswers.closeSession}
+                    onChange={(e) =>
+                      setOnboardingAnswers({
+                        ...onboardingAnswers,
+                        closeSession: e.target.value,
+                      })
+                    }
+                    placeholder='e.g., "What is your biggest takeaway?", "What is one small step you can take?", "I&apos;m proud of the work you did today."'
+                    className="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Add example questions or phrases you use to wrap up.
+                  </p>
+                </div>
+              )}
+
+              {onboardingStep === 4 && (
+                <div className="space-y-4">
+                  <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-3">
+                    <div>
+                      <span className="font-semibold text-gray-900 block">
+                        Credentials:
+                      </span>
+                      <p className="text-gray-600">
+                        {onboardingAnswers.credentials || "Not specified"}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900 block">
+                        Opening:
+                      </span>
+                      <p className="text-gray-600">
+                        {onboardingAnswers.openSession || "Not specified"}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-900 block">
+                        Closing:
+                      </span>
+                      <p className="text-gray-600">
+                        {onboardingAnswers.closeSession || "Not specified"}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 text-center">
+                    Ready to generate your AI Coach persona? This will update your
+                    System Prompt configuration.
+                  </p>
+                </div>
+              )}
+
+              {onboardingStep === 5 && (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600">
+                    Here's your generated AI Coach prompt. Feel free to edit it before confirming.
+                  </p>
+                  <textarea
+                    value={generatedPromptDraft}
+                    onChange={(e) => setGeneratedPromptDraft(e.target.value)}
+                    className="w-full h-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-sm font-mono leading-relaxed"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-100 flex justify-between bg-gray-50">
+              <button
+                onClick={() => {
+                  if (onboardingStep > 0) setOnboardingStep(onboardingStep - 1);
+                  else setShowOnboarding(false);
+                }}
+                disabled={isGeneratingPrompt}
+                className="px-4 py-2 text-gray-600 font-medium hover:text-gray-900 cursor-pointer"
+              >
+                {onboardingStep === 0 ? "Cancel" : "Back"}
+              </button>
+
+              {onboardingStep < 4 ? (
+                <button
+                  onClick={() => setOnboardingStep(onboardingStep + 1)}
+                  className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer"
+                >
+                  {onboardingStep === 0 ? "Get Started" : "Next"}
+                </button>
+              ) : onboardingStep === 4 ? (
+                <button
+                  onClick={handleGeneratePrompt}
+                  disabled={isGeneratingPrompt}
+                  className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isGeneratingPrompt ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                      Generate AI Coach
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={handleConfirmGeneratedPrompt}
+                  className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer"
+                >
+                  Confirm
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

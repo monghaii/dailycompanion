@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, memo, Suspense } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { posthogIdentifyIfAllowed } from "@/components/PostHogProvider";
@@ -625,20 +625,6 @@ const ProfileMenu = memo(function ProfileMenu({ userName, coachSlug, onLogout })
               <p className="text-sm font-medium text-gray-900 whitespace-nowrap">{userName}</p>
               <p className="text-xs text-gray-500 whitespace-nowrap">{coachSlug}</p>
             </div>
-            <button
-              onClick={() => {
-                setOpen(false);
-                window.open("/user/dashboard", "_blank");
-              }}
-              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap flex items-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                <polyline points="10 17 15 12 10 7" />
-                <line x1="15" y1="12" x2="3" y2="12" />
-              </svg>
-              Try Your Companion
-            </button>
             <button
               onClick={onLogout}
               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
@@ -1426,15 +1412,19 @@ function DashboardContent() {
 }
 
 export default function CoachDashboard() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      }
-    >
-      <DashboardContent />
-    </Suspense>
-  );
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return <DashboardContent />;
 }

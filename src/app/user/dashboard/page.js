@@ -66,6 +66,7 @@ function UserDashboardContent() {
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [tokenWarning, setTokenWarning] = useState(null);
   const chatEndRef = useRef(null);
+  const planSwitcherRef = useRef(null);
   const lastMessageRef = useRef(null);
   const configFetched = useRef(false);
   const [moreSubpage, setMoreSubpage] = useState(null);
@@ -605,7 +606,9 @@ function UserDashboardContent() {
   useEffect(() => {
     if (user && moreSubpage === "settings") {
       fetchProfileSettings();
-      fetchSubscriptionStatus();
+      if (user?.role !== "coach") {
+        fetchSubscriptionStatus();
+      }
     }
   }, [user, moreSubpage]);
 
@@ -886,6 +889,15 @@ function UserDashboardContent() {
   const fetchSubscriptionStatus = async () => {
     if (!user) return;
 
+    if (user?.role === "coach") {
+      const savedTier = localStorage.getItem("coachPreviewTier");
+      if (savedTier) {
+        const tier = parseInt(savedTier, 10);
+        handleCoachPlanSwitch(tier);
+        return;
+      }
+    }
+
     setIsLoadingSubscription(true);
     try {
       const res = await fetch("/api/user/subscription-status");
@@ -996,6 +1008,11 @@ function UserDashboardContent() {
   };
 
   const handleChangeTier = async (tier, interval = "monthly") => {
+    if (user?.role === "coach") {
+      handleCoachPlanSwitch(tier);
+      return;
+    }
+
     if (!user?.coach) {
       alert("No coach assigned. Please contact support.");
       return;
@@ -1036,6 +1053,10 @@ function UserDashboardContent() {
   };
 
   const handleCancelSubscription = async () => {
+    if (user?.role === "coach") {
+      handleCoachPlanSwitch(1);
+      return;
+    }
     if (
       !confirm(
         "Are you sure you want to cancel your subscription? You'll keep access until the end of your billing period.",
@@ -1065,6 +1086,31 @@ function UserDashboardContent() {
       alert("Failed to cancel subscription");
     } finally {
       setCancelingSubscription(false);
+    }
+  };
+
+  const handleCoachPlanSwitch = (tier) => {
+    localStorage.setItem("coachPreviewTier", String(tier));
+    if (tier === 1) {
+      setSubscriptionStatus({
+        isPremium: false,
+        status: "free",
+        tier: 1,
+        subscription: null,
+      });
+    } else {
+      setSubscriptionStatus({
+        isPremium: true,
+        status: "coach_owner",
+        tier,
+        subscription: {
+          id: "coach_owner",
+          coach: user?.coach,
+          pricePerMonth: 0,
+          canceledAt: null,
+          willCancelAtPeriodEnd: false,
+        },
+      });
     }
   };
 
@@ -1145,6 +1191,7 @@ function UserDashboardContent() {
     const isCoachUser = user?.role === "coach";
     const coachSlug = user?.coach?.slug;
     if (isCoachUser) {
+      localStorage.removeItem("coachPreviewTier");
       window.location.href = "/dashboard";
       return;
     }
@@ -1891,10 +1938,18 @@ function UserDashboardContent() {
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
           <span>
-            You are viewing as <strong>coach admin</strong> — this is the {subscriptionStatus?.tier === 3 ? (user?.coach?.tier3_name || "Premium Plus") : "Premium"} user experience
+            You are viewing as <strong>coach admin</strong> — this is the{" "}
+            <strong>
+              {subscriptionStatus?.tier === 3
+                ? (user?.coach?.tier3_name || "Premium Plus")
+                : subscriptionStatus?.tier === 2
+                  ? "Premium"
+                  : "Free"}
+            </strong>{" "}
+            user experience
           </span>
           <button
-            onClick={() => window.close() || (window.location.href = "/dashboard")}
+            onClick={() => { localStorage.removeItem("coachPreviewTier"); window.close() || (window.location.href = "/dashboard"); }}
             style={{
               marginLeft: "8px",
               padding: "4px 12px",
@@ -7296,8 +7351,8 @@ function UserDashboardContent() {
               </div>
             </div>
 
-            {/* Subscription - hidden for coaches using their own companion */}
-            {user?.role !== "coach" && <div>
+            {/* Subscription / Plan Switcher */}
+            <div ref={planSwitcherRef}>
               <h3
                 style={{
                   fontSize: "12px",
@@ -7307,8 +7362,24 @@ function UserDashboardContent() {
                   marginBottom: "16px",
                 }}
               >
-                SUBSCRIPTION
+                {user?.role === "coach" ? "PREVIEW PLAN" : "SUBSCRIPTION"}
               </h3>
+
+              {user?.role === "coach" && (
+                <div
+                  style={{
+                    backgroundColor: "#fef3c7",
+                    border: "1px solid #fbbf24",
+                    borderRadius: "8px",
+                    padding: "10px 12px",
+                    marginBottom: "16px",
+                    fontSize: "13px",
+                    color: "#92400e",
+                  }}
+                >
+                  Switch plans to preview what your users see at each tier.
+                </div>
+              )}
 
               {isLoadingSubscription ? (
                 <div
@@ -7677,7 +7748,8 @@ function UserDashboardContent() {
                     )}
                   </div>
 
-                  {/* Yearly Billing Info */}
+                  {/* Yearly Billing Info - hide for coaches */}
+                  {user?.role !== "coach" && (
                   <div
                     style={{
                       backgroundColor: "#eff6ff",
@@ -7693,10 +7765,11 @@ function UserDashboardContent() {
                     free when you choose yearly (pay for 11 months, get 12
                     months access). Select yearly during checkout.
                   </div>
+                  )}
 
                 </>
               )}
-            </div>}
+            </div>
 
             {/* Legal Links */}
             <div style={{ marginTop: "32px" }}>
@@ -8438,16 +8511,26 @@ function UserDashboardContent() {
                 boxShadow: `0 8px 24px ${coachConfig?.branding?.primary_color || "#a855f7"}40`,
               }}
             >
-              <MessageCircle size={36} style={{ color: "#fff" }} />
+              {upgradeModalContext === "Awareness" || upgradeModalContext === "Awareness Log" ? (
+                <Sun size={36} style={{ color: "#fff" }} />
+              ) : upgradeModalContext === "Coach" ? (
+                <MessageCircle size={36} style={{ color: "#fff" }} />
+              ) : upgradeModalContext === "Insights" ? (
+                <Calendar size={36} style={{ color: "#fff" }} />
+              ) : upgradeModalContext === "Library" ? (
+                <Star size={36} style={{ color: "#fff" }} />
+              ) : (
+                <Compass size={36} style={{ color: "#fff" }} />
+              )}
             </div>
 
             {/* Title */}
             <h2
               style={{
-                fontSize: "32px",
+                fontSize: "28px",
                 fontWeight: 700,
                 textAlign: "center",
-                marginBottom: "16px",
+                marginBottom: "12px",
                 color: "#1a1a1a",
                 lineHeight: 1.2,
               }}
@@ -8459,30 +8542,148 @@ function UserDashboardContent() {
                   : upgradeModalContext}
             </h2>
 
-            {/* Description */}
-            {upgradeModalContext === "Resource Hub" && (
-              <p
-                style={{
-                  textAlign: "center",
-                  color: "#6b7280",
-                  fontSize: "14px",
-                  marginBottom: "16px",
-                }}
-              >
-                Requires {user?.coach?.tier3_name || "Premium Plus"} for
-                exclusive access to community calls, programs & resources.
-              </p>
-            )}
+            {/* Feature description */}
+            <div
+              style={{
+                marginBottom: "20px",
+              }}
+            >
+              {(upgradeModalContext === "Awareness" || upgradeModalContext === "Awareness Log") && (
+                <>
+                  <p style={{ textAlign: "center", color: "#6b7280", fontSize: "14px", marginBottom: "14px" }}>
+                    Build self-awareness with daily emotional and mindfulness tracking.
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {[
+                      "Log emotions and track patterns over time",
+                      "Record mindfulness practices with notes",
+                      "View your awareness history by date",
+                      "Guided prompts to deepen self-reflection",
+                    ].map((feature) => (
+                      <div key={feature} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "#374151" }}>
+                        <span style={{ color: primaryColor, fontWeight: 700, flexShrink: 0, marginTop: "1px" }}>&#10003;</span>
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              {upgradeModalContext === "Coach" && (
+                <>
+                  <p style={{ textAlign: "center", color: "#6b7280", fontSize: "14px", marginBottom: "14px" }}>
+                    Get personalized guidance from your AI coach, anytime.
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {[
+                      "Chat with your AI coach trained on your data",
+                      "Personalized advice based on your journal entries",
+                      "Unlimited conversations and follow-ups",
+                      "Context-aware support for your goals",
+                    ].map((feature) => (
+                      <div key={feature} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "#374151" }}>
+                        <span style={{ color: primaryColor, fontWeight: 700, flexShrink: 0, marginTop: "1px" }}>&#10003;</span>
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              {upgradeModalContext === "Insights" && (
+                <>
+                  <p style={{ textAlign: "center", color: "#6b7280", fontSize: "14px", marginBottom: "14px" }}>
+                    Discover meaningful patterns in your daily practice.
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {[
+                      "Monthly and weekly trend analysis",
+                      "Focus and awareness pattern tracking",
+                      "Visual calendar of your practice history",
+                      "Day-by-day breakdowns with detailed notes",
+                    ].map((feature) => (
+                      <div key={feature} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "#374151" }}>
+                        <span style={{ color: primaryColor, fontWeight: 700, flexShrink: 0, marginTop: "1px" }}>&#10003;</span>
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              {upgradeModalContext === "Library" && (
+                <>
+                  <p style={{ textAlign: "center", color: "#6b7280", fontSize: "14px", marginBottom: "14px" }}>
+                    Access your full collection of practices and favorites.
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {[
+                      "Browse all available guided practices",
+                      "Save your favorites for quick access",
+                      "Audio-guided mindfulness sessions",
+                      "Curated content from your coach",
+                    ].map((feature) => (
+                      <div key={feature} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "#374151" }}>
+                        <span style={{ color: primaryColor, fontWeight: 700, flexShrink: 0, marginTop: "1px" }}>&#10003;</span>
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              {upgradeModalContext === "Announcements" && (
+                <>
+                  <p style={{ textAlign: "center", color: "#6b7280", fontSize: "14px", marginBottom: "14px" }}>
+                    Stay connected with your coaching community.
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {[
+                      "Community updates from your coach",
+                      "Event announcements and reminders",
+                      "Motivational messages and tips",
+                    ].map((feature) => (
+                      <div key={feature} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "#374151" }}>
+                        <span style={{ color: primaryColor, fontWeight: 700, flexShrink: 0, marginTop: "1px" }}>&#10003;</span>
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              {upgradeModalContext === "Resource Hub" && (
+                <>
+                  <p style={{ textAlign: "center", color: "#6b7280", fontSize: "14px", marginBottom: "14px" }}>
+                    Requires {user?.coach?.tier3_name || "Premium Plus"} for exclusive access.
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {[
+                      "Exclusive community calls and replays",
+                      "Structured coaching programs",
+                      "Premium resources and downloads",
+                      "Direct access to coach-curated content",
+                    ].map((feature) => (
+                      <div key={feature} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "#374151" }}>
+                        <span style={{ color: primaryColor, fontWeight: 700, flexShrink: 0, marginTop: "1px" }}>&#10003;</span>
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
 
             {/* CTA Button */}
             <button
               onClick={() => {
                 setShowUpgradeModal(false);
-                // For Resource Hub, upgrade to tier 3, otherwise tier 2
                 if (upgradeModalContext === "Resource Hub") {
                   handleChangeTier(3, "monthly");
                 } else {
                   handleUpgradeToPremium();
+                }
+                if (user?.role === "coach") {
+                  setActiveTab("more");
+                  setMoreSubpage("settings");
+                  setTimeout(() => {
+                    planSwitcherRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }, 150);
                 }
               }}
               disabled={upgradingToPremium}
