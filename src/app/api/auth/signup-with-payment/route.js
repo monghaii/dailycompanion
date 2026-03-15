@@ -55,9 +55,11 @@ export async function POST(request) {
       email,
       password,
       fullName,
+      firstName,
+      lastName,
       role: 'user',
       coachId: coach.id,
-      tokenLimit: 0, // Explicitly set 0 for free tier
+      tokenLimit: 0,
     });
 
     if (!user) {

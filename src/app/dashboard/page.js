@@ -490,7 +490,7 @@ function ClientsSection() {
               <div className="text-gray-500 text-sm font-medium mb-1">
                 Inactive
               </div>
-              <div className="text-3xl font-bold text-red-600">
+              <div className="text-3xl font-bold text-gray-900">
                 {
                   clients.filter((c) =>
                     ["canceled", "past_due"].includes(c.subscriptionStatus),
