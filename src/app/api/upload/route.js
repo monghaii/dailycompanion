@@ -77,7 +77,7 @@ export async function POST(request) {
 
     // Determine which bucket to use
     // Logos and screenshots go to public bucket, everything else to private bucket
-    const bucketName = (fileType === "logo" || fileType === "screenshot") ? "coach-public" : "coach-content";
+    const bucketName = (fileType === "logo" || fileType === "screenshot" || fileType === "avatar") ? "coach-public" : "coach-content";
 
     // Convert File to ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();

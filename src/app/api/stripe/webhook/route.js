@@ -78,6 +78,49 @@ export async function POST(request) {
             platform_subscription_status: "active",
             subscription_start_date: new Date().toISOString(),
           });
+        } else if (session.metadata?.type === "coach_sponsorship") {
+          // Coach completed checkout to sponsor their first user at a tier
+          const coachId = session.metadata.coach_id;
+          const tier = parseInt(session.metadata.subscription_tier);
+          const userId = session.metadata.user_id;
+          const feePerUserCents = parseInt(session.metadata.fee_per_user_cents);
+
+          // Create/update the coach_sponsorships record
+          await supabase.from("coach_sponsorships").upsert(
+            {
+              coach_id: coachId,
+              subscription_tier: tier,
+              stripe_subscription_id: session.subscription,
+              stripe_customer_id: session.customer,
+              status: "active",
+              quantity: 1,
+              fee_per_user_cents: feePerUserCents,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "coach_id,subscription_tier" },
+          );
+
+          // Create the sponsored user's subscription record
+          await supabase.from("user_subscriptions").upsert({
+            user_id: userId,
+            coach_id: coachId,
+            status: "active",
+            subscription_tier: tier,
+            billing_interval: "monthly",
+            price_cents: 0,
+            sponsored_by_coach_id: coachId,
+            current_period_start: new Date().toISOString(),
+          });
+
+          console.log(
+            `[Webhook] Sponsorship activated: coach=${coachId}, user=${userId}, tier=${tier}`,
+          );
+
+          trackServerEvent(coachId, "sponsorship_created", {
+            tier,
+            user_id: userId,
+            fee_per_user_cents: feePerUserCents,
+          });
         } else if (session.metadata?.type === "user_subscription") {
           // User subscribed to coach
           const subscriptionData = {
@@ -152,7 +195,34 @@ export async function POST(request) {
       case "customer.subscription.updated": {
         const subscription = event.data.object;
 
-        // Check if it's a coach or user subscription
+        // Check if it's a sponsorship subscription
+        const { data: sponsorshipRecord } = await supabase
+          .from("coach_sponsorships")
+          .select("id, coach_id, subscription_tier")
+          .eq("stripe_subscription_id", subscription.id)
+          .single();
+
+        if (sponsorshipRecord) {
+          const newStatus = subscription.status === "active" ? "active"
+            : subscription.status === "past_due" ? "past_due"
+            : "canceled";
+
+          await supabase
+            .from("coach_sponsorships")
+            .update({
+              status: newStatus,
+              quantity: subscription.items?.data?.[0]?.quantity || 0,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", sponsorshipRecord.id);
+
+          console.log(
+            `[Webhook] Sponsorship updated: coach=${sponsorshipRecord.coach_id}, tier=${sponsorshipRecord.subscription_tier}, status=${newStatus}`,
+          );
+          break;
+        }
+
+        // Check if it's a coach platform subscription
         const { data: coach } = await supabase
           .from("coaches")
           .select("id")
@@ -160,7 +230,6 @@ export async function POST(request) {
           .single();
 
         if (coach) {
-          // Update coach subscription status
           await supabase
             .from("coaches")
             .update({
@@ -220,6 +289,40 @@ export async function POST(request) {
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object;
+
+        // Check if it's a sponsorship subscription
+        const { data: deletedSponsorship } = await supabase
+          .from("coach_sponsorships")
+          .select("id, coach_id, subscription_tier")
+          .eq("stripe_subscription_id", subscription.id)
+          .single();
+
+        if (deletedSponsorship) {
+          await supabase
+            .from("coach_sponsorships")
+            .update({ status: "canceled", quantity: 0, updated_at: new Date().toISOString() })
+            .eq("id", deletedSponsorship.id);
+
+          // Cancel all sponsored user subscriptions for this tier
+          await supabase
+            .from("user_subscriptions")
+            .update({
+              status: "canceled",
+              canceled_at: new Date().toISOString(),
+            })
+            .eq("sponsored_by_coach_id", deletedSponsorship.coach_id)
+            .eq("subscription_tier", deletedSponsorship.subscription_tier)
+            .eq("status", "active");
+
+          console.log(
+            `[Webhook] Sponsorship canceled: coach=${deletedSponsorship.coach_id}, tier=${deletedSponsorship.subscription_tier}`,
+          );
+
+          trackServerEvent(deletedSponsorship.coach_id, "sponsorship_canceled", {
+            tier: deletedSponsorship.subscription_tier,
+          });
+          break;
+        }
 
         // Check if it's a coach subscription
         const { data: coach } = await supabase

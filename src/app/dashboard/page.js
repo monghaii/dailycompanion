@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, memo } from "react";
+import ReactDOM from "react-dom";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { posthogIdentifyIfAllowed } from "@/components/PostHogProvider";
@@ -286,8 +287,13 @@ function AnnouncementsSection({ coachId }) {
 
 function ClientsSection() {
   const [clients, setClients] = useState([]);
+  const [sponsorships, setSponsorships] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [sponsorLoading, setSponsorLoading] = useState(null);
+  const [sponsorMenuOpen, setSponsorMenuOpen] = useState(null);
+  const [sponsorMenuPos, setSponsorMenuPos] = useState(null);
+  const sponsorBtnRefs = useRef({});
 
   useEffect(() => {
     fetchClients();
@@ -308,11 +314,88 @@ function ClientsSection() {
       }
 
       setClients(data.clients);
+      if (data.sponsorships) setSponsorships(data.sponsorships);
     } catch (err) {
       console.error("Failed to fetch clients:", err);
       setError("Failed to load clients");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSponsor(userId, tier) {
+    setSponsorLoading(userId);
+    setSponsorMenuOpen(null);
+    try {
+      const hasExisting = sponsorships[tier]?.status === "active" && sponsorships[tier]?.stripe_subscription_id;
+
+      if (hasExisting || sponsorships[tier]?.quantity > 0) {
+        const res = await fetch("/api/coach/sponsor-user", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, tier }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || "Failed to sponsor user");
+          return;
+        }
+        await fetchClients();
+      } else {
+        const res = await fetch("/api/stripe/sponsor-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, tier }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || "Failed to start sponsorship checkout");
+          return;
+        }
+        if (data.action === "increment") {
+          const addRes = await fetch("/api/coach/sponsor-user", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId, tier }),
+          });
+          const addData = await addRes.json();
+          if (!addRes.ok) {
+            setError(addData.error || "Failed to sponsor user");
+            return;
+          }
+          await fetchClients();
+        } else if (data.url) {
+          window.location.href = data.url;
+        }
+      }
+    } catch (err) {
+      console.error("Sponsor error:", err);
+      setError("Failed to sponsor user");
+    } finally {
+      setSponsorLoading(null);
+    }
+  }
+
+  async function handleUnsponsor(userId) {
+    if (!confirm("Remove sponsorship for this user? Their access will end.")) return;
+    setSponsorLoading(userId);
+    try {
+      const res = await fetch("/api/coach/cancel-sponsorship", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to cancel sponsorship");
+        return;
+      }
+      await fetchClients();
+    } catch (err) {
+      console.error("Unsponsor error:", err);
+      setError("Failed to cancel sponsorship");
+    } finally {
+      setSponsorLoading(null);
     }
   }
 
@@ -454,7 +537,7 @@ function ClientsSection() {
           )}
 
           {/* Stats Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="text-gray-500 text-sm font-medium mb-1">
                 Total Clients
@@ -498,6 +581,14 @@ function ClientsSection() {
                 }
               </div>
             </div>
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="text-gray-500 text-sm font-medium mb-1">
+                Sponsored
+              </div>
+              <div className="text-3xl font-bold text-blue-600">
+                {clients.filter((c) => c.sponsoredByCoach).length}
+              </div>
+            </div>
           </div>
 
           {/* Clients List */}
@@ -532,6 +623,9 @@ function ClientsSection() {
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Subscription
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
                       </th>
                     </tr>
                   </thead>
@@ -587,6 +681,65 @@ function ClientsSection() {
                           ) : (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Free</span>
                           )}
+                          {client.sponsoredByCoach && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 ml-1">Sponsored</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm relative">
+                          {sponsorLoading === client.id ? (
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400" />
+                          ) : client.sponsoredByCoach ? (
+                            <button
+                              onClick={() => handleUnsponsor(client.id)}
+                              className="text-xs text-red-600 hover:text-red-800 font-medium cursor-pointer"
+                            >
+                              Remove Sponsorship
+                            </button>
+                          ) : client.subscriptionStatus === "no_subscription" || (client.subscriptionStatus === "canceled") ? (
+                            <div>
+                              <button
+                                ref={(el) => { sponsorBtnRefs.current[client.id] = el; }}
+                                onClick={() => {
+                                  if (sponsorMenuOpen === client.id) {
+                                    setSponsorMenuOpen(null);
+                                    setSponsorMenuPos(null);
+                                  } else {
+                                    const r = sponsorBtnRefs.current[client.id]?.getBoundingClientRect();
+                                    if (r) setSponsorMenuPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+                                    setSponsorMenuOpen(client.id);
+                                  }
+                                }}
+                                className="text-xs px-3 py-1.5 bg-[#fbbf24] text-black rounded-lg hover:bg-[#f59e0b] font-medium cursor-pointer"
+                              >
+                                Cover Subscription
+                              </button>
+                              {sponsorMenuOpen === client.id && sponsorMenuPos && ReactDOM.createPortal(
+                                <>
+                                  <div className="fixed inset-0 z-[9998]" onClick={() => { setSponsorMenuOpen(null); setSponsorMenuPos(null); }} />
+                                  <div
+                                    style={{ position: "fixed", top: sponsorMenuPos.top, right: sponsorMenuPos.right }}
+                                    className="z-[9999] bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-48"
+                                  >
+                                    <button
+                                      onClick={() => handleSponsor(client.id, 2)}
+                                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+                                    >
+                                      Tier 2 - Daily Companion
+                                      <span className="block text-xs text-gray-400">$5.00/mo platform fee</span>
+                                    </button>
+                                    <button
+                                      onClick={() => handleSponsor(client.id, 3)}
+                                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+                                    >
+                                      Tier 3 - Premium Plus
+                                      <span className="block text-xs text-gray-400">Platform fee per user/mo</span>
+                                    </button>
+                                  </div>
+                                </>,
+                                document.body,
+                              )}
+                            </div>
+                          ) : null}
                         </td>
                       </tr>
                     ))}
@@ -601,7 +754,7 @@ function ClientsSection() {
   );
 }
 
-const ProfileMenu = memo(function ProfileMenu({ userName, coachSlug, onLogout }) {
+const ProfileMenu = memo(function ProfileMenu({ userName, coachSlug, avatarUrl, onLogout, onGoToSettings }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
@@ -609,9 +762,13 @@ const ProfileMenu = memo(function ProfileMenu({ userName, coachSlug, onLogout })
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
       >
-        <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-xs shrink-0">
-          {userName?.charAt(0)}
-        </div>
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
+        ) : (
+          <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-xs shrink-0">
+            {userName?.charAt(0)}
+          </div>
+        )}
         <span className="text-sm font-medium text-gray-900">{userName}</span>
         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -625,6 +782,12 @@ const ProfileMenu = memo(function ProfileMenu({ userName, coachSlug, onLogout })
               <p className="text-sm font-medium text-gray-900 whitespace-nowrap">{userName}</p>
               <p className="text-xs text-gray-500 whitespace-nowrap">{coachSlug}</p>
             </div>
+            <button
+              onClick={() => { setOpen(false); onGoToSettings?.(); }}
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
+            >
+              Account settings
+            </button>
             <button
               onClick={onLogout}
               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
@@ -643,7 +806,12 @@ function DashboardContent() {
   const [user, setUser] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeSection, setActiveSectionRaw] = useState("config");
+  const [activeSection, setActiveSectionRaw] = useState(() => {
+    if (typeof window === "undefined") return "config";
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    const valid = ["config", "resource-hub", "analytics", "clients", "announcements", "finance", "settings"];
+    return valid.includes(tab) ? tab : "config";
+  });
 
   const initialLoadDoneRef = useRef(false);
   const loadGenRef = useRef(0);
@@ -672,6 +840,9 @@ function DashboardContent() {
       setDirtyPanels(new Set());
     }
     setActiveSectionRaw(section);
+    const url = new URL(window.location);
+    url.searchParams.set("tab", section);
+    window.history.replaceState({}, "", url);
   };
 
   useEffect(() => {
@@ -679,15 +850,22 @@ function DashboardContent() {
     if (saved !== null) setIsSidebarOpen(saved === "true");
   }, []);
 
-  // Once user data loads, decide the landing section
+  // Once user data loads, decide the landing section (only on initial load)
+  // URL ?tab= takes priority unless the coach must be redirected to finance
+  const hasSetInitialSection = useRef(false);
   useEffect(() => {
-    if (!user?.coach) return;
+    if (!user?.coach || hasSetInitialSection.current) return;
+    hasSetInitialSection.current = true;
     if (user.coach.platform_subscription_status !== "active") {
       setActiveSection("finance");
     } else if (user.coach.stripe_account_status !== "active") {
       setActiveSection("finance");
     } else {
-      setActiveSection("config");
+      const urlTab = new URLSearchParams(window.location.search).get("tab");
+      const valid = ["config", "resource-hub", "analytics", "clients", "announcements", "finance", "settings"];
+      if (urlTab && valid.includes(urlTab)) {
+        setActiveSectionRaw(urlTab);
+      }
     }
   }, [user]);
 
@@ -767,6 +945,23 @@ function DashboardContent() {
     };
 
     checkConnectStatus();
+  }, []);
+
+  // Handle sponsorship return flow
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const searchParams = new URLSearchParams(window.location.search);
+    const sponsorParam = searchParams.get("sponsor");
+
+    if (sponsorParam === "complete") {
+      setToastMessage("Sponsorship activated! The user now has access.");
+      setShowToast(true);
+      setActiveSection("clients");
+    } else if (sponsorParam === "canceled") {
+      setToastMessage("Sponsorship checkout was canceled.");
+      setShowToast(true);
+      window.history.replaceState({}, document.title, "/dashboard?tab=clients");
+    }
   }, []);
 
   useEffect(() => {
@@ -1285,7 +1480,7 @@ function DashboardContent() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
         <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-end shrink-0 relative z-30">
-          <ProfileMenu userName={user?.full_name} coachSlug={coach?.slug} onLogout={handleLogout} />
+          <ProfileMenu userName={user?.full_name} coachSlug={coach?.slug} avatarUrl={user?.avatar_url} onLogout={handleLogout} onGoToSettings={() => setActiveSectionRaw("settings")} />
         </div>
 
         {/* Clients Section */}
@@ -1324,8 +1519,10 @@ function DashboardContent() {
         {/* Settings Section */}
         {activeSection === "settings" && (
           <SettingsSection
+            user={user}
             checkAuthResponse={checkAuthResponse}
             showToast={(msg) => { setToastMessage(msg); setShowToast(true); setTimeout(() => setShowToast(false), 3000); }}
+            onUserUpdated={fetchUser}
           />
         )}
 

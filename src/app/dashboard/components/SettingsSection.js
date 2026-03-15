@@ -1,9 +1,315 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import CustomDomainWizard from "./CustomDomainWizard";
 
-export default function SettingsSection({ checkAuthResponse, showToast }) {
+function AccountSection({ user, checkAuthResponse, showToast, onUserUpdated }) {
+  const [fullName, setFullName] = useState(user?.full_name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (user) {
+      setFullName(user.full_name || "");
+      setEmail(user.email || "");
+      setAvatarUrl(user.avatar_url || null);
+    }
+  }, [user]);
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showToast("Please upload an image file");
+      return;
+    }
+
+    if (file.size > 4.5 * 1024 * 1024) {
+      showToast("Image must be under 4.5MB");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", "avatar");
+
+      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+      if (checkAuthResponse(uploadRes)) return;
+      const uploadData = await uploadRes.json();
+
+      if (!uploadData.success) {
+        showToast(uploadData.error || "Failed to upload image");
+        return;
+      }
+
+      const saveRes = await fetch("/api/coach/account", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatar_url: uploadData.url }),
+      });
+      if (checkAuthResponse(saveRes)) return;
+      const saveData = await saveRes.json();
+
+      if (saveData.success) {
+        setAvatarUrl(uploadData.url);
+        showToast("Profile picture updated");
+        onUserUpdated?.();
+      } else {
+        showToast(saveData.error || "Failed to save profile picture");
+      }
+    } catch (err) {
+      showToast("Error uploading image");
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!fullName.trim()) {
+      showToast("Name cannot be empty");
+      return;
+    }
+
+    setSavingProfile(true);
+    try {
+      const updates = {};
+      if (fullName.trim() !== user?.full_name) updates.full_name = fullName.trim();
+      if (email.trim().toLowerCase() !== user?.email) updates.email = email.trim();
+
+      if (Object.keys(updates).length === 0) {
+        showToast("No changes to save");
+        setSavingProfile(false);
+        return;
+      }
+
+      const res = await fetch("/api/coach/account", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (checkAuthResponse(res)) return;
+      const data = await res.json();
+
+      if (data.success) {
+        showToast("Profile updated");
+        onUserUpdated?.();
+      } else {
+        showToast(data.error || "Failed to update profile");
+      }
+    } catch (err) {
+      showToast("Error updating profile");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword) {
+      showToast("Enter your current password");
+      return;
+    }
+    if (newPassword.length < 8) {
+      showToast("New password must be at least 8 characters");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showToast("Passwords do not match");
+      return;
+    }
+
+    setSavingPassword(true);
+    try {
+      const res = await fetch("/api/coach/account", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+      });
+      if (checkAuthResponse(res)) return;
+      const data = await res.json();
+
+      if (data.success) {
+        showToast("Password updated");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        showToast(data.error || "Failed to update password");
+      }
+    } catch (err) {
+      showToast("Error updating password");
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  const initials = (fullName || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
+      <div className="px-6 py-5 border-b border-gray-100">
+        <h2 className="text-lg font-semibold text-gray-900">Account</h2>
+        <p className="text-sm text-gray-500 mt-0.5">
+          Update your personal information and credentials
+        </p>
+      </div>
+
+      <div className="p-6 space-y-6">
+        {/* Avatar */}
+        <div className="flex items-center gap-4">
+          <div
+            onClick={() => !uploadingAvatar && fileInputRef.current?.click()}
+            className="w-16 h-16 rounded-full overflow-hidden relative shrink-0 bg-blue-100 flex items-center justify-center group"
+            style={{ cursor: uploadingAvatar ? "wait" : "pointer" }}
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-xl font-bold text-blue-700">{initials}</span>
+            )}
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+            </div>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarUpload}
+            className="hidden"
+          />
+          <div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors disabled:cursor-not-allowed cursor-pointer"
+              >
+                {uploadingAvatar ? "Uploading..." : "Change photo"}
+              </button>
+              {avatarUrl && (
+                <button
+                  onClick={async () => {
+                    setUploadingAvatar(true);
+                    try {
+                      const res = await fetch("/api/coach/account", {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ avatar_url: null }),
+                      });
+                      if (checkAuthResponse(res)) return;
+                      const data = await res.json();
+                      if (data.success) {
+                        setAvatarUrl(null);
+                        showToast("Profile picture removed");
+                        onUserUpdated?.();
+                      }
+                    } catch {
+                      showToast("Error removing photo");
+                    } finally {
+                      setUploadingAvatar(false);
+                    }
+                  }}
+                  disabled={uploadingAvatar}
+                  className="px-3 py-1.5 text-red-600 text-sm font-medium hover:text-red-700 transition-colors cursor-pointer"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-gray-400 mt-1.5">JPG, PNG, or GIF. Max 4.5MB.</p>
+          </div>
+        </div>
+
+        {/* Name */}
+        <div className="max-w-md">
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+          <input
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+            placeholder="Your name"
+          />
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            onClick={handleSaveProfile}
+            disabled={savingProfile}
+            className="px-5 py-2 bg-amber-400 text-gray-900 rounded-lg text-sm font-semibold hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          >
+            {savingProfile ? "Saving..." : "Save Profile"}
+          </button>
+        </div>
+
+        {/* Divider */}
+        <div className="border-t border-gray-100" />
+
+        {/* Change Password */}
+        <div>
+          <h3 className="text-base font-semibold text-gray-900 mb-4">Change Password</h3>
+          <div className="space-y-4 max-w-md">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Current Password</label>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                placeholder="Enter current password"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">New Password</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                placeholder="At least 8 characters"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm New Password</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                placeholder="Repeat new password"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={handleChangePassword}
+              disabled={savingPassword}
+              className="px-5 py-2 bg-amber-400 text-gray-900 rounded-lg text-sm font-semibold hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              {savingPassword ? "Updating..." : "Update Password"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function SettingsSection({ user, checkAuthResponse, showToast, onUserUpdated }) {
   const [kitSettings, setKitSettings] = useState({
     enabled: false,
     apiKey: "",
@@ -24,172 +330,75 @@ export default function SettingsSection({ checkAuthResponse, showToast }) {
       <div className="bg-white border-b border-gray-200 px-8 py-6">
         <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
         <p className="text-gray-600 mt-1">
-          Manage your custom domain and account settings
+          Manage your account, custom domain, and integrations
         </p>
       </div>
-      <div style={{ padding: "32px" }}>
-        <div
-          style={{
-            maxWidth: "900px",
-            margin: "0 auto",
-            display: "flex",
-            flexDirection: "column",
-            gap: "40px",
-          }}
-        >
+
+      <div className="p-8">
+        <div className="max-w-3xl mx-auto space-y-6">
+          <AccountSection
+            user={user}
+            checkAuthResponse={checkAuthResponse}
+            showToast={showToast}
+            onUserUpdated={onUserUpdated}
+          />
+
           <CustomDomainWizard />
 
           {/* Kit (ConvertKit) Integration */}
-          <div>
-            <div style={{ marginBottom: "32px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: "8px",
-                }}
-              >
-                <div>
-                  <h2
-                    style={{
-                      fontSize: "28px",
-                      fontWeight: "bold",
-                      margin: 0,
-                    }}
-                  >
-                    Kit (ConvertKit) Integration
-                  </h2>
-                  <p
-                    style={{
-                      color: "#6B7280",
-                      fontSize: "16px",
-                      marginTop: "8px",
-                    }}
-                  >
-                    Automatically sync your subscribers to your Kit email
-                    list
-                  </p>
-                </div>
-                <label
-                  style={{
-                    position: "relative",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    cursor: "pointer",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={kitSettings.enabled}
-                    onChange={(e) =>
-                      setKitSettings({
-                        ...kitSettings,
-                        enabled: e.target.checked,
-                      })
-                    }
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      pointerEvents: "none",
-                    }}
-                  />
-                  <div
-                    style={{
-                      width: "44px",
-                      height: "24px",
-                      backgroundColor: kitSettings.enabled
-                        ? "#fbbf24"
-                        : "#d1d5db",
-                      borderRadius: "12px",
-                      position: "relative",
-                      transition: "background-color 0.2s",
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "2px",
-                        left: kitSettings.enabled ? "22px" : "2px",
-                        width: "20px",
-                        height: "20px",
-                        backgroundColor: "#fff",
-                        borderRadius: "50%",
-                        transition: "left 0.2s",
-                      }}
-                    />
-                  </div>
-                </label>
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Kit (ConvertKit) Integration</h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Automatically sync your subscribers to your Kit email list
+                </p>
               </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
+                <input
+                  type="checkbox"
+                  checked={kitSettings.enabled}
+                  onChange={(e) => setKitSettings({ ...kitSettings, enabled: e.target.checked })}
+                  className="absolute opacity-0 pointer-events-none"
+                />
+                <div
+                  className={`w-11 h-6 rounded-full relative transition-colors ${kitSettings.enabled ? "bg-amber-400" : "bg-gray-300"}`}
+                >
+                  <div
+                    className="absolute top-0.5 w-5 h-5 bg-white rounded-full transition-[left]"
+                    style={{ left: kitSettings.enabled ? "22px" : "2px" }}
+                  />
+                </div>
+              </label>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "24px",
-              }}
-            >
+            <div className="p-6 space-y-5">
               {/* API Key */}
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "#374151",
-                    marginBottom: "8px",
-                  }}
-                >
-                  Kit API Key
-                </label>
-                <p
-                  style={{
-                    fontSize: "13px",
-                    color: "#6b7280",
-                    marginBottom: "12px",
-                  }}
-                >
+                <label className="block text-sm font-medium text-gray-700 mb-1">Kit API Key</label>
+                <p className="text-xs text-gray-500 mb-2">
                   Find your API key in Kit under{" "}
                   <a
                     href="https://app.kit.com/developer"
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{
-                      color: "#f59e0b",
-                      textDecoration: "underline",
-                    }}
+                    className="text-amber-600 underline hover:text-amber-700"
                   >
-                    Settings → Developer
+                    Settings &rarr; Developer
                   </a>
                 </p>
-                <div style={{ display: "flex", gap: "8px" }}>
+                <div className="flex gap-2">
                   <input
                     type="password"
                     value={kitSettings.apiKey}
-                    onChange={(e) =>
-                      setKitSettings({
-                        ...kitSettings,
-                        apiKey: e.target.value,
-                      })
-                    }
-                    style={{
-                      flex: 1,
-                      padding: "10px 14px",
-                      border: "1px solid #d1d5db",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      outline: "none",
-                    }}
+                    onChange={(e) => setKitSettings({ ...kitSettings, apiKey: e.target.value })}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
                     placeholder="Enter your Kit API key"
                   />
                   <button
                     onClick={async () => {
                       if (!kitSettings.apiKey) {
-                        setKitTestResult({
-                          success: false,
-                          error: "Please enter an API key",
-                        });
+                        setKitTestResult({ success: false, error: "Please enter an API key" });
                         return;
                       }
                       setKitTesting(true);
@@ -198,191 +407,84 @@ export default function SettingsSection({ checkAuthResponse, showToast }) {
                         const res = await fetch("/api/coach/kit/test", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            apiKey: kitSettings.apiKey,
-                          }),
+                          body: JSON.stringify({ apiKey: kitSettings.apiKey }),
                         });
                         if (checkAuthResponse(res)) return;
                         const data = await res.json();
                         setKitTestResult(data);
                       } catch (error) {
-                        setKitTestResult({
-                          success: false,
-                          error: error.message,
-                        });
+                        setKitTestResult({ success: false, error: error.message });
                       } finally {
                         setKitTesting(false);
                       }
                     }}
                     disabled={kitTesting}
-                    style={{
-                      padding: "10px 16px",
-                      backgroundColor: kitTesting ? "#e5e7eb" : "#f3f4f6",
-                      color: "#374151",
-                      border: "none",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      cursor: kitTesting ? "not-allowed" : "pointer",
-                      whiteSpace: "nowrap",
-                    }}
+                    className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:cursor-not-allowed whitespace-nowrap transition-colors cursor-pointer"
                   >
                     {kitTesting ? "Testing..." : "Test Connection"}
                   </button>
                 </div>
 
-                {/* Test Result */}
                 {kitTestResult && (
                   <div
-                    style={{
-                      marginTop: "12px",
-                      padding: "12px",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      backgroundColor: kitTestResult.success
-                        ? "#f0fdf4"
-                        : "#fef2f2",
-                      color: kitTestResult.success
-                        ? "#166534"
-                        : "#991b1b",
-                      border: `1px solid ${kitTestResult.success ? "#bbf7d0" : "#fecaca"}`,
-                    }}
+                    className={`mt-3 p-3 rounded-lg text-sm border ${
+                      kitTestResult.success
+                        ? "bg-green-50 text-green-800 border-green-200"
+                        : "bg-red-50 text-red-800 border-red-200"
+                    }`}
                   >
                     {kitTestResult.success ? (
                       <div>
-                        <p style={{ fontWeight: "600" }}>
-                          ✓ Connection successful!
-                        </p>
+                        <p className="font-semibold">Connection successful</p>
                         {kitTestResult.account && (
-                          <p
-                            style={{ fontSize: "12px", marginTop: "4px" }}
-                          >
-                            Connected to: {kitTestResult.account.name} (
-                            {kitTestResult.account.primary_email})
+                          <p className="text-xs mt-1">
+                            Connected to: {kitTestResult.account.name} ({kitTestResult.account.primary_email})
                           </p>
                         )}
                       </div>
                     ) : (
-                      <p>
-                        ✗ {kitTestResult.error || "Connection failed"}
-                      </p>
+                      <p>{kitTestResult.error || "Connection failed"}</p>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Form ID (Optional) */}
+              {/* Form ID */}
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "#374151",
-                    marginBottom: "8px",
-                  }}
-                >
-                  Form ID (Optional)
-                </label>
-                <p
-                  style={{
-                    fontSize: "13px",
-                    color: "#6b7280",
-                    marginBottom: "12px",
-                  }}
-                >
-                  Subscribe users to a specific form. Leave empty to add
-                  as general subscribers.
+                <label className="block text-sm font-medium text-gray-700 mb-1">Form ID (Optional)</label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Subscribe users to a specific form. Leave empty to add as general subscribers.
                 </p>
                 <input
                   type="text"
                   value={kitSettings.formId}
-                  onChange={(e) =>
-                    setKitSettings({
-                      ...kitSettings,
-                      formId: e.target.value,
-                    })
-                  }
-                  style={{
-                    width: "100%",
-                    padding: "10px 14px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    outline: "none",
-                  }}
+                  onChange={(e) => setKitSettings({ ...kitSettings, formId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
                   placeholder="e.g., 1234567"
                 />
               </div>
 
               {/* Tags */}
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "#374151",
-                    marginBottom: "8px",
-                  }}
-                >
-                  Tags
-                </label>
-                <p
-                  style={{
-                    fontSize: "13px",
-                    color: "#6b7280",
-                    marginBottom: "12px",
-                  }}
-                >
-                  Tags to apply to new subscribers. We'll automatically
-                  add status and coach tags.
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Tags to apply to new subscribers. Status and coach tags are added automatically.
                 </p>
 
-                {/* Existing Tags */}
                 {kitSettings.tags.length > 0 && (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "8px",
-                      marginBottom: "12px",
-                    }}
-                  >
+                  <div className="flex flex-wrap gap-2 mb-3">
                     {kitSettings.tags.map((tag, index) => (
                       <span
                         key={index}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px",
-                          padding: "6px 12px",
-                          backgroundColor: "#fef3c7",
-                          color: "#92400e",
-                          borderRadius: "16px",
-                          fontSize: "14px",
-                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-sm"
                       >
                         {tag}
                         <button
                           onClick={() => {
-                            const newTags = kitSettings.tags.filter(
-                              (_, i) => i !== index,
-                            );
-                            setKitSettings({
-                              ...kitSettings,
-                              tags: newTags,
-                            });
+                            const newTags = kitSettings.tags.filter((_, i) => i !== index);
+                            setKitSettings({ ...kitSettings, tags: newTags });
                           }}
-                          style={{
-                            background: "none",
-                            border: "none",
-                            color: "#92400e",
-                            cursor: "pointer",
-                            padding: "0 4px",
-                            fontSize: "18px",
-                            lineHeight: "1",
-                          }}
+                          className="text-amber-800 hover:text-amber-900 text-base leading-none cursor-pointer"
                         >
                           ×
                         </button>
@@ -391,8 +493,7 @@ export default function SettingsSection({ checkAuthResponse, showToast }) {
                   </div>
                 )}
 
-                {/* Add Tag Input */}
-                <div style={{ display: "flex", gap: "8px" }}>
+                <div className="flex gap-2">
                   <input
                     type="text"
                     value={newTag}
@@ -400,44 +501,21 @@ export default function SettingsSection({ checkAuthResponse, showToast }) {
                     onKeyPress={(e) => {
                       if (e.key === "Enter" && newTag.trim()) {
                         e.preventDefault();
-                        setKitSettings({
-                          ...kitSettings,
-                          tags: [...kitSettings.tags, newTag.trim()],
-                        });
+                        setKitSettings({ ...kitSettings, tags: [...kitSettings.tags, newTag.trim()] });
                         setNewTag("");
                       }
                     }}
-                    style={{
-                      flex: 1,
-                      padding: "10px 14px",
-                      border: "1px solid #d1d5db",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      outline: "none",
-                    }}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
                     placeholder="Enter tag name"
                   />
                   <button
                     onClick={() => {
                       if (newTag.trim()) {
-                        setKitSettings({
-                          ...kitSettings,
-                          tags: [...kitSettings.tags, newTag.trim()],
-                        });
+                        setKitSettings({ ...kitSettings, tags: [...kitSettings.tags, newTag.trim()] });
                         setNewTag("");
                       }
                     }}
-                    style={{
-                      padding: "10px 16px",
-                      backgroundColor: "#fef3c7",
-                      color: "#92400e",
-                      border: "none",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}
+                    className="px-3 py-2 bg-amber-100 text-amber-800 rounded-lg text-sm font-medium hover:bg-amber-200 whitespace-nowrap transition-colors cursor-pointer"
                   >
                     Add Tag
                   </button>
@@ -446,79 +524,38 @@ export default function SettingsSection({ checkAuthResponse, showToast }) {
 
               {/* Sync Status */}
               {kitSettings.syncStatus && (
-                <div
-                  style={{
-                    padding: "16px",
-                    backgroundColor: "#f9fafb",
-                    borderRadius: "8px",
-                  }}
-                >
-                  <h3
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: "600",
-                      color: "#374151",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    Sync Status
-                  </h3>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "4px",
-                      fontSize: "14px",
-                    }}
-                  >
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Sync Status</h3>
+                  <div className="space-y-1 text-sm">
                     <p>
-                      <span style={{ color: "#6b7280" }}>Status:</span>{" "}
+                      <span className="text-gray-500">Status:</span>{" "}
                       <span
-                        style={{
-                          fontWeight: "500",
-                          color:
-                            kitSettings.syncStatus === "success"
-                              ? "#059669"
-                              : kitSettings.syncStatus === "error"
-                                ? "#dc2626"
-                                : "#6b7280",
-                        }}
+                        className={`font-medium ${
+                          kitSettings.syncStatus === "success"
+                            ? "text-green-600"
+                            : kitSettings.syncStatus === "error"
+                              ? "text-red-600"
+                              : "text-gray-500"
+                        }`}
                       >
                         {kitSettings.syncStatus}
                       </span>
                     </p>
                     {kitSettings.lastSync && (
                       <p>
-                        <span style={{ color: "#6b7280" }}>
-                          Last Sync:
-                        </span>{" "}
+                        <span className="text-gray-500">Last Sync:</span>{" "}
                         {new Date(kitSettings.lastSync).toLocaleString()}
                       </p>
                     )}
                     {kitSettings.errorMessage && (
-                      <p
-                        style={{
-                          color: "#dc2626",
-                          fontSize: "12px",
-                          marginTop: "8px",
-                        }}
-                      >
-                        {kitSettings.errorMessage}
-                      </p>
+                      <p className="text-red-600 text-xs mt-2">{kitSettings.errorMessage}</p>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Save Button */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  paddingTop: "16px",
-                  borderTop: "1px solid #e5e7eb",
-                }}
-              >
+              {/* Save */}
+              <div className="flex justify-end pt-4 border-t border-gray-100">
                 <button
                   onClick={async () => {
                     setKitSaving(true);
@@ -534,9 +571,7 @@ export default function SettingsSection({ checkAuthResponse, showToast }) {
                         }),
                       });
                       if (checkAuthResponse(res)) return;
-
                       const data = await res.json();
-
                       if (data.success) {
                         showToast("Kit settings saved successfully!");
                       } else {
@@ -549,25 +584,7 @@ export default function SettingsSection({ checkAuthResponse, showToast }) {
                     }
                   }}
                   disabled={kitSaving}
-                  style={{
-                    padding: "10px 24px",
-                    backgroundColor: kitSaving ? "#e5e7eb" : "#fbbf24",
-                    color: "#000",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    cursor: kitSaving ? "not-allowed" : "pointer",
-                    opacity: kitSaving ? 0.5 : 1,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!kitSaving)
-                      e.currentTarget.style.backgroundColor = "#f59e0b";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!kitSaving)
-                      e.currentTarget.style.backgroundColor = "#fbbf24";
-                  }}
+                  className="px-5 py-2 bg-amber-400 text-gray-900 rounded-lg text-sm font-semibold hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 >
                   {kitSaving ? "Saving..." : "Save Kit Settings"}
                 </button>

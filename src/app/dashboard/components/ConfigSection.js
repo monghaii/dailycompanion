@@ -1,9 +1,62 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import ReactDOM from "react-dom";
 import Image from "next/image";
 import html2canvas from "html2canvas";
 import posthog from "posthog-js";
+
+function Tip({ text }) {
+  const [hovered, setHovered] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const ref = useRef(null);
+  const [pos, setPos] = useState(null);
+  const fadeTimer = useRef(null);
+
+  useEffect(() => {
+    if (hovered) {
+      clearTimeout(fadeTimer.current);
+      setVisible(true);
+      if (ref.current) {
+        const r = ref.current.getBoundingClientRect();
+        setPos({ top: r.bottom + 6, left: r.left + r.width / 2 });
+      }
+    } else {
+      fadeTimer.current = setTimeout(() => setVisible(false), 300);
+    }
+    return () => clearTimeout(fadeTimer.current);
+  }, [hovered]);
+
+  return (
+    <span ref={ref} className="inline-flex ml-1 align-middle">
+      <span
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        className="w-4 h-4 rounded-full bg-gray-200 text-gray-500 text-[10px] font-bold inline-flex items-center justify-center cursor-help leading-none select-none"
+      >
+        ?
+      </span>
+      {visible && pos &&
+        ReactDOM.createPortal(
+          <span
+            style={{
+              position: "fixed",
+              top: pos.top,
+              left: pos.left,
+              transform: "translateX(-50%)",
+              opacity: hovered ? 1 : 0,
+              transition: "opacity 250ms ease-out",
+            }}
+            className="pointer-events-none w-56 rounded-lg bg-gray-900 text-white text-xs leading-relaxed px-3 py-2 z-[9999] shadow-lg"
+          >
+            {text}
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900" />
+          </span>,
+          document.body,
+        )}
+    </span>
+  );
+}
 
 const COUNTRY_CURRENCY_SYMBOL = {
   US: "$",
@@ -74,6 +127,7 @@ export default function ConfigSection({
   });
 
   const [uploadingAppLogo, setUploadingAppLogo] = useState(false);
+  const [uploadingLPPhoto, setUploadingLPPhoto] = useState(false);
 
   const [audioLibrary, setAudioLibrary] = useState(
     Array.from({ length: 30 }, (_, i) => ({
@@ -335,6 +389,8 @@ export default function ConfigSection({
   const systemPromptRef = useRef(null);
 
   const [coachTabConfig, setCoachTabConfig] = useState({
+    profile_name: "",
+    profile_bio: "",
     bot_profile_picture_url: null,
     system_prompt: `You are a compassionate and insightful life coach. Your role is to:
 
@@ -412,6 +468,23 @@ Remember: You're here to empower them to find their own answers, not to fix thei
         "AI-powered coaching conversations",
         "Progress tracking & insights",
         "Unlimited access to all features",
+      ],
+      free_features: [
+        "Daily Focus check-ins",
+        "Basic task tracking",
+        "Community support",
+      ],
+      tier2_features: [
+        "Everything in Free",
+        "AI-powered coaching",
+        "Progress tracking & insights",
+        "Unlimited access to all features",
+      ],
+      tier3_features: [
+        "Everything in Daily Companion",
+        "Exclusive Resource Hub access",
+        "Community calls & programs",
+        "Curated learning library",
       ],
     },
     testimonials: [],
@@ -1063,18 +1136,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
   const handleSaveLandingConfig = async () => {
     const currentConfig = {
       hero: landingConfig.hero,
-      coach_info: {
-        ...landingConfig.coach_info,
-        name:
-          document.getElementById("landing-coach-name")?.value ||
-          landingConfig.coach_info.name,
-        title:
-          document.getElementById("landing-coach-title")?.value ||
-          landingConfig.coach_info.title,
-        bio:
-          document.getElementById("landing-coach-bio")?.value ||
-          landingConfig.coach_info.bio,
-      },
+      coach_info: landingConfig.coach_info,
       pricing: {
         ...landingConfig.pricing,
         monthly_highlight:
@@ -1085,6 +1147,21 @@ Remember: You're here to empower them to find their own answers, not to fix thei
           landingConfig.pricing.show_yearly,
         features: (
           document.getElementById("landing-pricing-features")?.value || ""
+        )
+          .split("\n")
+          .filter((f) => f.trim()),
+        free_features: (
+          document.getElementById("landing-pricing-free-features")?.value || ""
+        )
+          .split("\n")
+          .filter((f) => f.trim()),
+        tier2_features: (
+          document.getElementById("landing-pricing-tier2-features")?.value || ""
+        )
+          .split("\n")
+          .filter((f) => f.trim()),
+        tier3_features: (
+          document.getElementById("landing-pricing-tier3-features")?.value || ""
         )
           .split("\n")
           .filter((f) => f.trim()),
@@ -1921,6 +1998,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1.5">
                         Headline
+                        <Tip text="The large bold heading at the top of your public landing page." />
                       </label>
                       <input
                         type="text"
@@ -1933,6 +2011,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1.5">
                         Subheadline
+                        <Tip text="Smaller text below the headline on your landing page. Summarizes what you offer." />
                       </label>
                       <input
                         type="text"
@@ -1944,7 +2023,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                        Hero Bio
+                        Landing Page Body Text
+                        <Tip text="A short paragraph about you shown on your landing page, below the subheadline." />
                       </label>
                       <textarea
                         rows={3}
@@ -1969,7 +2049,87 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                        Profile Photo
+                        <Tip text="Shown next to 'Made by [Your Name]' on your landing page as a small circular photo." />
+                      </label>
+                      <div className="flex items-center gap-3 mb-1">
+                        {landingConfig.coach_info.photo_url ? (
+                          <>
+                            <img
+                              src={landingConfig.coach_info.photo_url}
+                              alt="Profile"
+                              className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                            />
+                            <button
+                              onClick={() =>
+                                setLandingConfig({
+                                  ...landingConfig,
+                                  coach_info: {
+                                    ...landingConfig.coach_info,
+                                    photo_url: null,
+                                  },
+                                })
+                              }
+                              className="text-xs text-red-600 hover:text-red-700 cursor-pointer"
+                            >
+                              Remove
+                            </button>
+                          </>
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-xs">
+                            ?
+                          </div>
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+                          if (!validTypes.includes(file.type)) {
+                            showToast("Please upload a valid image (JPEG, PNG, GIF, or WebP)");
+                            return;
+                          }
+                          if (file.size > 4.5 * 1024 * 1024) {
+                            showToast("Image must be under 4.5MB");
+                            return;
+                          }
+                          setUploadingLPPhoto(true);
+                          try {
+                            const formData = new FormData();
+                            formData.append("file", file);
+                            formData.append("type", "logo");
+                            const res = await fetch("/api/upload", { method: "POST", body: formData });
+                            const data = await res.json().catch(() => ({}));
+                            if (res.ok && data.url) {
+                              setLandingConfig({
+                                ...landingConfig,
+                                coach_info: { ...landingConfig.coach_info, photo_url: data.url },
+                              });
+                              markPanelDirty("landing");
+                            } else {
+                              showToast(data.error || "Upload failed");
+                            }
+                          } catch {
+                            showToast("Failed to upload photo");
+                          } finally {
+                            setUploadingLPPhoto(false);
+                            e.target.value = "";
+                          }
+                        }}
+                        className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#fef3c7] file:text-black hover:file:bg-[#fbbf24] disabled:opacity-50"
+                        disabled={uploadingLPPhoto}
+                      />
+                      {uploadingLPPhoto && (
+                        <p className="text-xs text-gray-500 mt-1">Uploading...</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
                         Title / Role
+                        <Tip text="Shown below 'Made by [Your Name]' on your landing page as a colored uppercase label (e.g. 'Life & Wellness Coach')." />
                       </label>
                       <input
                         type="text"
@@ -1982,6 +2142,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1.5">
                         CTA Button Text
+                        <Tip text="The text on the main sign-up buttons on your landing page (e.g. 'Start Your Journey')." />
                       </label>
                       <input
                         type="text"
@@ -1989,55 +2150,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         defaultValue={profileConfig.landing_cta}
                         className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                         placeholder="Start Your Journey"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Coach Info */}
-                <div className="pt-4 border-t border-gray-100">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                    Coach Info
-                  </h3>
-                  <p className="text-xs text-gray-400 mb-3">
-                    Shown in the &ldquo;Made by&rdquo; section on your landing
-                    page
-                  </p>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                        Display Name
-                      </label>
-                      <input
-                        type="text"
-                        id="landing-coach-name"
-                        defaultValue={landingConfig.coach_info.name}
-                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                        placeholder="Your Name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                        Title
-                      </label>
-                      <input
-                        type="text"
-                        id="landing-coach-title"
-                        defaultValue={landingConfig.coach_info.title}
-                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                        placeholder="Life & Wellness Coach"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                        Bio
-                      </label>
-                      <textarea
-                        id="landing-coach-bio"
-                        defaultValue={landingConfig.coach_info.bio}
-                        rows={3}
-                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                        placeholder="Brief bio about your coaching approach..."
                       />
                     </div>
                   </div>
@@ -2074,16 +2186,53 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                        Feature List (one per line)
+                        Free Tier Features (one per line)
+                        <Tip text="Bullet points shown on the Free pricing card on your landing page." />
                       </label>
                       <textarea
-                        id="landing-pricing-features"
-                        defaultValue={landingConfig.pricing.features.join("\n")}
-                        rows={5}
+                        id="landing-pricing-free-features"
+                        defaultValue={(landingConfig.pricing.free_features || []).join("\n")}
+                        rows={3}
                         className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent font-mono"
-                        placeholder="Daily guided practices&#10;AI-powered coaching&#10;Progress tracking"
+                        placeholder="Daily Focus check-ins&#10;Basic task tracking&#10;Community support"
                       />
                     </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                        Daily Companion Features (one per line)
+                        <Tip text="Bullet points shown on the Daily Companion (Tier 2) pricing card on your landing page." />
+                      </label>
+                      <textarea
+                        id="landing-pricing-tier2-features"
+                        defaultValue={(landingConfig.pricing.tier2_features || landingConfig.pricing.features || []).join("\n")}
+                        rows={4}
+                        className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent font-mono"
+                        placeholder="Everything in Free&#10;AI-powered coaching&#10;Progress tracking & insights&#10;Unlimited access to all features"
+                      />
+                    </div>
+                    <div className={!profileConfig.tier3_enabled ? "opacity-60" : ""}>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                        {profileConfig.tier3_name || "Premium Plus"} Features (one per line)
+                        <Tip text={`Bullet points shown on the ${profileConfig.tier3_name || "Premium Plus"} (Tier 3) pricing card on your landing page.`} />
+                      </label>
+                      {!profileConfig.tier3_enabled && (
+                        <p className="text-xs text-amber-600 mb-1.5">
+                          Tier 3 is currently disabled. These features won't show until you enable it in Finance.
+                        </p>
+                      )}
+                      <textarea
+                        id="landing-pricing-tier3-features"
+                        defaultValue={(landingConfig.pricing.tier3_features || []).join("\n")}
+                        rows={4}
+                        className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent font-mono"
+                        placeholder="Everything in Daily Companion&#10;Exclusive Resource Hub access&#10;Community calls & programs&#10;Curated learning library"
+                      />
+                    </div>
+                    <textarea
+                      id="landing-pricing-features"
+                      defaultValue={landingConfig.pricing.features.join("\n")}
+                      className="hidden"
+                    />
                   </div>
                 </div>
 
@@ -2095,6 +2244,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1.5">
                       Meta Description
+                      <Tip text="Shows in Google search results and link previews when someone shares your landing page on social media." />
                     </label>
                     <textarea
                       id="landing-meta-description"
@@ -4115,13 +4265,10 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
                 {/* Bot Profile Picture */}
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">
                     AI Coach Profile Picture
+                    <Tip text="Appears as the AI's avatar in chat messages and the Coach Profile popup your users see." />
                   </h3>
-                  <p className="text-xs text-gray-500 mb-3">
-                    Upload a profile picture for the AI coach that will appear
-                    in chat messages instead of initials.
-                  </p>
 
                   {coachTabConfig.bot_profile_picture_url && (
                     <div className="mb-3 flex items-center gap-3">
@@ -4220,16 +4367,52 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                   )}
                 </div>
 
+                {/* Coach Profile Name */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                    Coach Profile Name
+                    <Tip text="The name shown in the Coach Profile popup your users see in the app. Falls back to your business name if left empty." />
+                  </h3>
+                  <input
+                    type="text"
+                    value={coachTabConfig.profile_name}
+                    onChange={(e) =>
+                      setCoachTabConfig({
+                        ...coachTabConfig,
+                        profile_name: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                    placeholder={profileConfig.business_name || "e.g. Coach Sarah"}
+                  />
+                </div>
+
+                {/* Coach Profile Bio */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                    Coach Profile Bio
+                    <Tip text="Short description below the name in the Coach Profile popup. Falls back to your landing page bio if left empty." />
+                  </h3>
+                  <textarea
+                    value={coachTabConfig.profile_bio}
+                    onChange={(e) =>
+                      setCoachTabConfig({
+                        ...coachTabConfig,
+                        profile_bio: e.target.value,
+                      })
+                    }
+                    rows={2}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                    placeholder="Your dedicated AI coach here to support your journey."
+                  />
+                </div>
+
                 {/* System Prompt Editor */}
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">
                     AI System Prompt (Tuning Script)
+                    <Tip text="The instructions that control how the AI coach responds -- its personality, tone, and coaching style. Use 'Set Up Your AI Coach' above to generate one automatically." />
                   </h3>
-                  <p className="text-xs text-gray-500 mb-3">
-                    Edit this prompt to customize how the AI coach responds to
-                    your users. This controls the AI's personality, tone, and
-                    coaching style.
-                  </p>
                   <textarea
                     ref={systemPromptRef}
                     value={coachTabConfig.system_prompt}
@@ -4296,6 +4479,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
                           Button Text
+                          <Tip text="Label for the booking button in the Coach Profile popup and chat area." />
                         </label>
                         <input
                           type="text"
@@ -4318,6 +4502,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
                           AI Disclaimer Text
+                          <Tip text="Shown in the Coach Profile popup to let users know responses are AI-generated. Use {coach_name} to insert your name." />
                         </label>
                         <textarea
                           value={coachTabConfig.booking?.ai_disclaimer || ""}
@@ -4343,6 +4528,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-2">
                           Booking Options
+                          <Tip text="Add links to your scheduling tool (e.g. Calendly). Each option appears as a clickable card in the booking modal." />
                         </label>
                         {(coachTabConfig.booking?.options || []).map(
                           (option, index) => (
@@ -4485,12 +4671,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             <div>
                               <label className="block text-xs font-medium text-gray-700">
                                 Suggest Booking During Long Sessions
+                                <Tip text="When a chat session gets long, the AI will suggest booking a real call and show a booking button inline in the conversation." />
                               </label>
-                              <p className="text-xs text-gray-500 mt-0.5">
-                                When a session enters "Wrap Up Soon" status, the
-                                AI will suggest booking a call and a booking
-                                button will appear in the chat
-                              </p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer ml-4 flex-shrink-0">
                               <input

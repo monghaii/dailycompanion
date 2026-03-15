@@ -3993,7 +3993,7 @@ function UserDashboardContent() {
                             margin: "0 0 8px",
                           }}
                         >
-                          {user.coach.business_name}
+                          {coachConfig?.coach_tab?.profile_name || user.coach.business_name}
                         </h3>
                         <p
                           style={{
@@ -4003,7 +4003,8 @@ function UserDashboardContent() {
                             margin: 0,
                           }}
                         >
-                          {user.coach.bio ||
+                          {coachConfig?.coach_tab?.profile_bio ||
+                            user.coach.bio ||
                             coachConfig?.bio ||
                             "Your dedicated AI coach here to support your journey."}
                         </p>
@@ -6633,9 +6634,9 @@ function UserDashboardContent() {
                         {/* Legend */}
                         <div
                           style={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(2, 1fr)",
-                            gap: "8px",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "6px",
                           }}
                         >
                           {distribution.map((item, i) => (
@@ -6645,13 +6646,12 @@ function UserDashboardContent() {
                                 display: "flex",
                                 alignItems: "center",
                                 gap: "8px",
-                                minWidth: 0,
                               }}
                             >
                               <div
                                 style={{
-                                  width: "12px",
-                                  height: "12px",
+                                  width: "10px",
+                                  height: "10px",
                                   borderRadius: "50%",
                                   backgroundColor: getEmotionColor(
                                     item.categoryId,
@@ -6663,9 +6663,6 @@ function UserDashboardContent() {
                                 style={{
                                   fontSize: "13px",
                                   color: "#1a1a1a",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
                                 }}
                               >
                                 {item.emotion.charAt(0).toUpperCase() +

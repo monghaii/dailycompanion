@@ -587,30 +587,46 @@ export default function CoachLandingPage() {
                 </p>
               )}
 
-              <div style={{ marginBottom: "32px" }}>
-                <p
-                  style={{
-                    fontSize: "15px",
-                    color: "#6b7280",
-                    fontWeight: 500,
-                    marginBottom: "4px",
-                  }}
-                >
-                  Made by {coach.business_name}
-                </p>
-                {coach.tagline && (
+              <div style={{ marginBottom: "32px", display: "flex", alignItems: "center", gap: "12px" }}>
+                {config.coach_info?.photo_url && (
+                  <img
+                    src={config.coach_info.photo_url}
+                    alt={coach.business_name}
+                    style={{
+                      width: "48px",
+                      height: "48px",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+                <div>
                   <p
                     style={{
-                      fontSize: "14px",
-                      color: primaryColor,
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
+                      fontSize: "15px",
+                      color: "#6b7280",
+                      fontWeight: 500,
+                      marginBottom: "4px",
                     }}
                   >
-                    {coach.tagline}
+                    Made by {coach.business_name}
                   </p>
-                )}
+                  {coach.tagline && (
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: primaryColor,
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                        margin: 0,
+                      }}
+                    >
+                      {coach.tagline}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <button
@@ -717,45 +733,22 @@ export default function CoachLandingPage() {
                   minHeight: "140px",
                 }}
               >
-                <li
-                  style={{
-                    marginBottom: "10px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    fontSize: "14px",
-                    color: "#4b5563",
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="20 6 9 17 4 12" /></svg>
-                  Daily Focus check-ins
-                </li>
-                <li
-                  style={{
-                    marginBottom: "10px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    fontSize: "14px",
-                    color: "#4b5563",
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="20 6 9 17 4 12" /></svg>
-                  Basic task tracking
-                </li>
-                <li
-                  style={{
-                    marginBottom: "10px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    fontSize: "14px",
-                    color: "#4b5563",
-                  }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="20 6 9 17 4 12" /></svg>
-                  Community support
-                </li>
+                {(pricing.free_features || ["Daily Focus check-ins", "Basic task tracking", "Community support"]).map((feature, idx) => (
+                  <li
+                    key={idx}
+                    style={{
+                      marginBottom: "10px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      fontSize: "14px",
+                      color: "#4b5563",
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="20 6 9 17 4 12" /></svg>
+                    {feature}
+                  </li>
+                ))}
               </ul>
 
               <button
@@ -846,12 +839,7 @@ export default function CoachLandingPage() {
                   minHeight: "140px",
                 }}
               >
-                {[
-                  "Everything in Free",
-                  "AI-powered coaching",
-                  "Progress tracking & insights",
-                  "Unlimited access to all features",
-                ].map((feature, idx) => (
+                {(pricing.tier2_features || pricing.features || ["Everything in Free", "AI-powered coaching", "Progress tracking & insights", "Unlimited access to all features"]).map((feature, idx) => (
                   <li
                     key={idx}
                     style={{
@@ -960,12 +948,7 @@ export default function CoachLandingPage() {
                     minHeight: "140px",
                   }}
                 >
-                  {[
-                    "Everything in Daily Companion",
-                    "Exclusive Resource Hub access",
-                    "Community calls & programs",
-                    "Curated learning library",
-                  ].map((feature, idx) => (
+                  {(pricing.tier3_features || ["Everything in Daily Companion", "Exclusive Resource Hub access", "Community calls & programs", "Curated learning library"]).map((feature, idx) => (
                     <li
                       key={idx}
                       style={{

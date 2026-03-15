@@ -217,49 +217,34 @@ export default function CustomDomainWizard() {
   }
 
   function getStatusBadge(status, sslStatus) {
-    const badges = {
-      pending: { bg: "#FEF3C7", color: "#92400E", text: "Pending Setup" },
-      verifying: { bg: "#DBEAFE", color: "#1E40AF", text: "Verifying..." },
-      verified: { bg: "#D1FAE5", color: "#065F46", text: "Verified" },
-      failed: { bg: "#FEE2E2", color: "#991B1B", text: "Failed" },
-      disabled: { bg: "#F3F4F6", color: "#6B7280", text: "Disabled" },
+    const badgeClasses = {
+      pending: "bg-amber-100 text-amber-800",
+      verifying: "bg-blue-100 text-blue-800",
+      verified: "bg-green-100 text-green-800",
+      failed: "bg-red-100 text-red-800",
+      disabled: "bg-gray-100 text-gray-500",
+    };
+    const badgeLabels = {
+      pending: "Pending Setup",
+      verifying: "Verifying...",
+      verified: "Verified",
+      failed: "Failed",
+      disabled: "Disabled",
     };
 
-    const badge = badges[status] || badges.pending;
+    const cls = badgeClasses[status] || badgeClasses.pending;
+    const label = badgeLabels[status] || badgeLabels.pending;
 
     return (
-      <div
-        style={{
-          display: "flex",
-          gap: "8px",
-          alignItems: "center",
-          flexWrap: "wrap",
-        }}
-      >
-        <span
-          style={{
-            display: "inline-block",
-            padding: "4px 12px",
-            borderRadius: "12px",
-            fontSize: "12px",
-            fontWeight: "600",
-            backgroundColor: badge.bg,
-            color: badge.color,
-          }}
-        >
-          {badge.text}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${cls}`}>
+          {label}
         </span>
         {status === "verified" && (
           <span
-            style={{
-              display: "inline-block",
-              padding: "4px 12px",
-              borderRadius: "12px",
-              fontSize: "12px",
-              fontWeight: "600",
-              backgroundColor: sslStatus === "active" ? "#D1FAE5" : "#FEF3C7",
-              color: sslStatus === "active" ? "#065F46" : "#92400E",
-            }}
+            className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+              sslStatus === "active" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"
+            }`}
           >
             {sslStatus === "active" ? "SSL Active" : "SSL Pending"}
           </span>
@@ -270,564 +255,198 @@ export default function CustomDomainWizard() {
 
   if (loading) {
     return (
-      <div style={{ padding: "40px", textAlign: "center" }}>
-        <div style={{ fontSize: "24px" }}>Loading domains...</div>
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-10 text-center">
+        <p className="text-sm text-gray-500">Loading domains...</p>
       </div>
     );
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div style={{ marginBottom: "32px" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            marginBottom: "8px",
-          }}
-        >
-          <h2 style={{ fontSize: "28px", fontWeight: "bold", margin: 0 }}>
-            Custom Domain
-          </h2>
-          {domains.some(
-            (d) => d.status === "verified" && d.ssl_status === "pending",
-          ) && (
-            <span
-              style={{
-                fontSize: "12px",
-                color: "#92400E",
-                backgroundColor: "#FEF3C7",
-                padding: "4px 8px",
-                borderRadius: "6px",
-                fontWeight: "600",
-              }}
-            >
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
+      <div className="px-6 py-5 border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-gray-900">Custom Domain</h2>
+          {domains.some((d) => d.status === "verified" && d.ssl_status === "pending") && (
+            <span className="text-xs font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
               Auto-checking SSL status...
             </span>
           )}
         </div>
-        <p style={{ color: "#6B7280", fontSize: "16px" }}>
-          Connect your own domain to serve your coaching landing page and user
-          experience.
+        <p className="text-sm text-gray-500 mt-0.5">
+          Connect your own domain to serve your coaching landing page and user experience.
         </p>
       </div>
 
-      {/* Alerts */}
-      {error && (
-        <div
-          style={{
-            padding: "16px",
-            marginBottom: "24px",
-            backgroundColor: "#FEE2E2",
-            color: "#991B1B",
-            borderRadius: "8px",
-            border: "1px solid #FCA5A5",
-          }}
-        >
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div
-          style={{
-            padding: "16px",
-            marginBottom: "24px",
-            backgroundColor: "#D1FAE5",
-            color: "#065F46",
-            borderRadius: "8px",
-            border: "1px solid #6EE7B7",
-          }}
-        >
-          {success}
-        </div>
-      )}
-
-      {/* Add Domain Button */}
-      {domains.length === 0 ? (
-        <div
-          style={{
-            padding: "60px",
-            textAlign: "center",
-            backgroundColor: "#F9FAFB",
-            borderRadius: "12px",
-            border: "2px dashed #D1D5DB",
-          }}
-        >
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}></div>
-          <h3
-            style={{ fontSize: "20px", fontWeight: "600", marginBottom: "8px" }}
-          >
-            No custom domain configured
-          </h3>
-          <p style={{ color: "#6B7280", marginBottom: "24px" }}>
-            Add your custom domain to get started
-          </p>
-          <button
-            onClick={() => setShowAddModal(true)}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "#fbbf24",
-              color: "black",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "16px",
-              fontWeight: "600",
-              cursor: "pointer",
-            }}
-            onMouseOver={(e) =>
-              (e.currentTarget.style.backgroundColor = "#f59e0b")
-            }
-            onMouseOut={(e) =>
-              (e.currentTarget.style.backgroundColor = "#fbbf24")
-            }
-          >
-            + Add Custom Domain
-          </button>
-        </div>
-      ) : (
-        <div>
-          {/* Info message */}
-          <div
-            style={{
-              padding: "12px 16px",
-              marginBottom: "24px",
-              backgroundColor: "#FEF3C7",
-              color: "#92400E",
-              borderRadius: "8px",
-              border: "1px solid #FDE68A",
-              fontSize: "14px",
-            }}
-          >
-            Only one custom domain is allowed per coach account.
+      <div className="p-6">
+        {/* Alerts */}
+        {error && (
+          <div className="p-3 mb-4 bg-red-50 text-red-800 rounded-lg border border-red-200 text-sm">
+            {error}
           </div>
+        )}
+        {success && (
+          <div className="p-3 mb-4 bg-green-50 text-green-800 rounded-lg border border-green-200 text-sm">
+            {success}
+          </div>
+        )}
 
-          {/* Domains List */}
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-          >
-            {domains.map((domain) => (
-              <div
-                key={domain.id}
-                style={{
-                  padding: "24px",
-                  backgroundColor: "white",
-                  borderRadius: "12px",
-                  border: "1px solid #E5E7EB",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: "16px",
-                    flexWrap: "wrap",
-                    gap: "16px",
-                  }}
-                >
-                  <div>
-                    <h3
-                      style={{
-                        fontSize: "20px",
-                        fontWeight: "600",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      {domain.full_domain}
-                    </h3>
-                    {getStatusBadge(domain.status, domain.ssl_status)}
-                  </div>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    {domain.status === "pending" ||
-                    domain.status === "failed" ? (
-                      <button
-                        onClick={() => handleVerifyDomain(domain.id)}
-                        disabled={verifying === domain.id}
-                        style={{
-                          padding: "8px 16px",
-                          backgroundColor:
-                            verifying === domain.id ? "#9CA3AF" : "#10B981",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "6px",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          cursor:
-                            verifying === domain.id ? "not-allowed" : "pointer",
-                        }}
-                      >
-                        {verifying === domain.id ? "Verifying..." : "Verify"}
-                      </button>
-                    ) : domain.status === "verified" &&
-                      domain.ssl_status === "pending" ? (
-                      <button
-                        onClick={() => handleRefreshStatus(domain.id)}
-                        disabled={verifying === domain.id}
-                        style={{
-                          padding: "8px 16px",
-                          backgroundColor:
-                            verifying === domain.id ? "#9CA3AF" : "#fbbf24",
-                          color: verifying === domain.id ? "white" : "black",
-                          border: "none",
-                          borderRadius: "6px",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          cursor:
-                            verifying === domain.id ? "not-allowed" : "pointer",
-                        }}
-                      >
-                        {verifying === domain.id
-                          ? "Checking..."
-                          : "Check SSL Status"}
-                      </button>
-                    ) : null}
-                    <button
-                      onClick={() => handleRemoveDomain(domain.id)}
-                      style={{
-                        padding: "8px 16px",
-                        backgroundColor: "#EF4444",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
+        {domains.length === 0 ? (
+          <div className="py-12 text-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+            <h3 className="text-base font-semibold text-gray-900 mb-1">No custom domain configured</h3>
+            <p className="text-sm text-gray-500 mb-5">Add your custom domain to get started</p>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-5 py-2 bg-amber-400 text-gray-900 rounded-lg text-sm font-semibold hover:bg-amber-500 transition-colors cursor-pointer"
+            >
+              + Add Custom Domain
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div className="p-3 mb-4 bg-amber-50 text-amber-800 rounded-lg border border-amber-200 text-sm">
+              Only one custom domain is allowed per coach account.
+            </div>
 
-                {domain.status === "pending" || domain.status === "failed" ? (
-                  <div
-                    style={{
-                      padding: "16px",
-                      backgroundColor: "#F3F4F6",
-                      borderRadius: "8px",
-                      marginTop: "16px",
-                    }}
-                  >
-                    <h4
-                      style={{
-                        fontSize: "16px",
-                        fontWeight: "600",
-                        marginBottom: "12px",
-                      }}
-                    >
-                      DNS Configuration Instructions
-                    </h4>
-                    <p
-                      style={{
-                        fontSize: "14px",
-                        color: "#6B7280",
-                        marginBottom: "16px",
-                      }}
-                    >
-                      Add the following DNS record to your domain provider:
-                    </p>
-                    <div
-                      style={{
-                        padding: "12px",
-                        backgroundColor: "#1F2937",
-                        color: "#10B981",
-                        borderRadius: "6px",
-                        fontFamily: "monospace",
-                        fontSize: "14px",
-                      }}
-                    >
-                      <div>
-                        Type: <span style={{ color: "white" }}>A</span>
-                      </div>
-                      <div>
-                        Name:{" "}
-                        <span style={{ color: "white" }}>
-                          {domain.subdomain || "@"}
-                        </span>
-                      </div>
-                      <div>
-                        Value:{" "}
-                        <span style={{ color: "white" }}>
-                          {domain.expected_a_record}
-                        </span>
-                      </div>
-                      <div>
-                        TTL: <span style={{ color: "white" }}>3600</span>
-                      </div>
+            <div className="space-y-4">
+              {domains.map((domain) => (
+                <div key={domain.id} className="p-5 bg-gray-50 rounded-xl border border-gray-200">
+                  <div className="flex justify-between mb-4 flex-wrap gap-3">
+                    <div>
+                      <h3 className="text-base font-semibold text-gray-900 mb-1.5">{domain.full_domain}</h3>
+                      {getStatusBadge(domain.status, domain.ssl_status)}
                     </div>
+                    <div className="flex gap-2 items-start">
+                      {domain.status === "pending" || domain.status === "failed" ? (
+                        <button
+                          onClick={() => handleVerifyDomain(domain.id)}
+                          disabled={verifying === domain.id}
+                          className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                        >
+                          {verifying === domain.id ? "Verifying..." : "Verify"}
+                        </button>
+                      ) : domain.status === "verified" && domain.ssl_status === "pending" ? (
+                        <button
+                          onClick={() => handleRefreshStatus(domain.id)}
+                          disabled={verifying === domain.id}
+                          className="px-3 py-1.5 bg-amber-400 text-gray-900 rounded-lg text-sm font-semibold hover:bg-amber-500 disabled:bg-gray-400 disabled:text-white disabled:cursor-not-allowed transition-colors cursor-pointer"
+                        >
+                          {verifying === domain.id ? "Checking..." : "Check SSL Status"}
+                        </button>
+                      ) : null}
+                      <button
+                        onClick={() => handleRemoveDomain(domain.id)}
+                        className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 transition-colors cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
 
-                    {/* Show TXT verification if stored in domain record */}
-                    {domain.verification_method === "txt" &&
-                      domain.txt_verification_code && (
-                        <div style={{ marginTop: "16px" }}>
-                          <p
-                            style={{
-                              fontSize: "14px",
-                              color: "#991B1B",
-                              fontWeight: "600",
-                              marginBottom: "8px",
-                            }}
-                          >
-                            Ownership Verification Required
+                  {domain.status === "pending" || domain.status === "failed" ? (
+                    <div className="p-4 bg-white rounded-lg mt-3">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">DNS Configuration Instructions</h4>
+                      <p className="text-sm text-gray-500 mb-3">
+                        Add the following DNS record to your domain provider:
+                      </p>
+                      <div className="p-3 bg-gray-900 text-green-400 rounded-md font-mono text-sm space-y-0.5">
+                        <div>Type: <span className="text-white">A</span></div>
+                        <div>Name: <span className="text-white">{domain.subdomain || "@"}</span></div>
+                        <div>Value: <span className="text-white">{domain.expected_a_record}</span></div>
+                        <div>TTL: <span className="text-white">3600</span></div>
+                      </div>
+
+                      {domain.verification_method === "txt" && domain.txt_verification_code && (
+                        <div className="mt-4">
+                          <p className="text-sm font-semibold text-red-800 mb-1.5">Ownership Verification Required</p>
+                          <p className="text-sm text-gray-500 mb-2">
+                            This domain is currently linked to another Vercel account. Please add this TXT record to verify ownership:
                           </p>
-                          <p
-                            style={{
-                              fontSize: "14px",
-                              color: "#6B7280",
-                              marginBottom: "8px",
-                            }}
-                          >
-                            This domain is currently linked to another Vercel
-                            account. Please add this TXT record to verify
-                            ownership:
-                          </p>
-                          <div
-                            style={{
-                              padding: "12px",
-                              backgroundColor: "#FEF2F2",
-                              border: "1px solid #FECACA",
-                              color: "#991B1B",
-                              borderRadius: "6px",
-                              fontFamily: "monospace",
-                              fontSize: "14px",
-                            }}
-                          >
-                            <div>
-                              Type: <strong>TXT</strong>
-                            </div>
-                            <div>
-                              Name: <strong>_vercel</strong>
-                            </div>
-                            <div
-                              style={{
-                                marginTop: "4px",
-                                wordBreak: "break-all",
-                              }}
-                            >
-                              Value:{" "}
-                              <strong>{domain.txt_verification_code}</strong>
-                            </div>
+                          <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-md font-mono text-sm space-y-0.5">
+                            <div>Type: <strong>TXT</strong></div>
+                            <div>Name: <strong>_vercel</strong></div>
+                            <div className="mt-1 break-all">Value: <strong>{domain.txt_verification_code}</strong></div>
                           </div>
-                          <p
-                            style={{
-                              fontSize: "12px",
-                              color: "#9CA3AF",
-                              marginTop: "8px",
-                            }}
-                          >
-                            After adding both the A record and TXT record,
-                            click "Verify" to complete the setup.
+                          <p className="text-xs text-gray-400 mt-2">
+                            After adding both the A record and TXT record, click "Verify" to complete the setup.
                           </p>
                         </div>
                       )}
 
-                    {/* Show verification data from API response (transient state) */}
-                    {verificationData && !domain.txt_verification_code && (
-                      <div style={{ marginTop: "16px" }}>
-                        <p
-                          style={{
-                            fontSize: "14px",
-                            color: "#991B1B",
-                            fontWeight: "600",
-                            marginBottom: "8px",
-                          }}
-                        >
-                          Ownership Verification Required
-                        </p>
-                        <p
-                          style={{
-                            fontSize: "14px",
-                            color: "#6B7280",
-                            marginBottom: "8px",
-                          }}
-                        >
-                          This domain is currently linked to another provider.
-                          Please add this TXT record to verify ownership:
-                        </p>
-                        <div
-                          style={{
-                            padding: "12px",
-                            backgroundColor: "#FEF2F2",
-                            border: "1px solid #FECACA",
-                            color: "#991B1B",
-                            borderRadius: "6px",
-                            fontFamily: "monospace",
-                            fontSize: "14px",
-                          }}
-                        >
-                          <div>
-                            Type: <strong>{verificationData.type}</strong>
-                          </div>
-                          <div>
-                            Name: <strong>{verificationData.name}</strong>
-                          </div>
-                          <div
-                            style={{ marginTop: "4px", wordBreak: "break-all" }}
-                          >
-                            Value: <strong>{verificationData.value}</strong>
+                      {verificationData && !domain.txt_verification_code && (
+                        <div className="mt-4">
+                          <p className="text-sm font-semibold text-red-800 mb-1.5">Ownership Verification Required</p>
+                          <p className="text-sm text-gray-500 mb-2">
+                            This domain is currently linked to another provider. Please add this TXT record to verify ownership:
+                          </p>
+                          <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-md font-mono text-sm space-y-0.5">
+                            <div>Type: <strong>{verificationData.type}</strong></div>
+                            <div>Name: <strong>{verificationData.name}</strong></div>
+                            <div className="mt-1 break-all">Value: <strong>{verificationData.value}</strong></div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    <p
-                      style={{
-                        fontSize: "12px",
-                        color: "#9CA3AF",
-                        marginTop: "12px",
-                      }}
-                    >
-                      DNS propagation can take up to 48 hours. Click "Verify"
-                      to check status.
-                    </p>
-                    {domain.failed_reason && (
-                      <div
-                        style={{
-                          marginTop: "12px",
-                          padding: "12px",
-                          backgroundColor: "#FEE2E2",
-                          color: "#991B1B",
-                          borderRadius: "6px",
-                          fontSize: "14px",
-                        }}
-                      >
-                        {domain.failed_reason}
-                      </div>
-                    )}
-                  </div>
-                ) : domain.status === "verified" ? (
-                  <div
-                    style={{
-                      padding: "16px",
-                      backgroundColor: "#ECFDF5",
-                      borderRadius: "8px",
-                      marginTop: "16px",
-                    }}
-                  >
-                    <h4
-                      style={{
-                        fontSize: "16px",
-                        fontWeight: "600",
-                        marginBottom: "8px",
-                        color: "#065F46",
-                      }}
-                    >
-                      Domain Active!
-                    </h4>
-                    <p style={{ fontSize: "14px", color: "#047857" }}>
-                      Your landing page is now accessible at{" "}
-                      <a
-                        href={`https://${domain.full_domain}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          fontWeight: "600",
-                          textDecoration: "underline",
-                        }}
-                      >
-                        {domain.full_domain}
-                      </a>
-                    </p>
-                    {domain.ssl_status === "pending" && (
-                      <div
-                        style={{
-                          marginTop: "12px",
-                          padding: "12px",
-                          backgroundColor: "#FEF3C7",
-                          borderRadius: "6px",
-                        }}
-                      >
-                        <p
-                          style={{
-                            fontSize: "13px",
-                            color: "#92400E",
-                            marginBottom: "8px",
-                          }}
-                        >
-                          <strong>SSL Certificate Pending</strong>
-                        </p>
-                        <p
-                          style={{
-                            fontSize: "12px",
-                            color: "#92400E",
-                            marginBottom: "8px",
-                          }}
-                        >
-                          Your domain is verified, but the SSL certificate is
-                          still being issued by Vercel. This typically takes
-                          5-30 minutes.
-                        </p>
-                        <p style={{ fontSize: "12px", color: "#92400E" }}>
-                          {" "}
-                          <em>
-                            Tip: This page auto-refreshes every 60 seconds, or
-                            click "Check SSL Status" above to check manually.
-                          </em>
-                        </p>
-                      </div>
-                    )}
-                    {domain.ssl_status === "active" && (
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#047857",
-                          marginTop: "8px",
-                        }}
-                      >
-                        SSL certificate is active. Your domain is fully
-                        secured with HTTPS!
+                      <p className="text-xs text-gray-400 mt-3">
+                        DNS propagation can take up to 48 hours. Click "Verify" to check status.
                       </p>
-                    )}
-                  </div>
-                ) : null}
-              </div>
-            ))}
+                      {domain.failed_reason && (
+                        <div className="mt-3 p-3 bg-red-50 text-red-800 rounded-md text-sm border border-red-200">
+                          {domain.failed_reason}
+                        </div>
+                      )}
+                    </div>
+                  ) : domain.status === "verified" ? (
+                    <div className="p-4 bg-green-50 rounded-lg mt-3">
+                      <h4 className="text-sm font-semibold text-green-800 mb-1">Domain Active</h4>
+                      <p className="text-sm text-green-700">
+                        Your landing page is now accessible at{" "}
+                        <a
+                          href={`https://${domain.full_domain}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold underline"
+                        >
+                          {domain.full_domain}
+                        </a>
+                      </p>
+                      {domain.ssl_status === "pending" && (
+                        <div className="mt-3 p-3 bg-amber-50 rounded-md">
+                          <p className="text-xs font-semibold text-amber-800 mb-1">SSL Certificate Pending</p>
+                          <p className="text-xs text-amber-700 mb-1">
+                            Your domain is verified, but the SSL certificate is still being issued by Vercel. This typically takes 5-30 minutes.
+                          </p>
+                          <p className="text-xs text-amber-700 italic">
+                            Tip: This page auto-refreshes every 60 seconds, or click "Check SSL Status" above to check manually.
+                          </p>
+                        </div>
+                      )}
+                      {domain.ssl_status === "active" && (
+                        <p className="text-xs text-green-700 mt-2">
+                          SSL certificate is active. Your domain is fully secured with HTTPS.
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Add Domain Modal */}
       {showAddModal && (
         <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000"
           onClick={() => setShowAddModal(false)}
         >
           <div
-            style={{
-              backgroundColor: "white",
-              borderRadius: "12px",
-              padding: "32px",
-              maxWidth: "500px",
-              width: "90%",
-            }}
+            className="bg-white rounded-2xl p-6 max-w-md w-[90%] shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3
-              style={{
-                fontSize: "24px",
-                fontWeight: "bold",
-                marginBottom: "16px",
-              }}
-            >
-              Add Custom Domain
-            </h3>
-            <p style={{ color: "#6B7280", marginBottom: "24px" }}>
-              Enter your domain name (e.g., mycoach.com or
-              coaching.mycompany.com)
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Add Custom Domain</h3>
+            <p className="text-sm text-gray-500 mb-5">
+              Enter your domain name (e.g., mycoach.com or coaching.mycompany.com)
             </p>
             <input
               type="text"
@@ -835,51 +454,19 @@ export default function CustomDomainWizard() {
               onChange={(e) => setNewDomain(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddDomain()}
               placeholder="mycoach.com"
-              style={{
-                width: "100%",
-                padding: "12px",
-                border: "1px solid #D1D5DB",
-                borderRadius: "8px",
-                fontSize: "16px",
-                marginBottom: "24px",
-                boxSizing: "border-box",
-              }}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm mb-5 outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
             />
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                justifyContent: "flex-end",
-              }}
-            >
+            <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowAddModal(false)}
-                style={{
-                  padding: "12px 24px",
-                  backgroundColor: "#F3F4F6",
-                  color: "#374151",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "16px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                }}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-200 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddDomain}
                 disabled={adding}
-                style={{
-                  padding: "12px 24px",
-                  backgroundColor: adding ? "#9CA3AF" : "#fbbf24",
-                  color: adding ? "white" : "black",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "16px",
-                  fontWeight: "600",
-                  cursor: adding ? "not-allowed" : "pointer",
-                }}
+                className="px-4 py-2 bg-amber-400 text-gray-900 rounded-lg text-sm font-semibold hover:bg-amber-500 disabled:bg-gray-400 disabled:text-white disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 {adding ? "Adding..." : "Add Domain"}
               </button>

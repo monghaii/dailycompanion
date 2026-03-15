@@ -346,6 +346,141 @@ export async function checkConnectAccountStatus(accountId) {
   };
 }
 
+// Sponsorship product ID (created in Stripe)
+const SPONSORSHIP_PRODUCT_ID = "prod_U9NPhGP2etd3cR";
+
+// Calculate the platform fee for a given tier
+export function getSponsorshipFeePerUser(tier, coach) {
+  if (tier === 2) {
+    return 500; // $5.00 flat
+  }
+  if (tier === 3) {
+    const userPrice = coach.user_monthly_price_cents || 1999;
+    const twentyPercent = Math.round(userPrice * 0.2);
+    return Math.max(twentyPercent, 500);
+  }
+  throw new Error("Invalid tier for sponsorship");
+}
+
+// Create a Stripe Checkout session for the first sponsored user (creates the subscription)
+export async function createSponsorshipCheckoutSession({
+  coachId,
+  coachStripeCustomerId,
+  coachEmail,
+  tier,
+  feePerUserCents,
+  currency,
+  userId,
+}) {
+  const tierLabel = tier === 2 ? "Daily Companion" : "Premium Plus";
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "subscription",
+    payment_method_types: ["card"],
+    customer: coachStripeCustomerId || undefined,
+    customer_email: coachStripeCustomerId ? undefined : coachEmail,
+    line_items: [
+      {
+        price_data: {
+          currency,
+          product: SPONSORSHIP_PRODUCT_ID,
+          unit_amount: feePerUserCents,
+          recurring: { interval: "month" },
+        },
+        quantity: 1,
+      },
+    ],
+    subscription_data: {
+      metadata: {
+        type: "coach_sponsorship",
+        coach_id: coachId,
+        subscription_tier: tier.toString(),
+        fee_per_user_cents: feePerUserCents.toString(),
+      },
+    },
+    metadata: {
+      type: "coach_sponsorship",
+      coach_id: coachId,
+      user_id: userId,
+      subscription_tier: tier.toString(),
+      fee_per_user_cents: feePerUserCents.toString(),
+    },
+    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?sponsor=complete&tier=${tier}&tab=clients`,
+    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?sponsor=canceled&tab=clients`,
+  });
+
+  return session;
+}
+
+// Increment quantity on an existing sponsorship subscription
+export async function incrementSponsorshipQuantity(stripeSubscriptionId) {
+  const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+  const item = subscription.items.data[0];
+
+  const updated = await stripe.subscriptions.update(stripeSubscriptionId, {
+    items: [
+      {
+        id: item.id,
+        quantity: item.quantity + 1,
+      },
+    ],
+    proration_behavior: "create_prorations",
+  });
+
+  return updated;
+}
+
+// Decrement quantity (or cancel if quantity reaches 0)
+export async function decrementSponsorshipQuantity(stripeSubscriptionId) {
+  const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+  const item = subscription.items.data[0];
+
+  if (item.quantity <= 1) {
+    const canceled = await stripe.subscriptions.cancel(stripeSubscriptionId);
+    return { canceled: true, subscription: canceled };
+  }
+
+  const updated = await stripe.subscriptions.update(stripeSubscriptionId, {
+    items: [
+      {
+        id: item.id,
+        quantity: item.quantity - 1,
+      },
+    ],
+    proration_behavior: "create_prorations",
+  });
+
+  return { canceled: false, subscription: updated };
+}
+
+// Update the unit price on a sponsorship subscription (for T3 price changes)
+export async function updateSponsorshipPrice(stripeSubscriptionId, newFeePerUserCents, currency) {
+  const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+  const item = subscription.items.data[0];
+
+  const updated = await stripe.subscriptions.update(stripeSubscriptionId, {
+    items: [
+      {
+        id: item.id,
+        price_data: {
+          currency,
+          product: SPONSORSHIP_PRODUCT_ID,
+          unit_amount: newFeePerUserCents,
+          recurring: { interval: "month" },
+        },
+      },
+    ],
+    proration_behavior: "create_prorations",
+  });
+
+  await supabase
+    .from("coach_sponsorships")
+    .update({ fee_per_user_cents: newFeePerUserCents, updated_at: new Date().toISOString() })
+    .eq("stripe_subscription_id", stripeSubscriptionId);
+
+  return updated;
+}
+
 // Set minimum balance ($150) on a connected account to cover refunds
 export async function setMinimumBalance(accountId, currency = "usd") {
   try {

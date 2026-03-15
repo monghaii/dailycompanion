@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { getSponsorshipFeePerUser, updateSponsorshipPrice } from "@/lib/stripe";
 
 export async function PATCH(request) {
   try {
@@ -86,6 +87,39 @@ export async function PATCH(request) {
         { error: "Failed to update profile" },
         { status: 500 }
       );
+    }
+
+    // If T3 price changed, sync sponsorship pricing
+    if (user_monthly_price_cents) {
+      try {
+        const { data: t3Sponsorship } = await supabase
+          .from("coach_sponsorships")
+          .select("*")
+          .eq("coach_id", currentCoach.id)
+          .eq("subscription_tier", 3)
+          .eq("status", "active")
+          .single();
+
+        if (t3Sponsorship?.stripe_subscription_id) {
+          const newFee = getSponsorshipFeePerUser(3, { user_monthly_price_cents });
+          if (newFee !== t3Sponsorship.fee_per_user_cents) {
+            const currency = updatedCoach.stripe_country
+              ? { US: "usd", DE: "eur", FR: "eur", ES: "eur", IT: "eur", NL: "eur", IE: "eur", BE: "eur", AT: "eur", GB: "gbp", CA: "cad", AU: "aud", NZ: "nzd", CH: "chf", SG: "sgd" }[updatedCoach.stripe_country] || "usd"
+              : "usd";
+
+            await updateSponsorshipPrice(
+              t3Sponsorship.stripe_subscription_id,
+              newFee,
+              currency,
+            );
+            console.log(
+              `[Profile] Synced T3 sponsorship fee: ${t3Sponsorship.fee_per_user_cents} -> ${newFee} cents`,
+            );
+          }
+        }
+      } catch (syncError) {
+        console.error("[Profile] Failed to sync sponsorship price:", syncError);
+      }
     }
 
     return NextResponse.json({ coach: updatedCoach });

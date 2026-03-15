@@ -66,7 +66,7 @@ export async function GET(request) {
     const userIds = profiles.map(p => p.id);
     const { data: subscriptions } = await supabase
       .from('user_subscriptions')
-      .select('user_id, status, created_at, current_period_start, current_period_end, canceled_at, subscription_tier')
+      .select('user_id, status, created_at, current_period_start, current_period_end, canceled_at, subscription_tier, sponsored_by_coach_id')
       .in('user_id', userIds);
     
     // Create a map for quick subscription lookup
@@ -74,6 +74,19 @@ export async function GET(request) {
     if (subscriptions) {
       subscriptions.forEach(sub => {
         subMap[sub.user_id] = sub;
+      });
+    }
+
+    // Get active sponsorship data for this coach
+    const { data: sponsorships } = await supabase
+      .from('coach_sponsorships')
+      .select('subscription_tier, status, quantity, fee_per_user_cents')
+      .eq('coach_id', coach.id);
+
+    const sponsorshipMap = {};
+    if (sponsorships) {
+      sponsorships.forEach(s => {
+        sponsorshipMap[s.subscription_tier] = s;
       });
     }
     
@@ -92,12 +105,13 @@ export async function GET(request) {
         currentPeriodEnd: subscription?.current_period_end || null,
         canceledAt: subscription?.canceled_at || null,
         userCreatedAt: profile.created_at,
+        sponsoredByCoach: subscription?.sponsored_by_coach_id === coach.id,
       };
     });
     
     console.log('[Get Clients] Returning clients:', clients.length);
     
-    return NextResponse.json({ clients });
+    return NextResponse.json({ clients, sponsorships: sponsorshipMap });
     
   } catch (error) {
     console.error('[Get Clients] Error:', error);
