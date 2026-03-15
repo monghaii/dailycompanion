@@ -96,7 +96,6 @@ export default function ConfigSection({
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const [generatedPromptDraft, setGeneratedPromptDraft] = useState("");
 
-
   const focusPreviewRef = useRef(null);
 
   const [focusConfig, setFocusConfig] = useState({
@@ -576,9 +575,14 @@ Remember: You're here to empower them to find their own answers, not to fix thei
   };
 
   const handleConfirmGeneratedPrompt = () => {
-    setCoachTabConfig((prev) => ({ ...prev, system_prompt: generatedPromptDraft }));
+    setCoachTabConfig((prev) => ({
+      ...prev,
+      system_prompt: generatedPromptDraft,
+    }));
     markPanelDirty("coach_tab");
-    showToast("AI Coach prompt saved! Head to the Coach Tab configuration section to edit further.");
+    showToast(
+      "AI Coach prompt saved! Head to the Coach Tab configuration section to edit further.",
+    );
     setShowOnboarding(false);
   };
 
@@ -1125,7 +1129,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
     }
   };
 
-
   useEffect(() => {
     markPanelDirty("landing");
   }, [profileConfig, landingConfig]);
@@ -1161,27 +1164,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-                setShowOnboarding(true);
-                setOnboardingStep(0);
-              }}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors cursor-pointer flex items-center gap-2 shrink-0"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              Start Onboarding
-            </button>
             <button
               onClick={() => window.open("/user/dashboard", "_blank")}
               className="px-4 py-2 bg-[#fbbf24] hover:bg-[#f59e0b] text-black rounded-lg text-sm font-semibold transition-colors cursor-pointer flex items-center gap-2 shrink-0"
@@ -4108,6 +4090,29 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 </span>
               </summary>
               <div className="p-6 space-y-6">
+                {/* Set Up AI Coach */}
+                <button
+                  onClick={() => {
+                    setShowOnboarding(true);
+                    setOnboardingStep(0);
+                  }}
+                  className="w-full px-4 py-3 bg-[#fbbf24] hover:bg-[#f59e0b] text-black rounded-lg text-sm font-semibold transition-colors cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  Set Up Your AI Coach
+                </button>
+
                 {/* Bot Profile Picture */}
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">
@@ -5197,7 +5202,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
             {/* Header */}
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
               <h3 className="font-semibold text-gray-900">
-                {onboardingStep === 0 && "Welcome to Your Dashboard"}
+                {onboardingStep === 0 && "Set Up Your AI Coach"}
                 {onboardingStep === 1 && "Credentials & Training"}
                 {onboardingStep === 2 && "Opening a Session"}
                 {onboardingStep === 3 && "Closing a Session"}
@@ -5244,15 +5249,15 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     </svg>
                   </div>
                   <h4 className="text-xl font-bold text-gray-900 mb-2">
-                    Let's Get You Set Up
+                    Set Up Your AI Coach
                   </h4>
                   <p className="text-gray-600 mb-4">
-                    We'll walk you through a few quick steps to personalize your
-                    experience and configure your dashboard.
+                    We'll walk you through a few quick steps to create an
+                    AI-powered coaching persona based on your style.
                   </p>
                   <p className="text-gray-500 text-sm">
-                    First up: we'll create an AI-powered coaching persona based on
-                    your style, so your clients get a consistent experience.
+                    Your clients will get a consistent coaching experience
+                    that reflects your methods and personality.
                   </p>
                 </div>
               )}
@@ -5274,8 +5279,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     className="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                   />
                   <p className="text-xs text-gray-500 mt-2">
-                    This helps the AI understand the frameworks and techniques it
-                    should draw from.
+                    This helps the AI understand the frameworks and techniques
+                    it should draw from.
                   </p>
                 </div>
               )}
@@ -5297,8 +5302,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     className="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                   />
                   <p className="text-xs text-gray-500 mt-2">
-                    Add example questions or phrases you use to start. The AI will
-                    mimic this opening style.
+                    Add example questions or phrases you use to start. The AI
+                    will mimic this opening style.
                   </p>
                 </div>
               )}
@@ -5354,8 +5359,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     </div>
                   </div>
                   <p className="text-sm text-gray-600 text-center">
-                    Ready to generate your AI Coach persona? This will update your
-                    System Prompt configuration.
+                    Ready to generate your AI Coach persona? This will update
+                    your System Prompt configuration.
                   </p>
                 </div>
               )}
@@ -5363,7 +5368,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
               {onboardingStep === 5 && (
                 <div className="space-y-3">
                   <p className="text-sm text-gray-600">
-                    Here's your generated AI Coach prompt. Feel free to edit it before confirming.
+                    Here's your generated AI Coach prompt. Feel free to edit it
+                    before confirming.
                   </p>
                   <textarea
                     value={generatedPromptDraft}
