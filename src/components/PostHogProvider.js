@@ -153,7 +153,12 @@ function PrivacyNotice() {
 }
 
 export default function PostHogProvider({ children }) {
-  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY || isLocalhost) {
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => setIsClient(true), []);
+
+  const skip = !process.env.NEXT_PUBLIC_POSTHOG_KEY || (isClient && isLocalhost);
+
+  if (skip) {
     return (
       <>
         <PrivacyNotice />

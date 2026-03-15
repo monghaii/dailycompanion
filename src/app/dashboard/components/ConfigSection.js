@@ -1292,8 +1292,9 @@ Remember: You're here to empower them to find their own answers, not to fix thei
             </p>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   Free Signup Link
+                  <Tip text="Share this URL to let new users sign up to your app for free." />
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -1326,6 +1327,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   Daily Companion Signup Link ({cs}9.99/month)
+                  <Tip text="Share this URL to let new users sign up and pay for Tier 2 directly." />
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -1415,6 +1417,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1.5">
                     Business Name
+                    <Tip text="Your coaching brand name. Shown on your landing page, browser tab, and user-facing app." />
                   </label>
                   <input
                     type="text"
@@ -1434,6 +1437,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1.5">
                     Business Logo
+                    <Tip text="Used as your app icon and browser favicon. Square images work best." />
                   </label>
                   <p className="text-xs text-gray-400 mb-2">
                     This also serves as the favicon (browser tab icon) for your
@@ -1537,6 +1541,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1.5">
                         Primary Color
+                        <Tip text="Accent color used for buttons, links, and highlights across your landing page and user app." />
                       </label>
                       <div className="flex items-center gap-2">
                         <input
@@ -1567,6 +1572,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1.5">
                         Background
+                        <Tip text="Background color or gradient for your user-facing companion app." />
                       </label>
                       <div className="flex gap-1.5 mb-3">
                         <button
@@ -2169,7 +2175,9 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                       />
                       <label className="text-xs font-medium text-gray-700">
-                        Highlight Monthly Plan (shows &ldquo;Most Popular&rdquo;
+                        Highlight Monthly Plan
+                        <Tip text="Adds a 'Most Popular' badge to the monthly plan card on your landing page to draw attention." />
+                        (shows &ldquo;Most Popular&rdquo;
                         badge)
                       </label>
                     </div>
@@ -2182,6 +2190,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                       />
                       <label className="text-xs font-medium text-gray-700">
                         Show Yearly Plan Option
+                        <Tip text="Adds a monthly/yearly toggle on your landing page pricing cards. Yearly plans offer 1 month free." />
                       </label>
                     </div>
                     <div>
@@ -2296,8 +2305,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
               <div className="p-6 space-y-6">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    App Title (Replaced by App Logo under Branding Section, if
-                    present)
+                    App Title
+                    <Tip text="Text shown in the top-left of your user's app. If you upload an App Logo in Branding, it replaces this text." />
                   </label>
                   <input
                     type="text"
@@ -2315,6 +2324,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1.5">
                     App Subtitle
+                    <Tip text="Smaller text below the app title in the top header bar of your user's app." />
                   </label>
                   <input
                     type="text"
@@ -2375,6 +2385,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
                       <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
                         Progress Bar
+                        <Tip text="The progress indicator at the top of the Focus tab that tracks daily task completion." />
                       </h3>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
                         ▼
@@ -2431,6 +2442,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
                       <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
                         Task 1 (Morning)
+                        <Tip text="The first daily task card. Typically used for a morning routine like a guided audio or meditation." />
                       </h3>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
                         ▼
@@ -2617,7 +2629,8 @@ Remember: You're here to empower them to find their own answers, not to fix thei
 
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-2">
-                          Audio Library{" "}
+                          Audio Library
+                          <Tip text="Upload audio files that rotate daily for the morning task. Users hear a different track each day." />{" "}
                           <span className="text-gray-400 font-normal">
                             (Up to 30 files • Daily rotation)
                           </span>
@@ -2930,6 +2943,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
                       <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
                         Task 2 (Intention)
+                        <Tip text="The second daily task card. Typically used for an intention-setting exercise with customizable prompts." />
                       </h3>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
                         ▼
@@ -3123,6 +3137,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                           <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1.5">
                               Modal Title
+                              <Tip text="Heading shown at the top of the popup when users tap the intention task card." />
                             </label>
                             <input
                               type="text"
@@ -3146,6 +3161,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1.5">
                                 First Question Label
+                                <Tip text="The label above the first text field in the intention modal." />
                               </label>
                               <input
                                 type="text"
@@ -3169,6 +3185,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1.5">
                                 First Question Placeholder
+                                <Tip text="Ghost text shown inside the first text field before the user types." />
                               </label>
                               <input
                                 type="text"
@@ -3195,6 +3212,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1.5">
                                 Second Question Label
+                                <Tip text="The label above the second text field in the intention modal." />
                               </label>
                               <input
                                 type="text"
@@ -3217,6 +3235,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1.5">
                                 Second Question Placeholder
+                                <Tip text="Ghost text shown inside the second text field before the user types." />
                               </label>
                               <input
                                 type="text"
@@ -3251,6 +3270,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
                       <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
                         Task 3 (Evening)
+                        <Tip text="The third daily task card. Typically used for an evening reflection or journal exercise." />
                       </h3>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
                         ▼
@@ -3444,6 +3464,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
                       <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
                         Day Notes Section
+                        <Tip text="A freeform note area at the bottom of the Focus tab where users can jot down thoughts for the day." />
                       </h3>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
                         ▼
@@ -3671,6 +3692,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     <div className="pb-4 border-b border-gray-100">
                       <label className="block text-xs font-medium text-gray-700 mb-1.5">
                         Modal Title
+                        <Tip text="The heading users see when they tap to log a mindfulness moment." />
                       </label>
                       <input
                         type="text"
@@ -3690,9 +3712,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                         placeholder="Nice catch!"
                       />
-                      <p className="text-xs text-gray-400 mt-1">
-                        Title shown when user logs a mindfulness moment
-                      </p>
                     </div>
 
                     {/* Mindfulness Logs */}
@@ -3821,6 +3840,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     <div className="pb-4 border-b border-gray-100">
                       <label className="block text-xs font-medium text-gray-700 mb-1.5">
                         Log Label
+                        <Tip text="The heading shown above the emotional state tracker in the Awareness tab." />
                       </label>
                       <input
                         type="text"
@@ -3840,15 +3860,13 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                         placeholder="Emotional State"
                       />
-                      <p className="text-xs text-gray-400 mt-1">
-                        Label shown in the awareness tab section
-                      </p>
                     </div>
 
                     {/* Modal Subtitle */}
                     <div className="pb-4 border-b border-gray-100">
                       <label className="block text-xs font-medium text-gray-700 mb-1.5">
                         Modal Subtitle
+                        <Tip text="Instruction text shown below the title in the emotion selection popup." />
                       </label>
                       <input
                         type="text"
@@ -3868,9 +3886,6 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                         className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                         placeholder="Select all that apply"
                       />
-                      <p className="text-xs text-gray-400 mt-1">
-                        Instruction text shown in the selection modal
-                      </p>
                     </div>
 
                     {/* Categories */}
@@ -3901,6 +3916,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1.5">
                                   Category Label
+                                  <Tip text="Name for this emotion group (e.g. 'Challenging' or 'Positive'). Shown as a section header in the selection modal." />
                                 </label>
                                 <input
                                   type="text"
@@ -3933,6 +3949,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                               <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1.5">
                                   Category Color
+                                  <Tip text="Color used for this category's emotions in charts and the selection modal." />
                                 </label>
                                 <div className="flex gap-2 items-center">
                                   <input
@@ -3984,6 +4001,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                                 <div className="flex justify-between items-center mb-2">
                                   <label className="block text-xs font-medium text-gray-700">
                                     Emotion Options
+                                    <Tip text="Individual emotions users can select within this category. Each appears as a tappable chip." />
                                   </label>
                                   <button
                                     type="button"
