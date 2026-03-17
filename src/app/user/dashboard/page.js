@@ -90,7 +90,7 @@ function UserDashboardContent() {
 
   const trackEvent = (event, properties) => {
     if (user?.role === "coach") return;
-    trackEvent(event, properties);
+    posthog.capture(event, properties);
   };
 
   useEffect(() => {
@@ -430,24 +430,19 @@ function UserDashboardContent() {
     document.title = `${user.coach.business_name} | Daily Companion`;
 
     if (user.coach.logo_url) {
-      document
-        .querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')
-        .forEach((el) => el.remove());
-      const link = document.createElement("link");
-      link.rel = "icon";
+      let link = document.querySelector('link[rel="icon"]');
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        document.head.appendChild(link);
+      }
       link.href = user.coach.logo_url;
-      document.head.appendChild(link);
     }
 
     return () => {
       document.title = "Daily Companion";
-      document
-        .querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')
-        .forEach((el) => el.remove());
-      const link = document.createElement("link");
-      link.rel = "icon";
-      link.href = "/favicon.ico";
-      document.head.appendChild(link);
+      const link = document.querySelector('link[rel="icon"]');
+      if (link) link.href = "/favicon.ico";
     };
   }, [user?.coach?.business_name, user?.coach?.logo_url]);
 
