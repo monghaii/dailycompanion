@@ -183,6 +183,7 @@ export default function ConfigSection({
       icon_url: null,
     },
     day_notes: {
+      enabled: true,
       title: "Day Notes",
       subtitle: "Capture thoughts and reflections",
       icon_url: null,
@@ -3464,12 +3465,31 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                     <summary className="flex items-center justify-between cursor-pointer list-none mb-3">
                       <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
                         Day Notes Section
-                        <Tip text="A freeform note area at the bottom of the Focus tab where users can jot down thoughts for the day." />
+                        <Tip text="A freeform note area at the bottom of the Focus tab where users can jot down thoughts for the day. Counts toward focus progress when enabled." />
                       </h3>
                       <span className="text-gray-400 group-open:rotate-180 transition-transform text-xs">
                         ▼
                       </span>
                     </summary>
+                    <div className="mt-3 space-y-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={focusConfig.day_notes.enabled !== false}
+                          onChange={(e) =>
+                            setFocusConfig({
+                              ...focusConfig,
+                              day_notes: {
+                                ...focusConfig.day_notes,
+                                enabled: e.target.checked,
+                              },
+                            })
+                          }
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                        />
+                        <span className="text-xs text-gray-600">Enabled</span>
+                      </label>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
@@ -5172,6 +5192,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
             )}
 
             {/* Day Notes preview */}
+            {focusConfig.day_notes?.enabled !== false && (
             <div
               style={{
                 backgroundColor: "#fff",
@@ -5238,6 +5259,7 @@ Remember: You're here to empower them to find their own answers, not to fix thei
                 </p>
               </div>
             </div>
+            )}
           </div>
 
           {/* Bottom Tab Bar */}

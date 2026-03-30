@@ -92,7 +92,7 @@ export async function GET(request) {
       `,
     };
 
-    // Days per user where all 3 focus tasks were completed
+    // Days per user where focus tasks were completed
     const habitQuery = {
       kind: "HogQLQuery",
       query: `

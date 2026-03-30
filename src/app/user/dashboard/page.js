@@ -31,6 +31,7 @@ function UserDashboardContent() {
     morning: false,
     intention: false,
     evening: false,
+    notes: false,
   });
   const [focusEntry, setFocusEntry] = useState(null);
   const [isSavingFocus, setIsSavingFocus] = useState(false);
@@ -708,6 +709,7 @@ function UserDashboardContent() {
           morning: data.entry.task_1_completed,
           intention: data.entry.task_2_completed,
           evening: data.entry.task_3_completed,
+          notes: data.entry.task_4_completed || false,
         });
         setDayNotes(data.entry.focus_notes || "");
         setNotesModified(false); // Reset modified state on load
@@ -1219,6 +1221,7 @@ function UserDashboardContent() {
         morning: "task_1_completed",
         intention: "task_2_completed",
         evening: "task_3_completed",
+        notes: "task_4_completed",
       };
 
       const todayStr = getLocalToday();
@@ -1409,6 +1412,7 @@ function UserDashboardContent() {
     morning: coachConfig?.focus_tab?.task_1?.enabled !== false,
     intention: coachConfig?.focus_tab?.task_2?.enabled !== false,
     evening: coachConfig?.focus_tab?.task_3?.enabled !== false,
+    notes: coachConfig?.focus_tab?.day_notes?.enabled !== false,
   };
 
   const completedCount = Object.entries(completedTasks).filter(
@@ -2580,6 +2584,7 @@ function UserDashboardContent() {
             )}
 
             {/* Day Notes */}
+            {coachConfig?.focus_tab?.day_notes?.enabled !== false && (
             <div
               style={{
                 backgroundColor: "#fff",
@@ -2637,7 +2642,7 @@ function UserDashboardContent() {
                     </svg>
                   )}
                 </div>
-                <div>
+                <div style={{ flex: 1 }}>
                   <h3
                     style={{
                       fontSize: "15px",
@@ -2653,6 +2658,33 @@ function UserDashboardContent() {
                       "Log observations to spot patterns"}
                   </p>
                 </div>
+                <button
+                  onClick={() => toggleTask("notes")}
+                  style={{
+                    width: "28px",
+                    height: "28px",
+                    borderRadius: "50%",
+                    border: completedTasks.notes
+                      ? "none"
+                      : "2px solid #d1d5db",
+                    backgroundColor: completedTasks.notes
+                      ? (coachConfig?.branding?.primary_color || "#10b981")
+                      : "transparent",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    transition: "all 0.2s",
+                    padding: 0,
+                  }}
+                >
+                  {completedTasks.notes && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </button>
               </div>
               <textarea
                 value={dayNotes}
@@ -2679,19 +2711,30 @@ function UserDashboardContent() {
 
                   setIsSavingFocus(true);
                   try {
+                    const payload = {
+                      focus_notes: dayNotes,
+                      date: getLocalToday(),
+                    };
+                    if (!completedTasks.notes && dayNotes.trim()) {
+                      payload.task_4_completed = true;
+                    }
                     const res = await fetch("/api/daily-entries/focus", {
                       method: "PATCH",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        focus_notes: dayNotes,
-                        date: getLocalToday(),
-                      }),
+                      body: JSON.stringify(payload),
                     });
 
                     if (res.ok) {
                       const data = await res.json();
                       setFocusEntry(data.entry);
                       setNotesModified(false);
+                      if (!completedTasks.notes && dayNotes.trim()) {
+                        setCompletedTasks((prev) => ({ ...prev, notes: true }));
+                        trackEvent("focus_task_completed", {
+                          task_name: "notes",
+                          date: getLocalToday(),
+                        });
+                      }
                       setToastMessage("Notes saved successfully");
                       setShowToast(true);
                       setTimeout(() => setShowToast(false), 3000);
@@ -2729,6 +2772,7 @@ function UserDashboardContent() {
                 {isSavingFocus ? "Saving..." : "Save Notes"}
               </button>
             </div>
+            )}
           </>
         )}
 
@@ -2884,6 +2928,47 @@ function UserDashboardContent() {
               {isLoadingAwareness ? (
                 // Skeleton Loader
                 <>
+                  {/* EMOTIONAL STATE Section Skeleton */}
+                  <div style={{ marginBottom: "32px" }}>
+                    <div
+                      style={{
+                        width: "160px",
+                        height: "14px",
+                        backgroundColor: "#e5e7eb",
+                        borderRadius: "4px",
+                        marginBottom: "16px",
+                        animation: "pulse 1.5s ease-in-out infinite",
+                      }}
+                    />
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "16px 0",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "180px",
+                          height: "16px",
+                          backgroundColor: "#e5e7eb",
+                          borderRadius: "4px",
+                          animation: "pulse 1.5s ease-in-out infinite",
+                        }}
+                      />
+                      <div
+                        style={{
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "4px",
+                          backgroundColor: "#e5e7eb",
+                          animation: "pulse 1.5s ease-in-out infinite",
+                        }}
+                      />
+                    </div>
+                  </div>
+
                   {/* MINDFULNESS Section Skeleton */}
                   <div style={{ marginBottom: "32px" }}>
                     <div
@@ -2944,47 +3029,6 @@ function UserDashboardContent() {
                         />
                       </div>
                     ))}
-                  </div>
-
-                  {/* EMOTIONAL STATE Section Skeleton */}
-                  <div>
-                    <div
-                      style={{
-                        width: "160px",
-                        height: "14px",
-                        backgroundColor: "#e5e7eb",
-                        borderRadius: "4px",
-                        marginBottom: "16px",
-                        animation: "pulse 1.5s ease-in-out infinite",
-                      }}
-                    />
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "16px 0",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: "180px",
-                          height: "16px",
-                          backgroundColor: "#e5e7eb",
-                          borderRadius: "4px",
-                          animation: "pulse 1.5s ease-in-out infinite",
-                        }}
-                      />
-                      <div
-                        style={{
-                          width: "32px",
-                          height: "32px",
-                          borderRadius: "4px",
-                          backgroundColor: "#e5e7eb",
-                          animation: "pulse 1.5s ease-in-out infinite",
-                        }}
-                      />
-                    </div>
                   </div>
 
                   {/* Entries Skeleton */}
@@ -3063,85 +3107,6 @@ function UserDashboardContent() {
                 </>
               ) : (
                 <>
-                  {/* MINDFULNESS Section */}
-                  <div style={{ marginBottom: "32px" }}>
-                    <h3
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: 700,
-                        color: "#7c3aed",
-                        letterSpacing: "0.05em",
-                        marginBottom: "16px",
-                      }}
-                    >
-                      MINDFULNESS
-                    </h3>
-
-                    {mindfulnessItems.map((item) => (
-                      <div
-                        key={item.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "16px 0",
-                          borderBottom: "1px solid #f3f4f6",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: "12px",
-                              height: "12px",
-                              borderRadius: "50%",
-                              backgroundColor: item.color,
-                            }}
-                          />
-                          <span
-                            style={{
-                              fontSize: "16px",
-                              color: "#1a1a1a",
-                            }}
-                          >
-                            {item.label}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() =>
-                            !subscriptionStatus?.isPremium
-                              ? null
-                              : handleMindfulnessClick(item)
-                          }
-                          disabled={!subscriptionStatus?.isPremium}
-                          style={{
-                            width: "32px",
-                            height: "32px",
-                            borderRadius: "4px",
-                            border: "none",
-                            backgroundColor: "transparent",
-                            color: "#60a5fa",
-                            fontSize: "24px",
-                            cursor: !subscriptionStatus?.isPremium
-                              ? "not-allowed"
-                              : "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            opacity: !subscriptionStatus?.isPremium ? 0.5 : 1,
-                          }}
-                        >
-                          +
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
                   {/* Suggested Practice */}
                   {showSuggestedPractice && selectedPractice && (
                     <div
@@ -3303,7 +3268,7 @@ function UserDashboardContent() {
                   )}
 
                   {/* EMOTIONAL STATE Section */}
-                  <div>
+                  <div style={{ marginBottom: "32px" }}>
                     <h3
                       style={{
                         fontSize: "14px",
@@ -3364,6 +3329,85 @@ function UserDashboardContent() {
                         +
                       </button>
                     </div>
+                  </div>
+
+                  {/* MINDFULNESS Section */}
+                  <div style={{ marginBottom: "32px" }}>
+                    <h3
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 700,
+                        color: "#7c3aed",
+                        letterSpacing: "0.05em",
+                        marginBottom: "16px",
+                      }}
+                    >
+                      MINDFULNESS
+                    </h3>
+
+                    {mindfulnessItems.map((item) => (
+                      <div
+                        key={item.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "16px 0",
+                          borderBottom: "1px solid #f3f4f6",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "12px",
+                              height: "12px",
+                              borderRadius: "50%",
+                              backgroundColor: item.color,
+                            }}
+                          />
+                          <span
+                            style={{
+                              fontSize: "16px",
+                              color: "#1a1a1a",
+                            }}
+                          >
+                            {item.label}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() =>
+                            !subscriptionStatus?.isPremium
+                              ? null
+                              : handleMindfulnessClick(item)
+                          }
+                          disabled={!subscriptionStatus?.isPremium}
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "4px",
+                            border: "none",
+                            backgroundColor: "transparent",
+                            color: "#60a5fa",
+                            fontSize: "24px",
+                            cursor: !subscriptionStatus?.isPremium
+                              ? "not-allowed"
+                              : "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            opacity: !subscriptionStatus?.isPremium ? 0.5 : 1,
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    ))}
                   </div>
 
                   {(emotionalEntries.length > 0 ||
@@ -6248,14 +6292,15 @@ function UserDashboardContent() {
 
                       return calendarDays.map((dayInfo, i) => {
                         const entry = insightsData[dayInfo.dateStr];
-                        const completedCount = entry
-                          ? [
-                              entry.task_1_completed,
-                              entry.task_2_completed,
-                              entry.task_3_completed,
-                            ].filter(Boolean).length
-                          : 0;
-                        const progressPercent = (completedCount / 3) * 100;
+                        const insightTasks = [
+                          enabledTasks.morning && entry?.task_1_completed,
+                          enabledTasks.intention && entry?.task_2_completed,
+                          enabledTasks.evening && entry?.task_3_completed,
+                          enabledTasks.notes && entry?.task_4_completed,
+                        ];
+                        const completedCount = insightTasks.filter(Boolean).length;
+                        const insightTotal = Object.values(enabledTasks).filter(Boolean).length;
+                        const progressPercent = insightTotal > 0 ? (completedCount / insightTotal) * 100 : 0;
                         const isSelected =
                           selectedInsightsDate === dayInfo.dateStr;
 
@@ -6385,12 +6430,13 @@ function UserDashboardContent() {
                       <strong>
                         {selectedDayData
                           ? [
-                              selectedDayData.task_1_completed,
-                              selectedDayData.task_2_completed,
-                              selectedDayData.task_3_completed,
+                              enabledTasks.morning && selectedDayData.task_1_completed,
+                              enabledTasks.intention && selectedDayData.task_2_completed,
+                              enabledTasks.evening && selectedDayData.task_3_completed,
+                              enabledTasks.notes && selectedDayData.task_4_completed,
                             ].filter(Boolean).length
                           : 0}{" "}
-                        of 3
+                        of {totalTasks}
                       </strong>
                     </p>
 

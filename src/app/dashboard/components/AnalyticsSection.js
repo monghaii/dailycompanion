@@ -421,7 +421,7 @@ export default function AnalyticsSection() {
                       Habit Formation
                     </h3>
                     <p className="text-sm text-gray-500 mb-5">
-                      How often users complete all 3 steps of Daily Focus
+                      How often users complete Daily Focus steps
                     </p>
                     <div className="space-y-4">
                       {[

@@ -35,6 +35,7 @@ export async function GET(request) {
           task_1_completed: false,
           task_2_completed: false,
           task_3_completed: false,
+          task_4_completed: false,
           focus_notes: "",
           log_1_entries: [],
           log_2_entries: [],

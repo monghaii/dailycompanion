@@ -15,6 +15,7 @@ export async function PATCH(request) {
       task_1_completed,
       task_2_completed,
       task_3_completed,
+      task_4_completed,
       focus_notes,
       intention_obstacles,
       intention_focus_word,
@@ -37,6 +38,8 @@ export async function PATCH(request) {
       updates.task_2_completed = task_2_completed;
     if (task_3_completed !== undefined)
       updates.task_3_completed = task_3_completed;
+    if (task_4_completed !== undefined)
+      updates.task_4_completed = task_4_completed;
     if (focus_notes !== undefined) updates.focus_notes = focus_notes;
     if (intention_obstacles !== undefined)
       updates.intention_obstacles = intention_obstacles;

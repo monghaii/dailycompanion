@@ -142,6 +142,7 @@ CREATE TABLE IF NOT EXISTS daily_user_entries (
   task_1_completed BOOLEAN DEFAULT false,
   task_2_completed BOOLEAN DEFAULT false,
   task_3_completed BOOLEAN DEFAULT false,
+  task_4_completed BOOLEAN DEFAULT false,
   focus_notes TEXT,
   
   -- AWARENESS TAB DATA (LOG section)
