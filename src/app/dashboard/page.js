@@ -295,6 +295,67 @@ function ClientsSection() {
   const [sponsorMenuPos, setSponsorMenuPos] = useState(null);
   const sponsorBtnRefs = useRef({});
 
+  // Kit bulk sync state
+  const [showKitModal, setShowKitModal] = useState(false);
+  const [kitForms, setKitForms] = useState([]);
+  const [kitFormsLoading, setKitFormsLoading] = useState(false);
+  const [kitFormId, setKitFormId] = useState("");
+  const [kitTags, setKitTags] = useState([]);
+  const [kitTagInput, setKitTagInput] = useState("");
+  const [kitSyncing, setKitSyncing] = useState(false);
+  const [kitSyncResult, setKitSyncResult] = useState(null);
+  const [kitHasKey, setKitHasKey] = useState(false);
+
+  async function openKitModal() {
+    setShowKitModal(true);
+    setKitSyncResult(null);
+    setKitFormsLoading(true);
+    try {
+      // Check if kit key is configured and load forms
+      const [settingsRes, formsRes] = await Promise.all([
+        fetch("/api/coach/kit/settings"),
+        fetch("/api/coach/kit/forms"),
+      ]);
+      const settingsData = await settingsRes.json();
+      setKitHasKey(settingsData.kitHasApiKey || false);
+      if (formsRes.ok) {
+        const formsData = await formsRes.json();
+        setKitForms(formsData.forms || []);
+        // Pre-select saved form if any
+        if (settingsData.kitFormId) setKitFormId(settingsData.kitFormId);
+        if (Array.isArray(settingsData.kitTags) && settingsData.kitTags.length > 0) {
+          setKitTags(settingsData.kitTags);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load Kit settings:", err);
+    } finally {
+      setKitFormsLoading(false);
+    }
+  }
+
+  async function handleKitBulkSync() {
+    setKitSyncing(true);
+    setKitSyncResult(null);
+    try {
+      const res = await fetch("/api/coach/kit/bulk-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ formId: kitFormId || null, tags: kitTags }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setKitSyncResult({ error: data.error || "Sync failed" });
+      } else {
+        setKitSyncResult(data);
+      }
+    } catch (err) {
+      setKitSyncResult({ error: err.message || "Sync failed" });
+    } finally {
+      setKitSyncing(false);
+    }
+  }
+
   useEffect(() => {
     fetchClients();
   }, []);
@@ -504,25 +565,36 @@ function ClientsSection() {
             </p>
           </div>
           {clients.length > 0 && (
-            <button
-              onClick={exportToCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-[#fbbf24] text-black rounded-lg hover:bg-[#f59e0b] transition-colors font-medium cursor-pointer"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div className="flex items-center gap-3">
+              <button
+                onClick={openKitModal}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium cursor-pointer"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              Export CSV
-            </button>
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+                Sync to Kit
+              </button>
+              <button
+                onClick={exportToCSV}
+                className="flex items-center gap-2 px-4 py-2 bg-[#fbbf24] text-black rounded-lg hover:bg-[#f59e0b] transition-colors font-medium cursor-pointer"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                Export CSV
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -750,6 +822,131 @@ function ClientsSection() {
           )}
         </div>
       </div>
+
+      {/* Kit Bulk Sync Modal */}
+      {showKitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-semibold text-gray-900">Sync Clients to Kit</h2>
+              <button
+                onClick={() => { setShowKitModal(false); setKitSyncResult(null); }}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {!kitHasKey ? (
+              <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-4">
+                No Kit API key configured. Go to <strong>Settings</strong> to set up your Kit integration first.
+              </div>
+            ) : kitSyncResult ? (
+              <div>
+                {kitSyncResult.error ? (
+                  <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-4">
+                    {kitSyncResult.error}
+                  </div>
+                ) : (
+                  <div className="text-sm bg-green-50 border border-green-200 rounded-lg p-4 text-green-800">
+                    <p className="font-semibold mb-1">Sync complete</p>
+                    <p>{kitSyncResult.synced} of {kitSyncResult.total} clients synced successfully.</p>
+                    {kitSyncResult.failed > 0 && (
+                      <p className="mt-1 text-amber-700">{kitSyncResult.failed} failed — check the console for details.</p>
+                    )}
+                  </div>
+                )}
+                <button
+                  onClick={() => setKitSyncResult(null)}
+                  className="mt-4 w-full py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+                >
+                  Back
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500 mb-5">
+                  {clients.length} client{clients.length !== 1 ? "s" : ""} will be synced to your Kit audience.
+                </p>
+
+                {/* Form select */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Form (optional)</label>
+                  {kitFormsLoading ? (
+                    <div className="text-sm text-gray-400">Loading forms...</div>
+                  ) : (
+                    <select
+                      value={kitFormId}
+                      onChange={(e) => setKitFormId(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="">No form — add as subscriber only</option>
+                      {kitForms.map((f) => (
+                        <option key={f.id} value={f.id}>{f.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                {/* Tags */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tags (optional)</label>
+                  <div className="flex gap-2 mb-2 flex-wrap">
+                    {kitTags.map((tag, idx) => (
+                      <span key={idx} className="flex items-center gap-1 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
+                        {tag}
+                        <button
+                          onClick={() => setKitTags(kitTags.filter((_, i) => i !== idx))}
+                          className="text-purple-500 hover:text-purple-800 cursor-pointer"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={kitTagInput}
+                      onChange={(e) => setKitTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if ((e.key === "Enter" || e.key === ",") && kitTagInput.trim()) {
+                          e.preventDefault();
+                          setKitTags([...kitTags, kitTagInput.trim()]);
+                          setKitTagInput("");
+                        }
+                      }}
+                      placeholder="Type tag and press Enter"
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <button
+                      onClick={() => {
+                        if (kitTagInput.trim()) {
+                          setKitTags([...kitTags, kitTagInput.trim()]);
+                          setKitTagInput("");
+                        }
+                      }}
+                      className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-200 cursor-pointer"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleKitBulkSync}
+                  disabled={kitSyncing}
+                  className="w-full py-2.5 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  {kitSyncing ? "Syncing..." : `Sync ${clients.length} client${clients.length !== 1 ? "s" : ""} to Kit`}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

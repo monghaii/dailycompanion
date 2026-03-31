@@ -41,8 +41,8 @@ export async function testKitConnection(apiKey) {
     return {
       success: true,
       account: {
-        name: data.user?.name || data.name,
-        primary_email: data.user?.email_address || data.primary_email_address,
+        name: data.account?.name,
+        primary_email: data.account?.primary_email_address,
       },
     };
   } catch (error) {

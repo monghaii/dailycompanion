@@ -49,11 +49,25 @@ export async function POST(request) {
       return Response.json({ error: "Coach not found" }, { status: 404 });
     }
 
-    if (kitEnabled && kitApiKey) {
+    // If a new API key is provided, validate it
+    if (kitApiKey) {
       const testResult = await testKitConnection(kitApiKey);
       if (!testResult.success) {
         return Response.json(
-          { error: "Invalid Kit API key", details: testResult.error },
+          { error: "Invalid Kit API key: " + (testResult.error || "Connection failed") },
+          { status: 400 },
+        );
+      }
+    } else if (kitEnabled) {
+      // Enabling without a new key — make sure a key is already saved
+      const { data: existingCoach } = await supabase
+        .from("coaches")
+        .select("kit_api_key")
+        .eq("id", coach.id)
+        .single();
+      if (!existingCoach?.kit_api_key) {
+        return Response.json(
+          { error: "Please provide your Kit API key before enabling the integration" },
           { status: 400 },
         );
       }
@@ -62,7 +76,7 @@ export async function POST(request) {
     const updateData = {
       kit_enabled: kitEnabled || false,
       kit_form_id: kitFormId || null,
-      kit_tags: kitTags ? JSON.stringify(kitTags) : "[]",
+      kit_tags: Array.isArray(kitTags) ? kitTags : [],
       updated_at: new Date().toISOString(),
     };
 
@@ -106,7 +120,7 @@ export async function GET() {
     const { data: coach } = await supabase
       .from("coaches")
       .select(
-        "kit_enabled, kit_form_id, kit_tags, kit_last_sync, kit_sync_status, kit_error_message",
+        "kit_enabled, kit_api_key, kit_form_id, kit_tags, kit_last_sync, kit_sync_status, kit_error_message",
       )
       .eq("profile_id", user.id)
       .single();
@@ -118,8 +132,8 @@ export async function GET() {
     return Response.json({
       kitEnabled: coach.kit_enabled || false,
       kitFormId: coach.kit_form_id || "",
-      kitTags: coach.kit_tags || [],
-      kitHasApiKey: false,
+      kitTags: Array.isArray(coach.kit_tags) ? coach.kit_tags : (coach.kit_tags ? JSON.parse(coach.kit_tags) : []),
+      kitHasApiKey: !!coach.kit_api_key,
       kitLastSync: coach.kit_last_sync,
       kitSyncStatus: coach.kit_sync_status,
       kitErrorMessage: coach.kit_error_message,

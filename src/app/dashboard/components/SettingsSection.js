@@ -43,7 +43,10 @@ function AccountSection({ user, checkAuthResponse, showToast, onUserUpdated }) {
       formData.append("file", file);
       formData.append("type", "avatar");
 
-      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
       if (checkAuthResponse(uploadRes)) return;
       const uploadData = await uploadRes.json();
 
@@ -84,8 +87,10 @@ function AccountSection({ user, checkAuthResponse, showToast, onUserUpdated }) {
     setSavingProfile(true);
     try {
       const updates = {};
-      if (fullName.trim() !== user?.full_name) updates.full_name = fullName.trim();
-      if (email.trim().toLowerCase() !== user?.email) updates.email = email.trim();
+      if (fullName.trim() !== user?.full_name)
+        updates.full_name = fullName.trim();
+      if (email.trim().toLowerCase() !== user?.email)
+        updates.email = email.trim();
 
       if (Object.keys(updates).length === 0) {
         showToast("No changes to save");
@@ -133,7 +138,10 @@ function AccountSection({ user, checkAuthResponse, showToast, onUserUpdated }) {
       const res = await fetch("/api/coach/account", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
       });
       if (checkAuthResponse(res)) return;
       const data = await res.json();
@@ -153,7 +161,12 @@ function AccountSection({ user, checkAuthResponse, showToast, onUserUpdated }) {
     }
   };
 
-  const initials = (fullName || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  const initials = (fullName || "?")
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
@@ -173,12 +186,27 @@ function AccountSection({ user, checkAuthResponse, showToast, onUserUpdated }) {
             style={{ cursor: uploadingAvatar ? "wait" : "pointer" }}
           >
             {avatarUrl ? (
-              <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+              <img
+                src={avatarUrl}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
             ) : (
-              <span className="text-xl font-bold text-blue-700">{initials}</span>
+              <span className="text-xl font-bold text-blue-700">
+                {initials}
+              </span>
             )}
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#fff"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                 <circle cx="12" cy="13" r="4" />
               </svg>
@@ -230,13 +258,17 @@ function AccountSection({ user, checkAuthResponse, showToast, onUserUpdated }) {
                 </button>
               )}
             </div>
-            <p className="text-xs text-gray-400 mt-1.5">JPG, PNG, or GIF. Max 4.5MB.</p>
+            <p className="text-xs text-gray-400 mt-1.5">
+              JPG, PNG, or GIF. Max 4.5MB.
+            </p>
           </div>
         </div>
 
         {/* Name */}
         <div className="max-w-md">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            Full Name
+          </label>
           <input
             type="text"
             value={fullName}
@@ -261,10 +293,14 @@ function AccountSection({ user, checkAuthResponse, showToast, onUserUpdated }) {
 
         {/* Change Password */}
         <div>
-          <h3 className="text-base font-semibold text-gray-900 mb-4">Change Password</h3>
+          <h3 className="text-base font-semibold text-gray-900 mb-4">
+            Change Password
+          </h3>
           <div className="space-y-4 max-w-md">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Current Password</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Current Password
+              </label>
               <input
                 type="password"
                 value={currentPassword}
@@ -274,7 +310,9 @@ function AccountSection({ user, checkAuthResponse, showToast, onUserUpdated }) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">New Password</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                New Password
+              </label>
               <input
                 type="password"
                 value={newPassword}
@@ -284,7 +322,9 @@ function AccountSection({ user, checkAuthResponse, showToast, onUserUpdated }) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm New Password</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Confirm New Password
+              </label>
               <input
                 type="password"
                 value={confirmPassword}
@@ -309,7 +349,12 @@ function AccountSection({ user, checkAuthResponse, showToast, onUserUpdated }) {
   );
 }
 
-export default function SettingsSection({ user, checkAuthResponse, showToast, onUserUpdated }) {
+export default function SettingsSection({
+  user,
+  checkAuthResponse,
+  showToast,
+  onUserUpdated,
+}) {
   const [kitSettings, setKitSettings] = useState({
     enabled: false,
     apiKey: "",
@@ -320,10 +365,68 @@ export default function SettingsSection({ user, checkAuthResponse, showToast, on
     syncStatus: null,
     errorMessage: null,
   });
+  const [kitLoading, setKitLoading] = useState(true);
   const [kitTesting, setKitTesting] = useState(false);
   const [kitTestResult, setKitTestResult] = useState(null);
   const [kitSaving, setKitSaving] = useState(false);
   const [newTag, setNewTag] = useState("");
+  const [kitForms, setKitForms] = useState([]);
+  const [kitFormsLoading, setKitFormsLoading] = useState(false);
+
+  const fetchKitForms = async (typedApiKey) => {
+    setKitFormsLoading(true);
+    try {
+      let res;
+      if (typedApiKey) {
+        res = await fetch("/api/coach/kit/forms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ apiKey: typedApiKey }),
+        });
+      } else {
+        res = await fetch("/api/coach/kit/forms");
+      }
+      if (res.ok) {
+        const data = await res.json();
+        setKitForms(data.forms || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch Kit forms:", err);
+    } finally {
+      setKitFormsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const loadKitSettings = async () => {
+      try {
+        const res = await fetch("/api/coach/kit/settings");
+        if (checkAuthResponse(res)) return;
+        const data = await res.json();
+        if (res.ok) {
+          setKitSettings((prev) => ({
+            ...prev,
+            enabled: data.kitEnabled || false,
+            formId: data.kitFormId || "",
+            tags: Array.isArray(data.kitTags) ? data.kitTags : [],
+            hasApiKey: data.kitHasApiKey || false,
+            lastSync: data.kitLastSync || null,
+            syncStatus: data.kitSyncStatus || null,
+            errorMessage: data.kitErrorMessage || null,
+          }));
+          // Auto-load forms if a key is already saved
+          if (data.kitHasApiKey) {
+            fetchKitForms();
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load Kit settings:", err);
+      } finally {
+        setKitLoading(false);
+      }
+    };
+    loadKitSettings();
+  }, []);
 
   return (
     <div className="flex-1 bg-gray-50">
@@ -349,7 +452,9 @@ export default function SettingsSection({ user, checkAuthResponse, showToast, on
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
             <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Kit (ConvertKit) Integration</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Kit (ConvertKit) Integration
+                </h2>
                 <p className="text-sm text-gray-500 mt-0.5">
                   Automatically sync your subscribers to your Kit email list
                 </p>
@@ -358,7 +463,12 @@ export default function SettingsSection({ user, checkAuthResponse, showToast, on
                 <input
                   type="checkbox"
                   checked={kitSettings.enabled}
-                  onChange={(e) => setKitSettings({ ...kitSettings, enabled: e.target.checked })}
+                  onChange={(e) =>
+                    setKitSettings({
+                      ...kitSettings,
+                      enabled: e.target.checked,
+                    })
+                  }
                   className="absolute opacity-0 pointer-events-none"
                 />
                 <div
@@ -373,222 +483,355 @@ export default function SettingsSection({ user, checkAuthResponse, showToast, on
             </div>
 
             <div className="p-6 space-y-5">
-              {/* API Key */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Kit API Key</label>
-                <p className="text-xs text-gray-500 mb-2">
-                  Find your API key in Kit under{" "}
-                  <a
-                    href="https://app.kit.com/developer"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-amber-600 underline hover:text-amber-700"
-                  >
-                    Settings &rarr; Developer
-                  </a>
-                </p>
-                <div className="flex gap-2">
-                  <input
-                    type="password"
-                    value={kitSettings.apiKey}
-                    onChange={(e) => setKitSettings({ ...kitSettings, apiKey: e.target.value })}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-                    placeholder="Enter your Kit API key"
-                  />
-                  <button
-                    onClick={async () => {
-                      if (!kitSettings.apiKey) {
-                        setKitTestResult({ success: false, error: "Please enter an API key" });
-                        return;
-                      }
-                      setKitTesting(true);
-                      setKitTestResult(null);
-                      try {
-                        const res = await fetch("/api/coach/kit/test", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ apiKey: kitSettings.apiKey }),
-                        });
-                        if (checkAuthResponse(res)) return;
-                        const data = await res.json();
-                        setKitTestResult(data);
-                      } catch (error) {
-                        setKitTestResult({ success: false, error: error.message });
-                      } finally {
-                        setKitTesting(false);
-                      }
-                    }}
-                    disabled={kitTesting}
-                    className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:cursor-not-allowed whitespace-nowrap transition-colors cursor-pointer"
-                  >
-                    {kitTesting ? "Testing..." : "Test Connection"}
-                  </button>
+              {kitLoading ? (
+                <div className="text-center py-6 text-gray-400 text-sm">
+                  Loading Kit settings...
                 </div>
+              ) : null}
+              {!kitLoading && (
+                <>
+                  {/* API Key */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Kit API Key
+                    </label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Find your API key in Kit under{" "}
+                      <a
+                        href="https://app.kit.com/account_settings/developer_settings"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-amber-600 underline hover:text-amber-700"
+                      >
+                        Settings &rarr; Developer
+                      </a>{" "}
+                      — use the <strong>V4 API Key</strong>.
+                    </p>
+                    {kitSettings.hasApiKey && !kitSettings.apiKey && (
+                      <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        API key saved. Enter a new key below to replace it.
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <input
+                        type="password"
+                        value={kitSettings.apiKey}
+                        onChange={(e) =>
+                          setKitSettings({
+                            ...kitSettings,
+                            apiKey: e.target.value,
+                          })
+                        }
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                        placeholder={
+                          kitSettings.hasApiKey
+                            ? "Enter new key to replace saved one"
+                            : "Paste your Kit API key here"
+                        }
+                      />
+                      <button
+                        onClick={async () => {
+                          if (!kitSettings.apiKey) {
+                            setKitTestResult({
+                              success: false,
+                              error: "Please enter an API key",
+                            });
+                            return;
+                          }
+                          setKitTesting(true);
+                          setKitTestResult(null);
+                          try {
+                            const res = await fetch("/api/coach/kit/test", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                apiKey: kitSettings.apiKey,
+                              }),
+                            });
+                            if (checkAuthResponse(res)) return;
+                            const data = await res.json();
+                            setKitTestResult(data);
+                            if (data.success) {
+                              fetchKitForms(kitSettings.apiKey);
+                            }
+                          } catch (error) {
+                            setKitTestResult({
+                              success: false,
+                              error: error.message,
+                            });
+                          } finally {
+                            setKitTesting(false);
+                          }
+                        }}
+                        disabled={kitTesting}
+                        className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:cursor-not-allowed whitespace-nowrap transition-colors cursor-pointer"
+                      >
+                        {kitTesting ? "Testing..." : "Connect"}
+                      </button>
+                    </div>
 
-                {kitTestResult && (
-                  <div
-                    className={`mt-3 p-3 rounded-lg text-sm border ${
-                      kitTestResult.success
-                        ? "bg-green-50 text-green-800 border-green-200"
-                        : "bg-red-50 text-red-800 border-red-200"
-                    }`}
-                  >
-                    {kitTestResult.success ? (
-                      <div>
-                        <p className="font-semibold">Connection successful</p>
-                        {kitTestResult.account && (
-                          <p className="text-xs mt-1">
-                            Connected to: {kitTestResult.account.name} ({kitTestResult.account.primary_email})
+                    {kitTestResult && (
+                      <div
+                        className={`mt-3 p-3 rounded-lg text-sm border ${
+                          kitTestResult.success
+                            ? "bg-green-50 text-green-800 border-green-200"
+                            : "bg-red-50 text-red-800 border-red-200"
+                        }`}
+                      >
+                        {kitTestResult.success ? (
+                          <div>
+                            <p className="font-semibold">
+                              Connection successful
+                            </p>
+                            {kitTestResult.account && (
+                              <p className="text-xs mt-1">
+                                Connected to: {kitTestResult.account.name} (
+                                {kitTestResult.account.primary_email})
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <p>{kitTestResult.error || "Connection failed"}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Form */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Form (Optional)
+                    </label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Add new subscribers to a specific Kit form. Leave blank to
+                      add as general subscribers only.
+                    </p>
+                    {kitForms.length > 0 ? (
+                      <select
+                        value={kitSettings.formId}
+                        onChange={(e) =>
+                          setKitSettings({
+                            ...kitSettings,
+                            formId: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-white"
+                      >
+                        <option value="">
+                          — No form (general subscribers) —
+                        </option>
+                        {kitForms.map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {f.name} ({f.type})
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={kitSettings.formId}
+                          onChange={(e) =>
+                            setKitSettings({
+                              ...kitSettings,
+                              formId: e.target.value,
+                            })
+                          }
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                          placeholder="Form ID (optional)"
+                        />
+                        {(kitSettings.hasApiKey || kitSettings.apiKey) && (
+                          <button
+                            onClick={() =>
+                              fetchKitForms(kitSettings.apiKey || undefined)
+                            }
+                            disabled={kitFormsLoading}
+                            className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:cursor-not-allowed whitespace-nowrap transition-colors cursor-pointer"
+                          >
+                            {kitFormsLoading ? "Loading..." : "Load Forms"}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tags */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tags
+                    </label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Tags to apply to new subscribers. Status and coach tags
+                      are added automatically.
+                    </p>
+
+                    {kitSettings.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {kitSettings.tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-sm"
+                          >
+                            {tag}
+                            <button
+                              onClick={() => {
+                                const newTags = kitSettings.tags.filter(
+                                  (_, i) => i !== index,
+                                );
+                                setKitSettings({
+                                  ...kitSettings,
+                                  tags: newTags,
+                                });
+                              }}
+                              className="text-amber-800 hover:text-amber-900 text-base leading-none cursor-pointer"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newTag}
+                        onChange={(e) => setNewTag(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === "Enter" && newTag.trim()) {
+                            e.preventDefault();
+                            setKitSettings({
+                              ...kitSettings,
+                              tags: [...kitSettings.tags, newTag.trim()],
+                            });
+                            setNewTag("");
+                          }
+                        }}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                        placeholder="Enter tag name"
+                      />
+                      <button
+                        onClick={() => {
+                          if (newTag.trim()) {
+                            setKitSettings({
+                              ...kitSettings,
+                              tags: [...kitSettings.tags, newTag.trim()],
+                            });
+                            setNewTag("");
+                          }
+                        }}
+                        className="px-3 py-2 bg-amber-100 text-amber-800 rounded-lg text-sm font-medium hover:bg-amber-200 whitespace-nowrap transition-colors cursor-pointer"
+                      >
+                        Add Tag
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Sync Status */}
+                  {kitSettings.syncStatus && (
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                        Sync Status
+                      </h3>
+                      <div className="space-y-1 text-sm">
+                        <p>
+                          <span className="text-gray-500">Status:</span>{" "}
+                          <span
+                            className={`font-medium ${
+                              kitSettings.syncStatus === "success"
+                                ? "text-green-600"
+                                : kitSettings.syncStatus === "error"
+                                  ? "text-red-600"
+                                  : "text-gray-500"
+                            }`}
+                          >
+                            {kitSettings.syncStatus}
+                          </span>
+                        </p>
+                        {kitSettings.lastSync && (
+                          <p>
+                            <span className="text-gray-500">Last Sync:</span>{" "}
+                            {new Date(kitSettings.lastSync).toLocaleString()}
+                          </p>
+                        )}
+                        {kitSettings.errorMessage && (
+                          <p className="text-red-600 text-xs mt-2">
+                            {kitSettings.errorMessage}
                           </p>
                         )}
                       </div>
-                    ) : (
-                      <p>{kitTestResult.error || "Connection failed"}</p>
-                    )}
+                    </div>
+                  )}
+
+                  {/* Save */}
+                  <div className="flex justify-end pt-4 border-t border-gray-100">
+                    <button
+                      onClick={async () => {
+                        if (
+                          kitSettings.enabled &&
+                          !kitSettings.apiKey &&
+                          !kitSettings.hasApiKey
+                        ) {
+                          showToast(
+                            "Please enter a Kit API key before enabling",
+                          );
+                          return;
+                        }
+                        setKitSaving(true);
+                        try {
+                          const res = await fetch("/api/coach/kit/settings", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              kitApiKey: kitSettings.apiKey || undefined,
+                              kitEnabled: kitSettings.enabled,
+                              kitFormId: kitSettings.formId,
+                              kitTags: kitSettings.tags,
+                            }),
+                          });
+                          if (checkAuthResponse(res)) return;
+                          const data = await res.json();
+                          if (data.success) {
+                            showToast("Kit settings saved!");
+                            const hadNewKey = !!kitSettings.apiKey;
+                            setKitSettings((prev) => ({
+                              ...prev,
+                              hasApiKey: prev.hasApiKey || !!prev.apiKey,
+                              apiKey: "",
+                            }));
+                            setKitTestResult(null);
+                            if (hadNewKey) fetchKitForms();
+                          } else {
+                            showToast(
+                              data.error || "Failed to save Kit settings",
+                            );
+                          }
+                        } catch (error) {
+                          showToast("Error saving Kit settings");
+                        } finally {
+                          setKitSaving(false);
+                        }
+                      }}
+                      disabled={kitSaving}
+                      className="px-5 py-2 bg-amber-400 text-gray-900 rounded-lg text-sm font-semibold hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      {kitSaving ? "Saving..." : "Save Kit Settings"}
+                    </button>
                   </div>
-                )}
-              </div>
-
-              {/* Form ID */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Form ID (Optional)</label>
-                <p className="text-xs text-gray-500 mb-2">
-                  Subscribe users to a specific form. Leave empty to add as general subscribers.
-                </p>
-                <input
-                  type="text"
-                  value={kitSettings.formId}
-                  onChange={(e) => setKitSettings({ ...kitSettings, formId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-                  placeholder="e.g., 1234567"
-                />
-              </div>
-
-              {/* Tags */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
-                <p className="text-xs text-gray-500 mb-2">
-                  Tags to apply to new subscribers. Status and coach tags are added automatically.
-                </p>
-
-                {kitSettings.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {kitSettings.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-sm"
-                      >
-                        {tag}
-                        <button
-                          onClick={() => {
-                            const newTags = kitSettings.tags.filter((_, i) => i !== index);
-                            setKitSettings({ ...kitSettings, tags: newTags });
-                          }}
-                          className="text-amber-800 hover:text-amber-900 text-base leading-none cursor-pointer"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter" && newTag.trim()) {
-                        e.preventDefault();
-                        setKitSettings({ ...kitSettings, tags: [...kitSettings.tags, newTag.trim()] });
-                        setNewTag("");
-                      }
-                    }}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-                    placeholder="Enter tag name"
-                  />
-                  <button
-                    onClick={() => {
-                      if (newTag.trim()) {
-                        setKitSettings({ ...kitSettings, tags: [...kitSettings.tags, newTag.trim()] });
-                        setNewTag("");
-                      }
-                    }}
-                    className="px-3 py-2 bg-amber-100 text-amber-800 rounded-lg text-sm font-medium hover:bg-amber-200 whitespace-nowrap transition-colors cursor-pointer"
-                  >
-                    Add Tag
-                  </button>
-                </div>
-              </div>
-
-              {/* Sync Status */}
-              {kitSettings.syncStatus && (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Sync Status</h3>
-                  <div className="space-y-1 text-sm">
-                    <p>
-                      <span className="text-gray-500">Status:</span>{" "}
-                      <span
-                        className={`font-medium ${
-                          kitSettings.syncStatus === "success"
-                            ? "text-green-600"
-                            : kitSettings.syncStatus === "error"
-                              ? "text-red-600"
-                              : "text-gray-500"
-                        }`}
-                      >
-                        {kitSettings.syncStatus}
-                      </span>
-                    </p>
-                    {kitSettings.lastSync && (
-                      <p>
-                        <span className="text-gray-500">Last Sync:</span>{" "}
-                        {new Date(kitSettings.lastSync).toLocaleString()}
-                      </p>
-                    )}
-                    {kitSettings.errorMessage && (
-                      <p className="text-red-600 text-xs mt-2">{kitSettings.errorMessage}</p>
-                    )}
-                  </div>
-                </div>
+                </>
               )}
-
-              {/* Save */}
-              <div className="flex justify-end pt-4 border-t border-gray-100">
-                <button
-                  onClick={async () => {
-                    setKitSaving(true);
-                    try {
-                      const res = await fetch("/api/coach/kit/settings", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          kitApiKey: kitSettings.apiKey,
-                          kitEnabled: kitSettings.enabled,
-                          kitFormId: kitSettings.formId,
-                          kitTags: kitSettings.tags,
-                        }),
-                      });
-                      if (checkAuthResponse(res)) return;
-                      const data = await res.json();
-                      if (data.success) {
-                        showToast("Kit settings saved successfully!");
-                      } else {
-                        showToast("Failed to save Kit settings");
-                      }
-                    } catch (error) {
-                      showToast("Error saving Kit settings");
-                    } finally {
-                      setKitSaving(false);
-                    }
-                  }}
-                  disabled={kitSaving}
-                  className="px-5 py-2 bg-amber-400 text-gray-900 rounded-lg text-sm font-semibold hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                >
-                  {kitSaving ? "Saving..." : "Save Kit Settings"}
-                </button>
-              </div>
             </div>
           </div>
         </div>

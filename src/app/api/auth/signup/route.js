@@ -3,6 +3,7 @@ import { createUser, createCoach, generateToken } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
 import { trackServerEvent, identifyUser, isBlacklistedEmail } from '@/lib/posthog';
+import { syncUserToKit } from '@/lib/kit-sync';
 
 export async function POST(request) {
   try {
@@ -84,6 +85,18 @@ export async function POST(request) {
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: '/',
     });
+
+    // Sync new user to coach's Kit list (fire-and-forget, never blocks signup)
+    if (coachId && role !== 'coach') {
+      syncUserToKit({
+        userId: profile.id,
+        coachId,
+        email,
+        firstName: resolvedFirst,
+        lastName: resolvedLast,
+        subscriptionStatus: 'free',
+      }).catch((err) => console.error('[Signup] Kit sync error:', err));
+    }
 
     // Track signup in PostHog (skip blacklisted test accounts)
     if (!isBlacklistedEmail(email)) {
