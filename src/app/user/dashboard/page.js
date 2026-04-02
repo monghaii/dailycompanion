@@ -729,9 +729,8 @@ function UserDashboardContent() {
       const data = await res.json();
 
       if (res.ok && data.entry) {
-        const log2 = data.entry.log_2_entries || [];
-        setEmotionalEntries(log2);
-        setShowEmotionPicker(log2.length === 0);
+        setEmotionalEntries(data.entry.log_2_entries || []);
+        setShowEmotionPicker(true);
         setMindfulnessEntries(data.entry.log_1_entries || []);
       } else {
         setEmotionalEntries([]);
@@ -1580,7 +1579,6 @@ function UserDashboardContent() {
       };
 
   const toggleEmotion = (emotionId, categoryId) => {
-    // Only allow selecting ONE emotion at a time
     setSelectedEmotions([{ id: emotionId, categoryId }]);
   };
 
@@ -1627,8 +1625,9 @@ function UserDashboardContent() {
     }
   };
 
-  const handleEmotionalDone = async () => {
-    if (selectedEmotions.length === 0) {
+  const handleEmotionalDone = async (directEmotion) => {
+    const selected = directEmotion || selectedEmotions[0];
+    if (!selected) {
       return;
     }
 
@@ -1639,9 +1638,7 @@ function UserDashboardContent() {
       timeZone: settingsTimezone,
     });
 
-    // Get the selected emotion info
-    const selected = selectedEmotions[0];
-    const emotionLabel = selected.id; // Now this is the emotion name directly
+    const emotionLabel = selected.id;
 
     // Format: categoryId-EmotionLabel
     const formattedEmotions = [`${selected.categoryId}-${emotionLabel}`];
@@ -1671,7 +1668,6 @@ function UserDashboardContent() {
       if (res.ok) {
         const data = await res.json();
         setEmotionalEntries(data.entry.log_2_entries || []);
-        setShowEmotionPicker(false);
 
         const category = emotions[selected.categoryId];
         const emotionObj = category?.find((e) => e.name === emotionLabel);
@@ -3131,6 +3127,10 @@ function UserDashboardContent() {
                             practiceAudioRef.current.pause();
                             practiceAudioRef.current.currentTime = 0;
                           }
+                          // Reset emotion picker so user can re-select
+                          setShowEmotionPicker(true);
+                          setSelectedEmotions([]);
+                          setEmotionalEntries([]);
                         }}
                         style={{
                           position: "absolute",
@@ -3384,22 +3384,19 @@ function UserDashboardContent() {
                               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                                 {(emotions[category.id] || []).map((emotion) => {
                                   const emotionName = emotion.name || emotion;
-                                  const isSelected =
-                                    selectedEmotions.length > 0 &&
-                                    selectedEmotions[0].id === emotionName;
                                   return (
                                     <button
                                       key={emotionName}
-                                      onClick={() => toggleEmotion(emotionName, category.id)}
+                                      onClick={() => handleEmotionalDone({ id: emotionName, categoryId: category.id })}
                                       style={{
                                         padding: "9px 8px",
-                                        backgroundColor: isSelected ? category.color : "#fff",
-                                        color: isSelected ? "#fff" : "#1a1a1a",
+                                        backgroundColor: "#fff",
+                                        color: "#1a1a1a",
                                         border: "1px solid #e5e7eb",
                                         borderRadius: "8px",
                                         fontSize: "clamp(11px, 3.2vw, 14px)",
                                         cursor: "pointer",
-                                        fontWeight: isSelected ? 600 : 400,
+                                        fontWeight: 400,
                                         whiteSpace: "nowrap",
                                         overflow: "hidden",
                                         textOverflow: "ellipsis",
@@ -3414,24 +3411,6 @@ function UserDashboardContent() {
                             </div>
                           ))}
                         </div>
-                        <button
-                          onClick={handleEmotionalDone}
-                          disabled={selectedEmotions.length === 0}
-                          style={{
-                            width: "100%",
-                            padding: "12px",
-                            backgroundColor: "#fff",
-                            color: selectedEmotions.length === 0 ? "#d1d5db" : "#3b82f6",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "8px",
-                            fontSize: "15px",
-                            fontWeight: 600,
-                            cursor: selectedEmotions.length === 0 ? "default" : "pointer",
-                            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                          }}
-                        >
-                          Done
-                        </button>
                       </div>
                     )}
                   </div>
