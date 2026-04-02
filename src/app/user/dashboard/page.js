@@ -47,7 +47,6 @@ function UserDashboardContent() {
   const [selectedMindfulness, setSelectedMindfulness] = useState(null);
   const [modalTime, setModalTime] = useState("");
   const [modalNotes, setModalNotes] = useState("");
-  const [showEmotionalModal, setShowEmotionalModal] = useState(false);
   const [selectedEmotions, setSelectedEmotions] = useState([]);
   const [emotionalEntries, setEmotionalEntries] = useState([]);
   const [mindfulnessEntries, setMindfulnessEntries] = useState([]);
@@ -1625,7 +1624,6 @@ function UserDashboardContent() {
 
   const handleEmotionalDone = async () => {
     if (selectedEmotions.length === 0) {
-      setShowEmotionalModal(false);
       return;
     }
 
@@ -1668,7 +1666,6 @@ function UserDashboardContent() {
       if (res.ok) {
         const data = await res.json();
         setEmotionalEntries(data.entry.log_2_entries || []);
-        setShowEmotionalModal(false);
 
         const category = emotions[selected.categoryId];
         const emotionObj = category?.find((e) => e.name === emotionLabel);
@@ -1690,7 +1687,6 @@ function UserDashboardContent() {
       }
     } catch (error) {
       console.error("Failed to save emotional state:", error);
-      setShowEmotionalModal(false);
       setSelectedEmotions([]);
     }
   };
@@ -3284,49 +3280,90 @@ function UserDashboardContent() {
                       ).toUpperCase()}
                     </h3>
 
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "16px 0",
-                      }}
-                    >
-                      <span
+                    {/* Inline emotion picker */}
+                    <div style={{ opacity: !subscriptionStatus?.isPremium ? 0.5 : 1, pointerEvents: !subscriptionStatus?.isPremium ? "none" : "auto" }}>
+                      <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "12px" }}>
+                        {coachConfig?.emotional_state_tab?.modal_subtitle || "What do you need right now?"}
+                      </p>
+                      <div
                         style={{
-                          fontSize: "16px",
-                          color: "#1a1a1a",
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "10px",
+                          marginBottom: "12px",
                         }}
                       >
-                        Log{" "}
-                        {coachConfig?.emotional_state_tab?.log_label?.toLowerCase() ||
-                          "emotional state"}
-                      </span>
+                        {(
+                          coachConfig?.emotional_state_tab?.categories || [
+                            { id: "challenging", label: "CHALLENGING", color: "#3b82f6" },
+                            { id: "positive", label: "POSITIVE", color: "#10b981" },
+                          ]
+                        ).map((category) => (
+                          <div key={category.id} style={{ minWidth: 0 }}>
+                            <div
+                              style={{
+                                backgroundColor: category.color,
+                                color: "#fff",
+                                padding: "8px",
+                                borderRadius: "8px 8px 0 0",
+                                textAlign: "center",
+                                fontSize: "12px",
+                                fontWeight: 700,
+                                letterSpacing: "0.05em",
+                              }}
+                            >
+                              {category.label}
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                              {(emotions[category.id] || []).map((emotion) => {
+                                const emotionName = emotion.name || emotion;
+                                const isSelected =
+                                  selectedEmotions.length > 0 &&
+                                  selectedEmotions[0].id === emotionName;
+                                return (
+                                  <button
+                                    key={emotionName}
+                                    onClick={() => toggleEmotion(emotionName, category.id)}
+                                    style={{
+                                      padding: "9px 8px",
+                                      backgroundColor: isSelected ? category.color : "#fff",
+                                      color: isSelected ? "#fff" : "#1a1a1a",
+                                      border: "1px solid #e5e7eb",
+                                      borderRadius: "8px",
+                                      fontSize: "clamp(11px, 3.2vw, 14px)",
+                                      cursor: "pointer",
+                                      fontWeight: isSelected ? 600 : 400,
+                                      whiteSpace: "nowrap",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      textAlign: "center",
+                                    }}
+                                  >
+                                    {emotionName}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                       <button
-                        onClick={() =>
-                          !subscriptionStatus?.isPremium
-                            ? null
-                            : setShowEmotionalModal(true)
-                        }
-                        disabled={!subscriptionStatus?.isPremium}
+                        onClick={handleEmotionalDone}
+                        disabled={selectedEmotions.length === 0}
                         style={{
-                          width: "32px",
-                          height: "32px",
-                          borderRadius: "4px",
-                          border: "none",
-                          backgroundColor: "transparent",
-                          color: "#60a5fa",
-                          fontSize: "24px",
-                          cursor: !subscriptionStatus?.isPremium
-                            ? "not-allowed"
-                            : "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          opacity: !subscriptionStatus?.isPremium ? 0.5 : 1,
+                          width: "100%",
+                          padding: "12px",
+                          backgroundColor: "#fff",
+                          color: selectedEmotions.length === 0 ? "#d1d5db" : "#3b82f6",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: "8px",
+                          fontSize: "15px",
+                          fontWeight: 600,
+                          cursor: selectedEmotions.length === 0 ? "default" : "pointer",
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
                         }}
                       >
-                        +
+                        Done
                       </button>
                     </div>
                   </div>
@@ -8237,176 +8274,6 @@ function UserDashboardContent() {
       )}
 
       {/* Emotional State Modal */}
-      {showEmotionalModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "center",
-            zIndex: 1100,
-            padding: "24px 16px calc(env(safe-area-inset-bottom, 0px) + 70px) 16px",
-          }}
-          onClick={() => setShowEmotionalModal(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              backgroundColor: "#f3f4f6",
-              borderRadius: "16px",
-              width: "100%",
-              maxWidth: "500px",
-              maxHeight: "80dvh",
-              position: "relative",
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-            }}
-          >
-            {/* Header */}
-            <div style={{ padding: "20px 20px 0", position: "relative", flexShrink: 0 }}>
-              <button
-                onClick={() => setShowEmotionalModal(false)}
-                style={{
-                  position: "absolute",
-                  top: "12px",
-                  right: "12px",
-                  background: "none",
-                  border: "none",
-                  fontSize: "22px",
-                  cursor: "pointer",
-                  color: "#9ca3af",
-                  padding: "4px",
-                  lineHeight: 1,
-                }}
-              >
-                ✕
-              </button>
-              <p
-                style={{
-                  fontSize: "14px",
-                  textAlign: "center",
-                  color: "#6b7280",
-                  marginBottom: "16px",
-                }}
-              >
-                {coachConfig?.emotional_state_tab?.modal_subtitle ||
-                  "What do you need right now?"}
-              </p>
-            </div>
-
-            {/* Scrollable content */}
-            <div style={{ overflowY: "auto", padding: "0 20px", flex: 1, minHeight: 0, WebkitOverflowScrolling: "touch" }}>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "10px",
-                  paddingBottom: "80px",
-                }}
-              >
-              {(
-                coachConfig?.emotional_state_tab?.categories || [
-                  { id: "challenging", label: "CHALLENGING", color: "#3b82f6" },
-                  { id: "positive", label: "POSITIVE", color: "#10b981" },
-                ]
-              ).map((category) => (
-                <div key={category.id} style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      backgroundColor: category.color,
-                      color: "#fff",
-                      padding: "8px",
-                      borderRadius: "8px 8px 0 0",
-                      textAlign: "center",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    {category.label}
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "8px",
-                    }}
-                  >
-                    {(emotions[category.id] || []).map((emotion, index) => {
-                      const emotionName = emotion.name || emotion;
-                      const emotionId = emotionName;
-                      const isSelected =
-                        selectedEmotions.length > 0 &&
-                        selectedEmotions[0].id === emotionId;
-                      return (
-                        <button
-                          key={emotionId}
-                          onClick={() => toggleEmotion(emotionId, category.id)}
-                          style={{
-                            padding: "10px 8px",
-                            backgroundColor: isSelected
-                              ? category.color
-                              : "#fff",
-                            color: isSelected ? "#fff" : "#1a1a1a",
-                            border: "none",
-                            borderRadius: "8px",
-                            fontSize: "clamp(11px, 3.2vw, 14px)",
-                            cursor: "pointer",
-                            fontWeight: isSelected ? 600 : 400,
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}
-                        >
-                          {emotionName}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-            </div>
-
-            {/* Sticky Done button pinned to bottom of modal */}
-            <div style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              padding: "12px 20px 20px",
-              background: "linear-gradient(to top, #f3f4f6 70%, transparent)",
-              borderRadius: "0 0 16px 16px",
-              pointerEvents: "none",
-            }}>
-              <button
-                onClick={handleEmotionalDone}
-                style={{
-                  width: "100%",
-                  padding: "14px",
-                  backgroundColor: "#fff",
-                  color: "#3b82f6",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  pointerEvents: "auto",
-                  boxShadow: "0 -2px 8px rgba(0,0,0,0.06)",
-                }}
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Bottom Navigation */}
       <div
