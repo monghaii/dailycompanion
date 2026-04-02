@@ -3349,7 +3349,7 @@ function UserDashboardContent() {
                       );
                     })() : (
                       <div style={{ opacity: !subscriptionStatus?.isPremium ? 0.5 : 1, pointerEvents: !subscriptionStatus?.isPremium ? "none" : "auto" }}>
-                        <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "12px" }}>
+                        <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "12px" }}>
                           {coachConfig?.emotional_state_tab?.modal_subtitle || "What do you need right now?"}
                         </p>
                         <div
@@ -3394,7 +3394,7 @@ function UserDashboardContent() {
                                         color: "#1a1a1a",
                                         border: "1px solid #e5e7eb",
                                         borderRadius: "8px",
-                                        fontSize: "clamp(11px, 3.2vw, 14px)",
+                                        fontSize: "14px",
                                         cursor: "pointer",
                                         fontWeight: 400,
                                         whiteSpace: "nowrap",
